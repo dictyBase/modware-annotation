@@ -77,7 +77,7 @@ func RunServer(c *cli.Context) error {
 			ms,
 			aphgrpc.TopicsOption(
 				map[string]string{
-					"annotaionCreate":  "AnnotationService.Create",
+					"annotationCreate": "AnnotationService.Create",
 					"annotationDelete": "AnnotationService.Delete",
 					"annotationUpdate": "AnnotationService.Update",
 				}),

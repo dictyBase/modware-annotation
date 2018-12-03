@@ -173,6 +173,7 @@ func (s *AnnotationService) CreateAnnotation(ctx context.Context, r *annotation.
 			Ontology:      r.Data.Attributes.Ontology,
 		},
 	}
+	s.publisher.Publish(s.Topics["annotationCreate"], ta)
 	return ta, nil
 }
 
@@ -204,6 +205,7 @@ func (s *AnnotationService) UpdateAnnotation(ctx context.Context, r *annotation.
 			Ontology:      m.Ontology,
 		},
 	}
+	s.publisher.Publish(s.Topics["annotationUpdate"], ta)
 	return ta, nil
 }
 
