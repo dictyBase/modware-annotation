@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"gopkg.in/go-playground/validator.v9"
+
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
-	validator "gopkg.in/go-playground/validator.v9"
 )
 
 // CollectionParams are the arangodb collections required for storing
@@ -64,27 +65,14 @@ type arangorepository struct {
 func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams) (repository.TaggedAnnotationRepository, error) {
 	var ar *arangorepository
 	validate := validator.New()
-	if err := validate.Struct(connP); err != nil {
-		return ar, err
-	}
 	if err := validate.Struct(collP); err != nil {
 		return ar, err
 	}
-	sess, err := manager.Connect(
-		connP.Host,
-		connP.User,
-		connP.Pass,
-		connP.Port,
-		connP.Istls,
-	)
+	sess, db, err := manager.NewSessionDb(connP)
 	if err != nil {
 		return ar, err
 	}
 	ar.sess = sess
-	db, err := sess.DB(connP.Database)
-	if err != nil {
-		return ar, err
-	}
 	ar.database = db
 	termc, err := db.Collection(collP.Term)
 	if err != nil {
