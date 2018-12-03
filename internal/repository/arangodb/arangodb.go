@@ -74,15 +74,21 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	}
 	ar.sess = sess
 	ar.database = db
-	termc, err := db.Collection(collP.Term)
+	termc, err := db.FindOrCreateCollection(collP.Term, &driver.CreateCollectionOptions{})
 	if err != nil {
 		return ar, err
 	}
-	relc, err := db.Collection(collP.Relationship)
+	relc, err := db.FindOrCreateCollection(
+		collP.Relationship,
+		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
+	)
 	if err != nil {
 		return ar, err
 	}
-	graphc, err := db.Collection(collP.GraphInfo)
+	graphc, err := db.FindOrCreateCollection(
+		collP.GraphInfo,
+		&driver.CreateCollectionOptions{},
+	)
 	if err != nil {
 		return ar, err
 	}
@@ -105,15 +111,24 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 		cv:   graphc,
 		obog: obog,
 	}
-	anno, err := db.Collection(collP.Annotation)
+	anno, err := db.FindOrCreateCollection(
+		collP.Annotation,
+		&driver.CreateCollectionOptions{},
+	)
 	if err != nil {
 		return ar, err
 	}
-	annot, err := db.Collection(collP.AnnoTerm)
+	annot, err := db.FindOrCreateCollection(
+		collP.AnnoTerm,
+		&driver.CreateCollectionOptions{},
+	)
 	if err != nil {
 		return ar, err
 	}
-	annov, err := db.Collection(collP.AnnoVersion)
+	annov, err := db.FindOrCreateCollection(
+		collP.AnnoVersion,
+		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
+	)
 	if err != nil {
 		return ar, err
 	}
