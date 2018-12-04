@@ -14,5 +14,6 @@ type TaggedAnnotationRepository interface {
 	EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error)
 	RemoveAnnotation(id string) error
 	ListAnnotations(cursor int64, limit int64) ([]*model.AnnoDoc, error)
+	ClearAnnotations() error
 	Clear() error
 }

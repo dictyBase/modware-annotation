@@ -396,6 +396,8 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64) ([]*model
 	return am, nil
 }
 
+// Clear clears all annotations and related ontologies from the repository
+// datasource
 func (ar *arangorepository) Clear() error {
 	if err := ar.anno.annot.Truncate(context.Background()); err != nil {
 		return err
@@ -425,4 +427,23 @@ func (ar *arangorepository) Clear() error {
 		return err
 	}
 	return nil
+}
+
+// ClearAnnotations clears all annotations from the repository datasource
+func (ar *arangorepository) ClearAnnotations() error {
+	if err := ar.anno.annot.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.ver.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.term.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.verg.Remove(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.annotg.Remove(context.Background()); err != nil {
+		return err
+	}
 }
