@@ -395,3 +395,34 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64) ([]*model
 	}
 	return am, nil
 }
+
+func (ar *arangorepository) Clear() error {
+	if err := ar.anno.annot.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.ver.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.term.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.verg.Remove(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.anno.annotg.Remove(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.onto.term.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.onto.cv.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.onto.rel.Truncate(context.Background()); err != nil {
+		return err
+	}
+	if err := ar.onto.obog.Remove(context.Background()); err != nil {
+		return err
+	}
+	return nil
+}
