@@ -1,6 +1,14 @@
 package arangodb
 
 const (
+	annExistTagQ = `
+		FOR cv IN @@cv_collection
+			FOR cvt IN @@cvterm_collection
+				FILTER cv.meta.namespace == @ontology
+				FILTER cvt.graph_id == cv._id
+				FILTER cvt.label == @tag
+				RETURN cvt._id
+	`
 	annExistQ = `
 		FOR ann IN %s
 			FOR v IN 1..1 OUTBOUND ann GRAPH '%s'
@@ -90,7 +98,7 @@ const (
 				FOR cv IN %s
 					FILTER ann.entry_id == '%s'
 					FILTER ann.rank == %d
-					FILTER ann.is_obsolete == %s
+					FILTER ann.is_obsolete == %t
 					FILTER v.label == '%s'
 					FILTER v.graph_id == cv._id
 					FILTER cv.metadata.namespace == '%s'

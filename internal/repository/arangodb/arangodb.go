@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"gopkg.in/go-playground/validator.v9"
+	validator "gopkg.in/go-playground/validator.v9"
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
@@ -63,7 +63,7 @@ type arangorepository struct {
 }
 
 func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams) (repository.TaggedAnnotationRepository, error) {
-	var ar *arangorepository
+	ar := &arangorepository{}
 	validate := validator.New()
 	if err := validate.Struct(collP); err != nil {
 		return ar, err
@@ -120,7 +120,7 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	}
 	annot, err := db.FindOrCreateCollection(
 		collP.AnnoTerm,
-		&driver.CreateCollectionOptions{},
+		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
 	if err != nil {
 		return ar, err
@@ -224,20 +224,13 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	m := &model.AnnoDoc{}
 	attr := na.Data.Attributes
 	// check if the tag and ontology exist
-	r, err := ar.database.Get(
-		manager.NewAqlStruct().
-			For("cv", ar.onto.cv.Name()).
-			For("cvt", ar.onto.term.Name()).
-			Filter(
-				"cv",
-				manager.Fil("meta.namespace", "eq", attr.Ontology),
-			).Filter(
-			"cvt",
-			manager.Fil("graph_id", "eq", "cv._id"),
-			manager.Fil("label", "eq", attr.Tag),
-			false,
-		).Return("cvt._id").Generate(),
-	)
+	bindVars := map[string]interface{}{
+		"@cv_collection":     ar.onto.cv.Name(),
+		"@cvterm_collection": ar.onto.term.Name(),
+		"tag":                attr.Tag,
+		"ontology":           attr.Ontology,
+	}
+	r, err := ar.database.GetRow(annExistTagQ, bindVars)
 	if err != nil {
 		return m, err
 	}
@@ -446,4 +439,5 @@ func (ar *arangorepository) ClearAnnotations() error {
 	if err := ar.anno.annotg.Remove(context.Background()); err != nil {
 		return err
 	}
+	return nil
 }
