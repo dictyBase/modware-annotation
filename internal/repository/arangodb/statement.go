@@ -4,9 +4,9 @@ const (
 	annExistTagQ = `
 		FOR cv IN @@cv_collection
 			FOR cvt IN @@cvterm_collection
-				FILTER cv.meta.namespace == @ontology
-				FILTER cvt.graph_id == cv._id
+				FILTER cv.metadata.namespace == @ontology
 				FILTER cvt.label == @tag
+				FILTER cvt.graph_id == cv._id
 				RETURN cvt._id
 	`
 	annExistQ = `
@@ -31,7 +31,7 @@ const (
 					rank: @rank,
 					is_obsolete: false,
 					version: @version,
-					created_at: DATE_ISO8601(DATE_NOW()),
+					created_at: DATE_ISO8601(DATE_NOW())
 				   } IN @@anno_collection RETURN NEW
 		)
 		INSERT { _from: n[0]._id, _to: @to } IN @@anno_cv_collection
