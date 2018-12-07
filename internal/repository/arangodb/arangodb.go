@@ -118,7 +118,7 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	if err != nil {
 		return ar, err
 	}
-	annot, err := db.FindOrCreateCollection(
+	annocvt, err := db.FindOrCreateCollection(
 		collP.AnnoTerm,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
@@ -149,7 +149,7 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 		collP.AnnoTagGraph,
 		[]driver.EdgeDefinition{
 			driver.EdgeDefinition{
-				Collection: annot.Name(),
+				Collection: annocvt.Name(),
 				From:       []string{anno.Name()},
 				To:         []string{termc.Name()},
 			},
@@ -160,7 +160,7 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	}
 	ar.anno = &annoc{
 		annot:  anno,
-		term:   annot,
+		term:   annocvt,
 		ver:    annov,
 		verg:   verg,
 		annotg: annotg,
@@ -227,20 +227,20 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	bindVars := map[string]interface{}{
 		"@cv_collection":     ar.onto.cv.Name(),
 		"@cvterm_collection": ar.onto.term.Name(),
-		"tag":                attr.Tag,
 		"ontology":           attr.Ontology,
+		"tag":                attr.Tag,
 	}
 	r, err := ar.database.GetRow(annExistTagQ, bindVars)
 	if err != nil {
-		return m, err
+		return m, fmt.Errorf("error in running obograph retrieving query %s", err)
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, nil
+		return m, fmt.Errorf("ontology %s and tag %s does not exist %s", attr.Ontology, attr.Tag, err)
 	}
 	var cvtid string
 	if err := r.Read(&cvtid); err != nil {
-		return m, err
+		return m, fmt.Errorf("error in retrieving obograph id %s", err)
 	}
 	// check if the annotation exist
 	count, err := ar.database.Count(
@@ -256,15 +256,15 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 		),
 	)
 	if err != nil {
-		return m, err
+		return m, fmt.Errorf("error in count query %s", err)
 	}
-	if count == 0 {
+	if count > 0 {
 		return m, fmt.Errorf("error in creating, annotation already exists")
 	}
 	// create annotation document
-	bindVars := map[string]interface{}{
-		"@anno_collection":    ar.anno.term.Name(),
-		"@anno_cv_collection": ar.anno.annot.Name(),
+	bindVarsc := map[string]interface{}{
+		"@anno_collection":    ar.anno.annot.Name(),
+		"@anno_cv_collection": ar.anno.term.Name(),
 		"value":               attr.Value,
 		"editable_value":      attr.EditableValue,
 		"created_by":          attr.CreatedBy,
@@ -273,13 +273,15 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 		"version":             1,
 		"to":                  cvtid,
 	}
-	rins, err := ar.database.DoRun(annInst, bindVars)
+	rins, err := ar.database.DoRun(annInst, bindVarsc)
 	if err != nil {
 		return m, err
 	}
 	if err := rins.Read(m); err != nil {
 		return m, err
 	}
+	m.Tag = attr.Tag
+	m.Ontology = attr.Ontology
 	return m, nil
 }
 
