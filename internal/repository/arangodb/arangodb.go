@@ -277,6 +277,10 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	if err != nil {
 		return m, err
 	}
+	if r.IsEmpty() {
+		m.NotFound = true
+		return m, fmt.Errorf("error in returning newly created document")
+	}
 	if err := rins.Read(m); err != nil {
 		return m, err
 	}
