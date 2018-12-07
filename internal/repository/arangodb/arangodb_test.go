@@ -111,8 +111,8 @@ func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
 			Attributes: &annotation.NewTaggedAnnotationAttributes{
-				Value:         "developmentally regulated gene whose expression is dependent on MADS Box transcription factor srfA",
-				EditableValue: "developmentally regulated gene whose expression is dependent on MADS Box transcription factor srfA",
+				Value:         "developmentally regulated gene",
+				EditableValue: "developmentally regulated gene",
 				CreatedBy:     "siddbasu@gmail.com",
 				Tag:           "description",
 				Ontology:      "dicty_annotation",
@@ -178,10 +178,17 @@ func TestAddAnnotation(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	m, err := anrepo.AddAnnotation(newTestTaggedAnnotaion())
+	nta := newTestTaggedAnnotaion()
+	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf("error in adding annotation %s", err)
 	}
 	assert := assert.New(t)
 	assert.False(m.IsObsolete, "new tagged annotation should not be obsolete")
+	assert.Equal(m.Value, nta.Data.Attributes.Value, "should match the value")
+	assert.Equal(m.CreatedBy, nta.Data.Attributes.CreatedBy, "should match created_by")
+	assert.Equal(m.EnrtyId, nta.Data.Attributes.EntryId, "should match entry identifier")
+	assert.Equal(m.Rank, nta.Data.Attributes.Rank, "should match the rank")
+	assert.Equal(m.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
+	assert.Equal(m.Tag, nta.Data.Attributes.Tag, "should match the ontology tag")
 }
