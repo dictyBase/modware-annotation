@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -191,4 +192,35 @@ func TestAddAnnotation(t *testing.T) {
 	assert.Equal(m.Rank, nta.Data.Attributes.Rank, "should match the rank")
 	assert.Equal(m.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
 	assert.Equal(m.Tag, nta.Data.Attributes.Tag, "should match the ontology tag")
+
+	// error in case of existing record
+	_, err = anrepo.AddAnnotation(nta)
+	if assert.Error(err) {
+		assert.Regexp(
+			regexp.MustCompile("already exists"),
+			err.Error(),
+			"error should have existence of annotation",
+		)
+	}
+
+	// error in case of non-existent ontology and tag
+	nta.Data.Attributes.Tag = "respiration"
+	_, err = anrepo.AddAnnotation(nta)
+	if assert.Error(err) {
+		assert.Regexp(
+			regexp.MustCompile("respiration"),
+			err.Error(),
+			"error should contain the non-existent tag name",
+		)
+	}
+	nta.Data.Attributes.Tag = "description"
+	nta.Data.Attributes.Ontology = "caboose"
+	_, err = anrepo.AddAnnotation(nta)
+	if assert.Error(err) {
+		assert.Regexp(
+			regexp.MustCompile("caboose"),
+			err.Error(),
+			"error should contain the non-existent ontology",
+		)
+	}
 }
