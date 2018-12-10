@@ -107,6 +107,23 @@ func loadAnnotaionObo() error {
 	return nil
 }
 
+func newTestTaggedAnnotaionWithParams(tag, entryId string) *annotation.NewTaggedAnnotation {
+	return &annotation.NewTaggedAnnotation{
+		Data: &annotation.NewTaggedAnnotation_Data{
+			Type: "annotations",
+			Attributes: &annotation.NewTaggedAnnotationAttributes{
+				Value:         "developmentally regulated gene",
+				EditableValue: "developmentally regulated gene",
+				CreatedBy:     "siddbasu@gmail.com",
+				Tag:           tag,
+				Ontology:      "dicty_annotation",
+				EntryId:       entryId,
+				Rank:          0,
+			},
+		},
+	}
+}
+
 func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
@@ -223,4 +240,70 @@ func TestAddAnnotation(t *testing.T) {
 			"error should contain the non-existent ontology",
 		)
 	}
+}
+
+func TestGetAnnotationByEntry(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	nta := newTestTaggedAnnotaion()
+	_, err = anrepo.AddAnnotation(nta)
+	if err != nil {
+		t.Fatalf(
+			"error in adding annotation %s with entry id %s",
+			nta.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	_, err = anrepo.AddAnnotation(nta2)
+	if err != nil {
+		t.Fatalf(
+			"error in adding annotation %s with entry id %s",
+			nta2.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	m, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
+		Tag:      nta.Data.Attributes.Tag,
+		EntryId:  nta.Data.Attributes.EntryId,
+		Ontology: nta.Data.Attributes.Ontology,
+	})
+	if err != nil {
+		t.Fatalf(
+			"unable to retrieve entry annotation request %s for entry id %s",
+			err,
+			nta.Data.Attributes.EntryId,
+		)
+	}
+	assert := assert.New(t)
+	assert.Equal(m.Rank, int64(0), "should match rank 0")
+	assert.Equal(m.EnrtyId, nta.Data.Attributes.EntryId, "should match the entry id")
+
+	m2, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
+		Tag:      nta2.Data.Attributes.Tag,
+		EntryId:  nta2.Data.Attributes.EntryId,
+		Ontology: nta2.Data.Attributes.Ontology,
+	})
+	if err != nil {
+		t.Fatalf(
+			"unable to retrieve entry annotation request %s for entry id %s",
+			err,
+			nta2.Data.Attributes.EntryId,
+		)
+	}
+	assert.Equal(m2.EnrtyId, nta2.Data.Attributes.EntryId, "should match the entry id")
+	assert.Equal(m2.Tag, nta2.Data.Attributes.Tag, "should match the tag")
+
+	em, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
+		Tag:      nta2.Data.Attributes.Tag,
+		Ontology: nta2.Data.Attributes.Ontology,
+		EntryId:  "DDB_G0277853",
+	})
+	if err != nil {
+		t.Fatalf("error in retrieving entry %s %s", "DDB_G0277853", err)
+	}
+	assert.True(em.NotFound, "the entry should not exist")
 }
