@@ -307,3 +307,65 @@ func TestGetAnnotationByEntry(t *testing.T) {
 	}
 	assert.True(em.NotFound, "the entry should not exist")
 }
+
+func TestGetAnnotationById(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	nta := newTestTaggedAnnotaion()
+	m, err := anrepo.AddAnnotation(nta)
+	if err != nil {
+		t.Fatalf(
+			"error in adding annotation %s with entry id %s",
+			nta.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	m2, err := anrepo.AddAnnotation(nta2)
+	if err != nil {
+		t.Fatalf(
+			"error in adding annotation %s with entry id %s",
+			nta2.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	em, err := anrepo.GetAnnotationById(m.Key)
+	if err != nil {
+		t.Fatalf(
+			"error in fetching annotation %s with entry id %s",
+			nta.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	assert := assert.New(t)
+	assert.Equal(m.EnrtyId, em.EnrtyId, "should match entry identifier")
+	assert.Equal(m.Ontology, em.Ontology, "should match ontology")
+	assert.Equal(m.Tag, em.Tag, "should match tag")
+	assert.Equal(m.Key, em.Key, "should match the identifier")
+	assert.Equal(m.Value, em.Value, "should match the value")
+	assert.True(m.CreatedAt.Equal(em.CreatedAt), "should match created time of annotation")
+	assert.Equal(m.Rank, em.Rank, "should match rank")
+
+	em2, err := anrepo.GetAnnotationById(m2.Key)
+	if err != nil {
+		t.Fatalf(
+			"error in fetching annotation %s with entry id %s",
+			nta2.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	assert.Equal(m2.EnrtyId, em2.EnrtyId, "should match entry identifier")
+
+	ne, err := anrepo.GetAnnotationById("9999999")
+	if err != nil {
+		t.Fatalf(
+			"error in fetching annotation %s with identifier %s",
+			"9999999",
+			err,
+		)
+	}
+	assert.True(ne.NotFound, "entry should not exist")
+}
