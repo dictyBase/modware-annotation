@@ -344,21 +344,18 @@ func (ar *arangorepository) RemoveAnnotation(id string) error {
 		}
 		return err
 	}
-	err = ar.database.Exec(
-		fmt.Sprintf(
-			annDelQ,
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-			m.EnrtyId,
-			m.Rank,
-			m.Tag,
-			m.Ontology,
-			ar.anno.annot.Name(),
-		),
+	if m.IsObsolete {
+		return fmt.Errorf("annotation with id %s has already been obsolete", m.Key)
+	}
+	_, err = ar.anno.annot.UpdateDocument(
+		context.Background(),
+		m.Key,
+		map[string]interface{}{
+			"is_obsolete": true,
+		},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to remove annotation with id %s", m.Key)
 	}
 	return nil
 }
