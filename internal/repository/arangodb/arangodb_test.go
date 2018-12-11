@@ -369,3 +369,49 @@ func TestGetAnnotationById(t *testing.T) {
 	}
 	assert.True(ne.NotFound, "entry should not exist")
 }
+
+func TestRemoveAnnotation(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	nta := newTestTaggedAnnotaion()
+	m, err := anrepo.AddAnnotation(nta)
+	if err != nil {
+		t.Fatalf(
+			"error in adding annotation %s with entry id %s",
+			nta.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	m2, err := anrepo.AddAnnotation(nta2)
+	if err != nil {
+		t.Fatalf(
+			"error in adding annotation %s with entry id %s",
+			nta2.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	err = anrepo.RemoveAnnotation(m.Key)
+	if err != nil {
+		t.Fatalf(
+			"error in removing annotation %s with entry id %s",
+			m.EnrtyId,
+			err,
+		)
+	}
+	err = anrepo.RemoveAnnotation(m2.Key)
+	if err != nil {
+		t.Fatalf(
+			"error in removing annotation %s with entry id %s",
+			m2.EnrtyId,
+			err,
+		)
+	}
+	err = anrepo.RemoveAnnotation(m2.Key)
+	assert := assert.New(t)
+	assert.True(assert.Error(err), "should return error")
+	assert.Contains(err.Error(), "obsolete", "should contain obsolete message")
+}
