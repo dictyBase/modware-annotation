@@ -106,16 +106,4 @@ const (
 					LIMIT 1
 					RETURN MERGE(ann, { ontology: cv.metadata.namespace, tag: v.label })
 	`
-	annDelQ = `
-		FOR ann IN %s
-			FOR v IN 1..1 OUTBOUND ann GRAPH '%s'
-				FOR cv IN %s
-					FILTER ann.entry_id == '%s'
-					FILTER ann.rank == %d
-					FILTER ann.is_obsolete == false
-					FILTER v.label == '%s'
-					FILTER v.graph_id == cv._id
-					FILTER cv.metadata.namespace == '%s'
-					UPDATE ann WITH { is_obsolete: true } IN %s
-	`
 )
