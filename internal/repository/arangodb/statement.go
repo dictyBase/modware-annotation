@@ -74,11 +74,11 @@ const (
 					rank: @rank,
 					is_obsolete: false,
 					version: @version,
-					created_at: DATE_ISO8601(DATE_NOW()),
+					created_at: DATE_ISO8601(DATE_NOW())
 				   } IN @@anno_collection RETURN NEW
 		)
 		INSERT { _from: n[0]._id, _to: @to } IN @@anno_cv_collection
-		INSERT { _from: @prev, _to: n[0]._id } IN @anno_ver_collection
+		INSERT { _from: @prev, _to: n[0]._id } IN @@anno_ver_collection
 		RETURN n[0]
 	`
 	annGetQ = `
