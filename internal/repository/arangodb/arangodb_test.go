@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/assert"
@@ -139,6 +141,46 @@ func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
 			},
 		},
 	}
+}
+
+func newTestTaggedAnnotaionsList() []*annotation.NewTaggedAnnotation {
+	var nal []*annotation.NewTaggedAnnotation
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	tags := []string{
+		"private note",
+		"name description",
+		"name",
+		"curator note",
+		"description",
+		"public note",
+		"status",
+		"curation",
+		"product",
+		"gene product",
+		"curation status",
+		"curator",
+		"note",
+	}
+	max := 800000
+	min := 300000
+	for i := 0; i < 15; i++ {
+		value := fmt.Sprintf("cool gene %s", tags[r.Intn(len(tags)-1)])
+		nal = append(nal, &annotation.NewTaggedAnnotation{
+			Data: &annotation.NewTaggedAnnotation_Data{
+				Type: "annotations",
+				Attributes: &annotation.NewTaggedAnnotationAttributes{
+					Value:         value,
+					EditableValue: value,
+					CreatedBy:     "siddbasu@gmail.com",
+					Tag:           tags[r.Intn(len(tags)-1)],
+					Ontology:      "dicty_annotation",
+					EntryId:       fmt.Sprintf("DDB_G0%d", r.Intn(max-min)+min),
+					Rank:          0,
+				},
+			},
+		})
+	}
+	return nal
 }
 
 func TestMain(m *testing.M) {
