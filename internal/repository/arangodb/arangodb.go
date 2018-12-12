@@ -313,8 +313,8 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 	}
 	// create annotation document
 	bindVars := map[string]interface{}{
-		"@anno_collection":     ar.anno.term.Name(),
-		"@anno_cv_collection":  ar.anno.annot.Name(),
+		"@anno_collection":     ar.anno.annot.Name(),
+		"@anno_cv_collection":  ar.anno.term.Name(),
 		"@anno_ver_collection": ar.anno.ver.Name(),
 		"value":                attr.Value,
 		"editable_value":       attr.EditableValue,
@@ -323,16 +323,19 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 		"rank":                 m.Rank,
 		"version":              m.Version + 1,
 		"to":                   m.CvtId,
-		"prev":                 m.ID,
+		"prev":                 m.ID.String(),
 	}
+	um := &model.AnnoDoc{}
 	rupd, err := ar.database.DoRun(annVerInst, bindVars)
 	if err != nil {
-		return m, err
+		return um, err
 	}
-	if err := rupd.Read(m); err != nil {
-		return m, err
+	if err := rupd.Read(um); err != nil {
+		return um, err
 	}
-	return m, nil
+	um.Ontology = m.Ontology
+	um.Tag = m.Tag
+	return um, nil
 }
 
 func (ar *arangorepository) RemoveAnnotation(id string) error {
