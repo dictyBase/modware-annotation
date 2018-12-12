@@ -415,3 +415,44 @@ func TestRemoveAnnotation(t *testing.T) {
 	assert.True(assert.Error(err), "should return error")
 	assert.Contains(err.Error(), "obsolete", "should contain obsolete message")
 }
+
+func TestEditAnnotation(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	nta := newTestTaggedAnnotaion()
+	m, err := anrepo.AddAnnotation(nta)
+	if err != nil {
+		t.Fatalf(
+			"error in adding annotation %s with entry id %s",
+			nta.Data.Attributes.EntryId,
+			err,
+		)
+	}
+	ua := &annotation.TaggedAnnotationUpdate{
+		Data: &annotation.TaggedAnnotationUpdate_Data{
+			Type: "annotations",
+			Id:   m.Key,
+			Attributes: &annotation.TaggedAnnotationUpdateAttributes{
+				Value:         "updated gene description",
+				EditableValue: "updated gene description",
+				CreatedBy:     "basu@gmail.com",
+			},
+		},
+	}
+	um, err := anrepo.EditAnnotation(ua)
+	if err != nil {
+		t.Fatalf(
+			"error in updating annotation with entry id %s %s",
+			m.EnrtyId,
+			err,
+		)
+	}
+	assert := assert.New(t)
+	assert.Equal(m.Version+1, um.Version, "version should be incremented by 1")
+	assert.NotEqual(ua.Data.Id, um.Key, "identifier should not match")
+	assert.Equal(ua.Data.Attributes.Value, um.Value, "should matches the value")
+	assert.Equal(ua.Data.Attributes.CreatedBy, um.CreatedBy, "should matches created by")
+}
