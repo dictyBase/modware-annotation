@@ -366,19 +366,25 @@ func (ar *arangorepository) RemoveAnnotation(id string) error {
 func (ar *arangorepository) ListAnnotations(cursor int64, limit int64) ([]*model.AnnoDoc, error) {
 	var am []*model.AnnoDoc
 	var stmt string
-	bindVars := map[string]interface{}{
-		"@anno_collection": ar.anno.term.Name(),
-		"@cv_collection":   ar.onto.cv.Name(),
-		"graph":            ar.anno.annotg.Name(),
-		"limit":            limit + 1,
-	}
 	if cursor == 0 { // no cursor so return first set of result
-		stmt = annListQ
+		stmt = fmt.Sprintf(
+			annListQ,
+			ar.anno.annot.Name(),
+			ar.anno.annotg.Name(),
+			ar.onto.cv.Name(),
+			limit+1,
+		)
 	} else {
-		bindVars["next_cursor"] = cursor
-		stmt = annListWithCursorQ
+		stmt = fmt.Sprintf(
+			annListWithCursorQ,
+			ar.anno.annot.Name(),
+			ar.anno.annotg.Name(),
+			ar.onto.cv.Name(),
+			cursor,
+			limit+1,
+		)
 	}
-	rs, err := ar.database.SearchRows(stmt, bindVars)
+	rs, err := ar.database.Search(stmt)
 	if err != nil {
 		return am, err
 	}
