@@ -61,7 +61,7 @@ const (
 					LIMIT %d
 					RETURN MERGE(
 						ann,
-						{ tag: cvt.label, ontology.cv.metadata.namespace }
+						{ tag: cvt.label, ontology:cv.metadata.namespace }
 					)
 	`
 	annVerInst = `
