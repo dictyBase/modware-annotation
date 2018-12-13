@@ -40,6 +40,10 @@ var tags = []string{
 	"note",
 }
 
+func toTimestamp(t time.Time) int64 {
+	return t.UnixNano() / 1000000
+}
+
 func getConnectParams() *manager.ConnectParams {
 	arPort, _ := strconv.Atoi(aport)
 	return &manager.ConnectParams{
@@ -526,4 +530,28 @@ func TestListAnnotations(t *testing.T) {
 		assert.Contains(m.EnrtyId, "DDB_G0", "should contain the DDB_G0 in entry id")
 		assert.Equal(int(m.Rank), 0, "should match the zero rank")
 	}
+
+	ml2, err := anrepo.ListAnnotations(
+		toTimestamp(ml[len(ml)-1].CreatedAt),
+		4,
+	)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
+	assert.Len(ml2, 5, "should have five annotations")
+	assert.Exactly(ml[len(ml)-1], ml2[0], "should have identical model objects")
+
+	ml3, err := anrepo.ListAnnotations(
+		toTimestamp(ml2[len(ml2)-1].CreatedAt),
+		4,
+	)
+	assert.Len(ml3, 5, "should have five annotations")
+	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
+
+	ml4, err := anrepo.ListAnnotations(
+		toTimestamp(ml3[len(ml3)-1].CreatedAt),
+		4,
+	)
+	assert.Len(ml4, 3, "should have three annotations")
+	assert.Exactly(ml3[len(ml3)-1], ml4[0], "should have identical model objects")
 }
