@@ -38,27 +38,27 @@ const (
 		RETURN n[0]
 	`
 	annListQ = `
-		FOR ann IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH '@graph'
-				FOR cv IN @@cv_collection
+		FOR ann IN %s
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+				FOR cv IN %s
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
 					SORT ann.created_at DESC
-					LIMIT @limit
+					LIMIT %d
 					RETURN MERGE(
 						ann,
-						{ tag: cvt.label, ontology.cv.metadata.namespace }
+						{ tag: cvt.label, ontology: cv.metadata.namespace }
 					)
 	`
 	annListWithCursorQ = `
-		FOR ann IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH '@graph'
-				FOR cv IN @@cv_collection
+		FOR ann IN %s
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+				FOR cv IN %s
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
-					FILTER ann.created_at <= DATE_ISO8601(@next_cursor)
+					FILTER ann.created_at <= DATE_ISO8601(%d)
 					SORT ann.created_at DESC
-					LIMIT @limit
+					LIMIT %d
 					RETURN MERGE(
 						ann,
 						{ tag: cvt.label, ontology.cv.metadata.namespace }
