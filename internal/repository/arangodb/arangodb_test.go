@@ -24,6 +24,21 @@ import (
 )
 
 var ahost, aport, auser, apass, adb string
+var tags = []string{
+	"private note",
+	"name description",
+	"name",
+	"curator note",
+	"description",
+	"public note",
+	"status",
+	"curation",
+	"product",
+	"gene product",
+	"curation status",
+	"curator",
+	"note",
+}
 
 func getConnectParams() *manager.ConnectParams {
 	arPort, _ := strconv.Atoi(aport)
@@ -146,21 +161,6 @@ func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
 func newTestTaggedAnnotaionsList() []*annotation.NewTaggedAnnotation {
 	var nal []*annotation.NewTaggedAnnotation
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	tags := []string{
-		"private note",
-		"name description",
-		"name",
-		"curator note",
-		"description",
-		"public note",
-		"status",
-		"curation",
-		"product",
-		"gene product",
-		"curation status",
-		"curator",
-		"note",
-	}
 	max := 800000
 	min := 300000
 	for i := 0; i < 15; i++ {
@@ -497,4 +497,33 @@ func TestEditAnnotation(t *testing.T) {
 	assert.NotEqual(ua.Data.Id, um.Key, "identifier should not match")
 	assert.Equal(ua.Data.Attributes.Value, um.Value, "should matches the value")
 	assert.Equal(ua.Data.Attributes.CreatedBy, um.CreatedBy, "should matches created by")
+}
+
+func TestListAnnotations(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotaionsList()
+	for _, anno := range tal {
+		_, err := anrepo.AddAnnotation(anno)
+		if err != nil {
+			t.Fatalf("error in adding annotation with entry id %s %s", anno.Data.Attributes.EntryId, err)
+		}
+	}
+	ml, err := anrepo.ListAnnotations(0, 4)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
+	assert := assert.New(t)
+	assert.Len(ml, 5, "should have 5 annotations")
+	for i, m := range ml {
+		assert.Contains(m.Value, "cool gene", "should contain the phrase cool gene")
+		assert.Equal(tal[i].Data.Attributes.CreatedBy, m.CreatedBy, "should match created by")
+		assert.Subset(tags, []string{m.Tag}, "should contain the tag in the slice")
+		assert.Equal(tal[i].Data.Attributes.Ontology, m.Ontology, "should match the ontology")
+		assert.Contains(m.EnrtyId, "DDB_G0", "should contain the DDB_G0 in entry id")
+		assert.Equal(int(m.Rank), 0, "should match the zero rank")
+	}
 }
