@@ -18,6 +18,7 @@ import (
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/go-obograph/graph"
 	araobo "github.com/dictyBase/go-obograph/storage/arangodb"
+	"github.com/dictyBase/modware-annotation/internal/model"
 
 	"github.com/dictyBase/apihelpers/aphdocker"
 	manager "github.com/dictyBase/arangomanager"
@@ -530,7 +531,6 @@ func TestListAnnotations(t *testing.T) {
 		assert.Contains(m.EnrtyId, "DDB_G0", "should contain the DDB_G0 in entry id")
 		assert.Equal(int(m.Rank), 0, "should match the zero rank")
 	}
-
 	ml2, err := anrepo.ListAnnotations(
 		toTimestamp(ml[len(ml)-1].CreatedAt),
 		4,
@@ -554,4 +554,25 @@ func TestListAnnotations(t *testing.T) {
 	)
 	assert.Len(ml4, 3, "should have three annotations")
 	assert.Exactly(ml3[len(ml3)-1], ml4[0], "should have identical model objects")
+	testModelListSort(ml, t)
+	testModelListSort(ml2, t)
+	testModelListSort(ml3, t)
+	testModelListSort(ml4, t)
+}
+
+func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
+	it, err := NewPairWiseIterator(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert := assert.New(t)
+	for it.NextPair() {
+		cm, nm := it.Pair()
+		assert.Truef(
+			nm.CreatedAt.Before(cm.CreatedAt),
+			"date %s should be before %s",
+			nm.CreatedAt.String(),
+			cm.CreatedAt.String(),
+		)
+	}
 }
