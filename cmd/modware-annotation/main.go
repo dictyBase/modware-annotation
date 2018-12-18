@@ -5,6 +5,9 @@ import (
 
 	apiflag "github.com/dictyBase/apihelpers/command/flag"
 	arangoflag "github.com/dictyBase/arangomanager/command/flag"
+	oboaction "github.com/dictyBase/go-obograph/command/action"
+	oboflag "github.com/dictyBase/go-obograph/command/flag"
+	obovalidate "github.com/dictyBase/go-obograph/command/validate"
 	"github.com/dictyBase/modware-annotation/internal/app/server"
 	"github.com/dictyBase/modware-annotation/internal/app/validate"
 	cli "gopkg.in/urfave/cli.v1"
@@ -34,6 +37,13 @@ func main() {
 			Action: server.RunServer,
 			Before: validate.ValidateServerArgs,
 			Flags:  getServerFlags(),
+		},
+		{
+			Name:   "load-ontologies",
+			Usage:  "load one or more ontologies in obograph json format",
+			Action: oboaction.LoadOntologies,
+			Before: obovalidate.OntologyArgs,
+			Flags:  oboflag.OntologyFlags(),
 		},
 	}
 	app.Run(os.Args)

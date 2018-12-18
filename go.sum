@@ -24,6 +24,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dictyBase/apihelpers v0.0.0-20181206195845-f89e7429b073 h1:/4yHFOkL4N5mJpjCu0BPI5VjOyD8dmDkSq7BAgGMlEM=
 github.com/dictyBase/apihelpers v0.0.0-20181206195845-f89e7429b073/go.mod h1:WMCcrIvQoc3UBfA643QFDQufK2a+7mYGgkGxVFWfJus=
+github.com/dictyBase/apihelpers v0.0.0-20181218160245-dce81474776f h1:OK7SIEJdVWdRw7Dc681txXz6N8lwEub5YcabplgqBsE=
+github.com/dictyBase/apihelpers v0.0.0-20181218160245-dce81474776f/go.mod h1:WMCcrIvQoc3UBfA643QFDQufK2a+7mYGgkGxVFWfJus=
 github.com/dictyBase/arangomanager v0.0.0-20181207154211-de2560879efa h1:/UpF+Vd8c3S0lhkVzRQYzKE8k//xAb0otSG0yVm06pM=
 github.com/dictyBase/arangomanager v0.0.0-20181207154211-de2560879efa/go.mod h1:0H8JGH8tnla3cagGMgyAc2+KuseooHKsv4Byx3jeKO4=
 github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef h1:SYvSzPeNoGkAUiEZ0FExU+0bn3WPTsI94Y8MKW7r+fw=
