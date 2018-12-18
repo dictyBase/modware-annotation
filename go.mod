@@ -8,9 +8,10 @@ require (
 	github.com/cenkalti/backoff v2.1.0+incompatible // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/dictyBase/apihelpers v0.0.0-20181206195845-f89e7429b073
-	github.com/dictyBase/arangomanager v0.0.0-20181207154211-de2560879efa
+	github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef
 	github.com/dictyBase/go-genproto v0.0.0-20181203170714-0c5a42137f21
-	github.com/dictyBase/go-obograph v0.0.0-20181023195506-aa9860c41a41
+	github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85
+	github.com/dictybase/apihelpers v0.0.0-20181218160245-dce81474776f // indirect
 	github.com/docker/distribution v2.7.0+incompatible // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
