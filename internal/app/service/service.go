@@ -104,43 +104,53 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 
 func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.ListParameters) (*annotation.TaggedAnnotationCollection, error) {
 	tac := &annotation.TaggedAnnotationCollection{}
-	if len(r.Filter) == 0 { // no filter parameters
-		mc, err := s.repo.ListAnnotations(r.Cursor, r.Limit)
-		if err != nil {
-			return tac, aphgrpc.HandleGetError(ctx, err)
-		}
-		if len(mc) == 0 {
-			return tac, aphgrpc.HandleNotFoundError(ctx, err)
-		}
-		var tcdata []*annotation.TaggedAnnotationCollection_Data
-		for _, m := range mc {
-			tcdata = append(tcdata, &annotation.TaggedAnnotationCollection_Data{
-				Type: s.GetResourceName(),
-				Id:   m.Key,
-				Attributes: &annotation.TaggedAnnotationAttributes{
-					Value:         m.Value,
-					EditableValue: m.EditableValue,
-					CreatedBy:     m.CreatedBy,
-					CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-					Version:       m.Version,
-					EntryId:       m.EnrtyId,
-					Rank:          m.Rank,
-					IsObsolete:    m.IsObsolete,
-					Tag:           m.Tag,
-					Ontology:      m.Ontology,
-				},
-			})
-		}
-		if len(tcdata) < int(r.Limit)-2 { // fewer result than limit
-			tac.Data = tcdata
-			tac.Meta = &annotation.Meta{Limit: r.Limit}
-			return tac, nil
-		}
-		tac.Data = tcdata[:len(tcdata)-1]
-		tac.Meta = &annotation.Meta{
-			Limit:      r.Limit,
-			NextCursor: genNextCursorVal(tcdata[len(tcdata)-1]),
-		}
+	if len(r.Filter) > 0 {
+		return tac,
+			aphgrpc.HandleInvalidParamError(
+				ctx,
+				fmt.Errorf("filter parameter is not yet implemented"),
+			)
+	}
+	// default value of limit
+	limit := int64(10)
+	if r.Limit > 0 {
+		limit = r.Limit
+	}
+	mc, err := s.repo.ListAnnotations(r.Cursor, limit)
+	if err != nil {
+		return tac, aphgrpc.HandleGetError(ctx, err)
+	}
+	if len(mc) == 0 {
+		return tac, aphgrpc.HandleNotFoundError(ctx, err)
+	}
+	var tcdata []*annotation.TaggedAnnotationCollection_Data
+	for _, m := range mc {
+		tcdata = append(tcdata, &annotation.TaggedAnnotationCollection_Data{
+			Type: s.GetResourceName(),
+			Id:   m.Key,
+			Attributes: &annotation.TaggedAnnotationAttributes{
+				Value:         m.Value,
+				EditableValue: m.EditableValue,
+				CreatedBy:     m.CreatedBy,
+				CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
+				Version:       m.Version,
+				EntryId:       m.EnrtyId,
+				Rank:          m.Rank,
+				IsObsolete:    m.IsObsolete,
+				Tag:           m.Tag,
+				Ontology:      m.Ontology,
+			},
+		})
+	}
+	if len(tcdata) < int(limit)-2 { // fewer result than limit
+		tac.Data = tcdata
+		tac.Meta = &annotation.Meta{Limit: r.Limit}
+		return tac, nil
+	}
+	tac.Data = tcdata[:len(tcdata)-1]
+	tac.Meta = &annotation.Meta{
+		Limit:      limit,
+		NextCursor: genNextCursorVal(tcdata[len(tcdata)-1]),
 	}
 	return tac, nil
 }
