@@ -32,12 +32,16 @@ type CollectionParams struct {
 	// AnnoVersion is the edge collection for connecting different versions of
 	// annotations
 	AnnoVersion string `validate:"required"`
+	// AnnoGroup is the edge collection for grouping annotations
+	AnnoGroup string `validate:"required"`
 	// AnnoTagGraph is the named graph for connecting annotation
 	// with the ontology
 	AnnoTagGraph string `validate:"required"`
-	// AnnoVerGraph is the name graph for connecting different
+	// AnnoVerGraph is the named graph for connecting different
 	// version of annotations
 	AnnoVerGraph string `validate:"required"`
+	// AnnoGroupGraph is the named graph for grouping annotations
+	AnnoGroupGraph string `validate:"required"`
 }
 
 type annoc struct {
@@ -46,6 +50,7 @@ type annoc struct {
 	ver    driver.Collection
 	verg   driver.Graph
 	annotg driver.Graph
+	annogg driver.Graph
 }
 
 type ontoc struct {
@@ -132,6 +137,13 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	if err != nil {
 		return ar, err
 	}
+	annogrp, err := db.FindOrCreateCollection(
+		collP.AnnoGroup,
+		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
+	)
+	if err != nil {
+		return ar, err
+	}
 	verg, err := db.FindOrCreateGraph(
 		collP.AnnoVerGraph,
 		[]driver.EdgeDefinition{
@@ -158,12 +170,23 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	if err != nil {
 		return ar, err
 	}
+	annogg, err := db.FindOrCreateGraph(
+		collP.AnnoGroupGraph,
+		[]driver.EdgeDefinition{
+			driver.EdgeDefinition{
+				Collection: annogrp.Name(),
+				From:       []string{anno.Name()},
+				To:         []string{anno.Name()},
+			},
+		},
+	)
 	ar.anno = &annoc{
 		annot:  anno,
 		term:   annocvt,
 		ver:    annov,
 		verg:   verg,
 		annotg: annotg,
+		annogg: annogg,
 	}
 	return ar, nil
 }
