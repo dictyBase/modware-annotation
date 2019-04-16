@@ -561,13 +561,13 @@ func TestListAnnotations(t *testing.T) {
 }
 
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
-	it, err := NewPairWiseIterator(m)
+	it, err := NewModelAnnoDocPairWiseIterator(m)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert := assert.New(t)
-	for it.NextPair() {
-		cm, nm := it.Pair()
+	for it.NextModelAnnoDocPair() {
+		cm, nm := it.ModelAnnoDocPair()
 		assert.Truef(
 			nm.CreatedAt.Before(cm.CreatedAt),
 			"date %s should be before %s",
