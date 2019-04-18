@@ -527,7 +527,7 @@ func (ar *arangorepository) DeleteAnnotationGroup(groupId string) error {
 }
 
 // Creates a new annotation group
-func (ar *arangorepository) CreateAnnotationGroup(idslice []string) (string, []*model.AnnoDoc, error) {
+func (ar *arangorepository) AddAnnotationGroup(idslice []string) (string, []*model.AnnoDoc, error) {
 	var am []*model.AnnoDoc
 	if len(idslice) <= 1 {
 		return "", am, errors.New("need at least more than one entry to form a group")

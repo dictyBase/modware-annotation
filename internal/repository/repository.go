@@ -17,7 +17,7 @@ type TaggedAnnotationRepository interface {
 	ClearAnnotations() error
 	Clear() error
 	// Creates a new annotation group
-	CreateAnnotationGroup([]string) (string, []*model.AnnoDoc, error)
+	AddAnnotationGroup([]string) (string, []*model.AnnoDoc, error)
 	// Retrieves an annotation group
 	GetAnnotationGroup(groudId string) ([]*model.AnnoDoc, error)
 	// Add a new annotation to an existing group
