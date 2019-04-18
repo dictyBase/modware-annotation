@@ -23,7 +23,7 @@ type StringPairWiseIterator struct {
 // slice with single element
 func NewStringPairWiseIterator(m []string) (StringPairWiseIterator, error) {
 	if len(m) <= 1 {
-		return &StringPairWiseIterator{}, errors.New("not enough element to fetch pairs")
+		return StringPairWiseIterator{}, errors.New("not enough element to fetch pairs")
 	}
 	return StringPairWiseIterator{
 		slice:     m,
@@ -72,7 +72,7 @@ type ModelAnnoDocPairWiseIterator struct {
 // slice with single element
 func NewModelAnnoDocPairWiseIterator(m []*model.AnnoDoc) (ModelAnnoDocPairWiseIterator, error) {
 	if len(m) <= 1 {
-		return &ModelAnnoDocPairWiseIterator{}, errors.New("not enough element to fetch pairs")
+		return ModelAnnoDocPairWiseIterator{}, errors.New("not enough element to fetch pairs")
 	}
 	return ModelAnnoDocPairWiseIterator{
 		slice:     m,
