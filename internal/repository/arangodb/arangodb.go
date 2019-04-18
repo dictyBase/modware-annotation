@@ -2,6 +2,7 @@ package arangodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	validator "gopkg.in/go-playground/validator.v9"
@@ -26,31 +27,29 @@ type CollectionParams struct {
 	OboGraph string `validate:"required"`
 	// Annotation is the collection for storing annotation
 	Annotation string `validate:"required"`
+	// AnnoGroup is the collection for grouping annotations
+	AnnoGroup string `validate:"required"`
 	// AnnoTerm is the edge collection annotation with a named tag(ontology
 	// term)
 	AnnoTerm string `validate:"required"`
 	// AnnoVersion is the edge collection for connecting different versions of
 	// annotations
 	AnnoVersion string `validate:"required"`
-	// AnnoGroup is the edge collection for grouping annotations
-	AnnoGroup string `validate:"required"`
 	// AnnoTagGraph is the named graph for connecting annotation
 	// with the ontology
 	AnnoTagGraph string `validate:"required"`
 	// AnnoVerGraph is the named graph for connecting different
 	// version of annotations
 	AnnoVerGraph string `validate:"required"`
-	// AnnoGroupGraph is the named graph for grouping annotations
-	AnnoGroupGraph string `validate:"required"`
 }
 
 type annoc struct {
 	annot  driver.Collection
 	term   driver.Collection
 	ver    driver.Collection
+	annog  driver.Collection
 	verg   driver.Graph
 	annotg driver.Graph
-	annogg driver.Graph
 }
 
 type ontoc struct {
@@ -123,6 +122,13 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	if err != nil {
 		return ar, err
 	}
+	annogrp, err := db.FindOrCreateCollection(
+		collP.AnnoGroup,
+		&driver.CreateCollectionOptions{},
+	)
+	if err != nil {
+		return ar, err
+	}
 	annocvt, err := db.FindOrCreateCollection(
 		collP.AnnoTerm,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
@@ -132,13 +138,6 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	}
 	annov, err := db.FindOrCreateCollection(
 		collP.AnnoVersion,
-		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
-	)
-	if err != nil {
-		return ar, err
-	}
-	annogrp, err := db.FindOrCreateCollection(
-		collP.AnnoGroup,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
 	if err != nil {
@@ -170,23 +169,13 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	if err != nil {
 		return ar, err
 	}
-	annogg, err := db.FindOrCreateGraph(
-		collP.AnnoGroupGraph,
-		[]driver.EdgeDefinition{
-			driver.EdgeDefinition{
-				Collection: annogrp.Name(),
-				From:       []string{anno.Name()},
-				To:         []string{anno.Name()},
-			},
-		},
-	)
 	ar.anno = &annoc{
 		annot:  anno,
 		term:   annocvt,
 		ver:    annov,
 		verg:   verg,
 		annotg: annotg,
-		annogg: annogg,
+		annog:  annogrp,
 	}
 	return ar, nil
 }
@@ -422,6 +411,48 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64) ([]*model
 		am = append(am, m)
 	}
 	return am, nil
+}
+
+func (ar *arangorepository) CreateAnnotationGroup(idslice []string) (string, []*model.AnnoDoc, error) {
+	var am []*model.AnnoDoc
+	if len(idslice) <= 1 {
+		return "", am, errors.New("need at least more than one entry to form a group")
+	}
+	for _, id := range idslice {
+		m := &model.AnnoDoc{}
+		ok, err := ar.anno.annot.DocumentExists(context.Background(), id)
+		if err != nil {
+			return "", am, fmt.Errorf("error in checking for existence of identifier %s %s", id, err)
+		}
+		if !ok {
+			return "", am, nil
+		}
+		r, err := ar.database.Get(
+			fmt.Sprintf(
+				annGetQ,
+				ar.anno.annot.Name(),
+				ar.anno.annotg.Name(),
+				ar.onto.cv.Name(),
+				id,
+			),
+		)
+		if err != nil {
+			return "", am, err
+		}
+		if err := r.Read(m); err != nil {
+			return "", am, err
+		}
+		am = append(am, m)
+	}
+	grp := &model.AnnoGroup{Group: idslice}
+	meta, err := ar.anno.annog.CreateDocument(
+		context.Background(),
+		grp,
+	)
+	if err != nil {
+		return "", am, fmt.Errorf("error in creating group %s", err)
+	}
+	return meta.Key, am, nil
 }
 
 // Clear clears all annotations and related ontologies from the repository

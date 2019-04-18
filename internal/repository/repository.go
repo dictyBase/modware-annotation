@@ -16,7 +16,7 @@ type TaggedAnnotationRepository interface {
 	ListAnnotations(cursor int64, limit int64) ([]*model.AnnoDoc, error)
 	ClearAnnotations() error
 	Clear() error
-	CreateAnnotationGroup([]string) ([][]*model.AnnoDoc, error)
+	CreateAnnotationGroup([]string) (string, []*model.AnnoDoc, error)
 	//GetAnnotationGroup(entryId string) ([][]*model.AnnoDoc, error)
 	//AppendAnnotationGroup(id, entryId string) ([][]*model.AnnoDoc, error)
 	//DeleteAnnotationGroup(entryId string) error

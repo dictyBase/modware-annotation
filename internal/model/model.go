@@ -21,3 +21,7 @@ type AnnoDoc struct {
 	CvtId         string    `json:"cvtid,omitempty"`
 	NotFound      bool
 }
+
+type AnnoGroup struct {
+	Group []string `json:"group"`
+}
