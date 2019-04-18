@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	validator "gopkg.in/go-playground/validator.v9"
 
@@ -558,7 +559,11 @@ func (ar *arangorepository) AddAnnotationGroup(idslice []string) (string, []*mod
 		}
 		am = append(am, m)
 	}
-	grp := &model.AnnoGroup{Group: idslice}
+	grp := &model.AnnoGroup{
+		Group:     idslice,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 	meta, err := ar.anno.annog.CreateDocument(
 		context.Background(),
 		grp,

@@ -23,5 +23,7 @@ type AnnoDoc struct {
 }
 
 type AnnoGroup struct {
-	Group []string `json:"group"`
+	Group     []string  `json:"group"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
