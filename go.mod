@@ -9,7 +9,7 @@ require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/dictyBase/apihelpers v0.0.0-20181218160245-dce81474776f
 	github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef
-	github.com/dictyBase/go-genproto v0.0.0-20190412175108-4e77e27483c8
+	github.com/dictyBase/go-genproto v0.0.0-20190418124514-788941f8fef5
 	github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85
 	github.com/dictybase/apihelpers v0.0.0-20181218160245-dce81474776f // indirect
 	github.com/docker/distribution v2.7.0+incompatible // indirect
