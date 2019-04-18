@@ -462,7 +462,7 @@ func (ar *arangorepository) AppendAnnotationGroup(id, groupId string) ([]*model.
 		return am, nil
 	}
 	// check if the group exists
-	ok, err := ar.anno.annog.DocumentExists(
+	ok, err = ar.anno.annog.DocumentExists(
 		context.Background(),
 		groupId,
 	)
@@ -503,7 +503,7 @@ func (ar *arangorepository) AppendAnnotationGroup(id, groupId string) ([]*model.
 		am = append(am, m)
 	}
 	// update the new group
-	_, err := ar.anno.annog.UpdateDocument(
+	_, err = ar.anno.annog.UpdateDocument(
 		context.Background(),
 		groupId,
 		grp,
@@ -514,6 +514,19 @@ func (ar *arangorepository) AppendAnnotationGroup(id, groupId string) ([]*model.
 	return am, nil
 }
 
+// Delete an annotation group
+func (ar *arangorepository) DeleteAnnotationGroup(groupId string) error {
+	_, err := ar.anno.annog.RemoveDocument(
+		context.Background(),
+		groupId,
+	)
+	if err != nil {
+		return fmt.Errorf("error in removing group with id %s %s", groupId, err)
+	}
+	return nil
+}
+
+// Creates a new annotation group
 func (ar *arangorepository) CreateAnnotationGroup(idslice []string) (string, []*model.AnnoDoc, error) {
 	var am []*model.AnnoDoc
 	if len(idslice) <= 1 {
