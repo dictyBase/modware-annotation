@@ -50,8 +50,17 @@ const (
 						{ tag: cvt.label, ontology: cv.metadata.namespace }
 					)
 	`
-	annGroupListQ = `
-		FOR ag IN %s
+	annGroupListFilterQ = `
+		LET filterannos = (
+			FOR ann IN %s
+				FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+					FOR cv IN %s
+						FILTER ann.is_obsolete == false
+						FILTER cvt.graph_id == cv._id
+						%s
+						RETURN ann._key
+		)
+		FOR ag in %s
 			LET annotations = (
 				FOR aid in ag.group
 					FOR ann IN %s
@@ -64,12 +73,48 @@ const (
 									{ tag: cvt.label, ontology: cv.metadata.namespace }
 								)
 			)
+			FILTER ag.group ANY IN filterannos
 			SORT ag.created_at DESC
 			LIMIT %d
 			RETURN {
 				group_id: ag._key,
 				annotations: annotations
 			}
+	`
+	annGroupListFilterWithCursorQ = `
+		LET filterannos = (
+			FOR ann IN %s
+				FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+					FOR cv IN %s
+						FILTER ann.is_obsolete == false
+						FILTER cvt.graph_id == cv._id
+						%s
+						RETURN ann._key
+		)
+		FOR ag in %s
+			LET annotations = (
+				FOR aid in ag.group
+					FOR ann IN %s
+						FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+							FOR cv IN %s
+								FILTER aid == ann._key
+								FILTER cvt.graph_id == cv._id
+								RETURN MERGE(
+									ann,
+									{ tag: cvt.label, ontology: cv.metadata.namespace }
+								)
+			)
+			FILTER ag.group ANY IN filterannos
+			FILTER ag.created_at <= DATE_ISO8601(%d)
+			SORT ag.created_at DESC
+			LIMIT %d
+			RETURN {
+				group_id: ag._key,
+				annotations: annotations
+			}
+	`
+	annGroupListQ = `
+		FOR ag IN %s
 	`
 	annGroupListWithCursorQ = `
 		FOR ag IN %s
