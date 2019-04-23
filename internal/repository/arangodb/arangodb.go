@@ -574,6 +574,80 @@ func (ar *arangorepository) AddAnnotationGroup(idslice []string) (string, []*mod
 	return meta.Key, am, nil
 }
 
+// ListAnnotationGroup provides a paginated list of annotation groups along
+// with optional filtering
+func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroupList, error) {
+	var gm []*model.AnnoGroupList
+	var stmt string
+	if len(filter) > 0 { // filter string is present
+		if cursor == 0 { // no cursor, return first set of result
+			stmt = fmt.Sprintf(
+				annGroupListFilterQ,
+				ar.anno.annot.Name(),
+				ar.anno.annot.Name(),
+				ar.onto.cv.Name(),
+				filter,
+				ar.anno.annog.Name(),
+				ar.anno.annot.Name(),
+				ar.anno.annot.Name(),
+				ar.onto.cv.Name(),
+				limit,
+			)
+		} else {
+			stmt = fmt.Sprintf(
+				annGroupListFilterQ,
+				ar.anno.annot.Name(),
+				ar.anno.annot.Name(),
+				ar.onto.cv.Name(),
+				filter,
+				ar.anno.annog.Name(),
+				ar.anno.annot.Name(),
+				ar.anno.annot.Name(),
+				ar.onto.cv.Name(),
+				cursor,
+				limit,
+			)
+		}
+	} else { // no filter
+		if cursor == 0 { // no cursor
+			stmt = fmt.Sprintf(
+				annGroupListQ,
+				ar.anno.annog.Name(),
+				ar.anno.annot.Name(),
+				ar.anno.annotg.Name(),
+				ar.onto.cv.Name(),
+				limit,
+			)
+
+		} else { // with cursor
+			stmt = fmt.Sprintf(
+				annGroupListQ,
+				ar.anno.annog.Name(),
+				ar.anno.annot.Name(),
+				ar.anno.annotg.Name(),
+				ar.onto.cv.Name(),
+				cursor,
+				limit,
+			)
+		}
+	}
+	rs, err := ar.database.Search(stmt)
+	if err != nil {
+		return gm, err
+	}
+	if rs.IsEmpty() {
+		return gm, err
+	}
+	for rs.Scan() {
+		m := &model.AnnoGroupList{}
+		if err := rs.Read(m); err != nil {
+			return gm, err
+		}
+		gm = append(gm, m)
+	}
+	return gm, nil
+}
+
 // Clear clears all annotations and related ontologies from the repository
 // datasource
 func (ar *arangorepository) Clear() error {
