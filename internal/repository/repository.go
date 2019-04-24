@@ -20,8 +20,8 @@ type TaggedAnnotationRepository interface {
 	AddAnnotationGroup([]string) (string, []*model.AnnoDoc, error)
 	// Retrieves an annotation group
 	GetAnnotationGroup(groudId string) ([]*model.AnnoDoc, error)
-	// Add a new annotation to an existing group
-	AppendAnnotationGroup(id, groupId string) ([]*model.AnnoDoc, error)
+	// Add new annotations to an existing group
+	AppendToAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
 	// Delete annotation group
 	DeleteAnnotationGroup(groupId string) error
 	// ListAnnotationGroup provides a paginated list of annotation groups along

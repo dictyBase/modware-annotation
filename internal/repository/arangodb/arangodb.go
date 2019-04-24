@@ -13,6 +13,7 @@ import (
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/dictybase/apihelpers/aphcollection"
 )
 
 // CollectionParams are the arangodb collections required for storing
@@ -448,44 +449,22 @@ func (ar *arangorepository) GetAnnotationGroup(groupId string) ([]*model.AnnoDoc
 	return am, nil
 }
 
-// Add a new annotation to an existing group
-func (ar *arangorepository) AppendAnnotationGroup(id, groupId string) ([]*model.AnnoDoc, error) {
+// Add a new annotations to an existing group
+func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error) {
 	var am []*model.AnnoDoc
-	// check if the annotation exists
-	ok, err := ar.anno.annot.DocumentExists(
-		context.Background(),
-		id,
-	)
-	if err != nil {
-		return am, fmt.Errorf("error in checking for existence of identifier %s %s", id, err)
+	if len(idslice) <= 1 {
+		return nil, errors.New("need at least more than one entry to form a group")
 	}
-	if !ok {
-		return am, nil
-	}
-	// check if the group exists
-	ok, err = ar.anno.annog.DocumentExists(
-		context.Background(),
-		groupId,
-	)
-	if err != nil {
-		return am, fmt.Errorf("error in checking for existence of group identifier %s %s", groupId, err)
-	}
-	if !ok {
-		return am, nil
-	}
-	// retrieve all annotation ids for the group
-	grp := &model.AnnoGroup{}
-	_, err = ar.anno.annog.ReadDocument(
-		context.Background(),
-		groupId,
-		grp,
-	)
-	if err != nil {
-		return am, fmt.Errorf("error in retrieving the group %s", err)
-	}
-	grp.Group = append(grp.Group, groupId)
-	for _, id := range grp.Group {
+	// check if the annotations exists
+	for _, id := range idslice {
 		m := &model.AnnoDoc{}
+		ok, err := ar.anno.annot.DocumentExists(context.Background(), id)
+		if err != nil {
+			return nil, fmt.Errorf("error in checking for existence of identifier %s %s", id, err)
+		}
+		if !ok {
+			return nil, &repository.AnnoNotFound{id}
+		}
 		r, err := ar.database.Get(
 			fmt.Sprintf(
 				annGetQ,
@@ -496,10 +475,59 @@ func (ar *arangorepository) AppendAnnotationGroup(id, groupId string) ([]*model.
 			),
 		)
 		if err != nil {
-			return am, err
+			return nil, err
 		}
 		if err := r.Read(m); err != nil {
-			return am, err
+			return nil, err
+		}
+		am = append(am, m)
+	}
+	// check if the group exists
+	ok, err := ar.anno.annog.DocumentExists(
+		context.Background(),
+		groupId,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error in checking for existence of group identifier %s %s", groupId, err)
+	}
+	if !ok {
+		return nil, &repository.GroupNotFound{groupId}
+	}
+	// retrieve all annotations ids for the group
+	grp := &model.AnnoGroup{}
+	_, err = ar.anno.annog.ReadDocument(
+		context.Background(),
+		groupId,
+		grp,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error in retrieving the group %s", err)
+	}
+	// remove duplicates
+	grp.Group = aphcollection.UniqueString(append(grp.Group, idslice...))
+	for _, id := range grp.Group {
+		m := &model.AnnoDoc{}
+		ok, err := ar.anno.annot.DocumentExists(context.Background(), id)
+		if err != nil {
+			return nil, fmt.Errorf("error in checking for existence of identifier %s %s", id, err)
+		}
+		if !ok {
+			return nil, &repository.AnnoNotFound{id}
+		}
+		r, err := ar.database.Get(
+			fmt.Sprintf(
+				annGetQ,
+				ar.anno.annot.Name(),
+				ar.anno.annotg.Name(),
+				ar.onto.cv.Name(),
+				id,
+			),
+		)
+		if err != nil {
+			return nil, err
+		}
+		if err := r.Read(m); err != nil {
+			return nil, err
 		}
 		am = append(am, m)
 	}
