@@ -320,7 +320,7 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, nil
+		return m, &repository.AnnoNotFound{ua.Data.Id}
 	}
 	if err := r.Read(m); err != nil {
 		return m, err
@@ -568,7 +568,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice []string) (string, []*mod
 			return "", am, fmt.Errorf("error in checking for existence of identifier %s %s", id, err)
 		}
 		if !ok {
-			return "", am, nil
+			return "", am, &repository.AnnoNotFound{id}
 		}
 		r, err := ar.database.Get(
 			fmt.Sprintf(

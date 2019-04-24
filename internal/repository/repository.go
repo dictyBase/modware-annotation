@@ -16,13 +16,13 @@ type TaggedAnnotationRepository interface {
 	ListAnnotations(cursor int64, limit int64) ([]*model.AnnoDoc, error)
 	ClearAnnotations() error
 	Clear() error
-	// Creates a new annotation group
+	// AddAnnotationGroup creates a new annotation group
 	AddAnnotationGroup([]string) (string, []*model.AnnoDoc, error)
-	// Retrieves an annotation group
+	// GetAnnotationGroup retrieves an annotation group
 	GetAnnotationGroup(groudId string) ([]*model.AnnoDoc, error)
-	// Add new annotations to an existing group
+	// AppendToAnnotationGroup adds new annotations to an existing group
 	AppendToAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
-	// Delete annotation group
+	// DeleteAnnotationGroup deletes an annotation group
 	DeleteAnnotationGroup(groupId string) error
 	// ListAnnotationGroup provides a paginated list of annotation groups along
 	// with optional filtering
