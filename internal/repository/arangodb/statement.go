@@ -151,7 +151,7 @@ const (
 				annotations: annotations
 			}
 	`
-	annGroupList = `
+	annGroupListQ = `
 		FOR ag IN %s
 			LET annotations = (
 				FOR aid in ag.group

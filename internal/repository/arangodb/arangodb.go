@@ -226,7 +226,7 @@ func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotation
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, nil
+		return m, &repository.AnnoNotFound{req.EntryId}
 	}
 	if err := r.Read(m); err != nil {
 		return m, err
@@ -403,7 +403,7 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64) ([]*model
 		return am, err
 	}
 	if rs.IsEmpty() {
-		return am, nil
+		return am, &repository.AnnoListNotFound{}
 	}
 	for rs.Scan() {
 		m := &model.AnnoDoc{}
@@ -442,6 +442,43 @@ func (ar *arangorepository) GetAnnotationGroup(groupId string) ([]*model.AnnoDoc
 			return am, err
 		}
 		if err := r.Read(m); err != nil {
+			return am, err
+		}
+		am = append(am, m)
+	}
+	return am, nil
+}
+
+// GetAnnotationGroupByEntry retrieves an annotation group associated with an entry
+func (ar *arangorepository) GetAnnotationGroupByEntry(req *annotation.EntryAnnotationRequest) ([]*model.AnnoDoc, error) {
+	var am []*model.AnnoDoc
+	rs, err := ar.database.Search(
+		fmt.Sprintf(
+			annGetGroupByEntryQ,
+			ar.anno.annot.Name(),
+			ar.anno.annotg.Name(),
+			ar.onto.cv.Name(),
+			req.EntryId,
+			req.Rank,
+			req.IsObsolete,
+			req.Tag,
+			req.Ontology,
+			ar.anno.annog.Name(),
+			ar.anno.annot.Name(),
+			ar.anno.annot.Name(),
+			ar.anno.annotg.Name(),
+			ar.onto.cv.Name(),
+		),
+	)
+	if err != nil {
+		return am, err
+	}
+	if rs.IsEmpty() {
+		return am, &repository.AnnoGroupListNotFound{}
+	}
+	for rs.Scan() {
+		m := &model.AnnoDoc{}
+		if err := rs.Read(m); err != nil {
 			return am, err
 		}
 		am = append(am, m)
@@ -664,7 +701,7 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 		return gm, err
 	}
 	if rs.IsEmpty() {
-		return gm, err
+		return gm, &repository.AnnoGroupListNotFound{}
 	}
 	for rs.Scan() {
 		m := &model.AnnoGroupList{}
