@@ -26,6 +26,8 @@ type TaggedAnnotationRepository interface {
 	AppendToAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
 	// DeleteAnnotationGroup deletes an annotation group
 	DeleteAnnotationGroup(groupId string) error
+	// RemoveFromAnnotationGroup remove annotations from an existing group
+	RemoveFromAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
 	// ListAnnotationGroup provides a paginated list of annotation groups along
 	// with optional filtering
 	ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroupList, error)

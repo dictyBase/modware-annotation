@@ -639,6 +639,72 @@ func (ar *arangorepository) AddAnnotationGroup(idslice []string) (string, []*mod
 	return meta.Key, am, nil
 }
 
+// RemoveFromAnnotationGroup remove annotations from an existing group
+func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error) {
+	var am []*model.AnnoDoc
+	if len(idslice) <= 1 {
+		return nil, errors.New("need at least more than one entry to form a group")
+	}
+	// check if the group exists
+	ok, err := ar.anno.annog.DocumentExists(
+		context.Background(),
+		groupId,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error in checking for existence of group identifier %s %s", groupId, err)
+	}
+	if !ok {
+		return nil, &repository.GroupNotFound{groupId}
+	}
+	// retrieve all annotations ids for the group
+	grp := &model.AnnoGroup{}
+	_, err = ar.anno.annog.ReadDocument(
+		context.Background(),
+		groupId,
+		grp,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error in retrieving the group %s", err)
+	}
+	var ngrp []string
+	for _, id := range grp.Group {
+		if !aphcollection.Contains(idslice, id) {
+			ngrp = append(ngrp, id)
+		}
+	}
+	grp.Group = ngrp
+	// retrieve the annotation objects
+	for _, id := range grp.Group {
+		m := &model.AnnoDoc{}
+		r, err := ar.database.Get(
+			fmt.Sprintf(
+				annGetQ,
+				ar.anno.annot.Name(),
+				ar.anno.annotg.Name(),
+				ar.onto.cv.Name(),
+				id,
+			),
+		)
+		if err != nil {
+			return nil, err
+		}
+		if err := r.Read(m); err != nil {
+			return nil, err
+		}
+		am = append(am, m)
+	}
+	// update the new group
+	_, err = ar.anno.annog.UpdateDocument(
+		context.Background(),
+		groupId,
+		grp,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error in updating the group id %s %s", groupId, err)
+	}
+	return am, nil
+}
+
 // ListAnnotationGroup provides a paginated list of annotation groups along
 // with optional filtering
 func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroupList, error) {
