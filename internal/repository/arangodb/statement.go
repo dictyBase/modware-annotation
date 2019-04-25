@@ -50,6 +50,44 @@ const (
 						{ tag: cvt.label, ontology: cv.metadata.namespace }
 					)
 	`
+	annGetGroupByEntryQ = `
+		LET searchedAnnoKeys = (
+			FOR ann IN %s
+				FOR v IN 1..1 OUTBOUND ann GRAPH '%s'
+					FOR cv IN %s
+						FILTER ann.entry_id == '%s'
+						FILTER ann.rank == %d
+						FILTER ann.is_obsolete == %t
+						FILTER v.label == '%s'
+						FILTER v.graph_id == cv._id
+						FILTER cv.metadata.namespace == '%s'
+						SORT ann.version DESC
+						LIMIT 1
+						RETURN MERGE(
+							ann, 
+							{ ontology: cv.metadata.namespace, tag: v.label }
+						)
+		)
+		LET annoids = (
+			FOR akey IN searchedAnnoKeys
+				FOR grp IN %s
+					FOR ann IN %s
+						FILTER akey ANY IN grp.group
+						FOR k IN grp.group
+							FILTER k == ann._key
+							RETURN ann._id
+		)
+		FOR id IN annoids
+			FOR ann IN %s
+				FOR v IN 1..1 OUTBOUND id GRAPH '%s'
+					FOR cv IN %s
+						FILTER ann._id == id
+						FILTER v.graph_id == cv._id
+						RETURN MERGE(
+							ann,
+							{ ontology: cv.metadata.namespace, tag: v.label, cvtid: v._id}
+						)
+	`
 	annGroupListFilterQ = `
 		LET filterannos = (
 			FOR ann IN %s
@@ -113,8 +151,26 @@ const (
 				annotations: annotations
 			}
 	`
-	annGroupListQ = `
+	annGroupList = `
 		FOR ag IN %s
+			LET annotations = (
+				FOR aid in ag.group
+					FOR ann IN %s
+						FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+							FOR cv IN %s
+								FILTER aid == ann._key
+								FILTER cvt.graph_id == cv._id
+								RETURN MERGE(
+									ann,
+									{ tag: cvt.label, ontology: cv.metadata.namespace }
+								)
+			)
+			SORT ag.created_at DESC
+			LIMIT %d
+			RETURN {
+				group_id: ag._key,
+				annotations: annotations
+			}
 	`
 	annGroupListWithCursorQ = `
 		FOR ag IN %s
@@ -175,6 +231,7 @@ const (
 		        FOR cv IN %s
 					FILTER ann._key == '%s'
 					FILTER v.graph_id == cv._id
+					LIMIT 1
 					RETURN MERGE(
 						ann,
 						{ ontology: cv.metadata.namespace, tag: v.label, cvtid: v._id}
