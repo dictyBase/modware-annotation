@@ -13,6 +13,7 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
@@ -349,9 +350,13 @@ func TestGetAnnotationByEntry(t *testing.T) {
 		Ontology: nta2.Data.Attributes.Ontology,
 		EntryId:  "DDB_G0277853",
 	})
-	if err != nil {
+	if err == nil {
 		t.Fatalf("error in retrieving entry %s %s", "DDB_G0277853", err)
 	}
+	assert.True(
+		repository.IsAnnotationNotFound(err),
+		"the entry should not exist",
+	)
 	assert.True(em.NotFound, "the entry should not exist")
 }
 
@@ -407,13 +412,17 @@ func TestGetAnnotationById(t *testing.T) {
 	assert.Equal(m2.EnrtyId, em2.EnrtyId, "should match entry identifier")
 
 	ne, err := anrepo.GetAnnotationById("9999999")
-	if err != nil {
+	if err == nil {
 		t.Fatalf(
 			"error in fetching annotation %s with identifier %s",
 			"9999999",
 			err,
 		)
 	}
+	assert.True(
+		repository.IsAnnotationNotFound(err),
+		"entry should not exist",
+	)
 	assert.True(ne.NotFound, "entry should not exist")
 }
 
