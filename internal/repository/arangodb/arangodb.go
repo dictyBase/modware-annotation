@@ -9,11 +9,11 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/dictyBase/apihelpers/aphcollection"
 	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
-	"github.com/dictybase/apihelpers/aphcollection"
 )
 
 // CollectionParams are the arangodb collections required for storing
@@ -198,7 +198,7 @@ func (ar *arangorepository) GetAnnotationById(id string) (*model.AnnoDoc, error)
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, nil
+		return m, &repository.AnnoNotFound{id}
 	}
 	if err := r.Read(m); err != nil {
 		return m, err
@@ -726,7 +726,7 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 			)
 		} else {
 			stmt = fmt.Sprintf(
-				annGroupListFilterQ,
+				annGroupListFilterWithCursorQ,
 				ar.anno.annot.Name(),
 				ar.anno.annot.Name(),
 				ar.onto.cv.Name(),
@@ -752,7 +752,7 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 
 		} else { // with cursor
 			stmt = fmt.Sprintf(
-				annGroupListQ,
+				annGroupListWithCursorQ,
 				ar.anno.annog.Name(),
 				ar.anno.annot.Name(),
 				ar.anno.annotg.Name(),

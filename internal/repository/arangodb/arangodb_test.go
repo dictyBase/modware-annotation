@@ -69,6 +69,7 @@ func getCollectionParams() *CollectionParams {
 		AnnoVersion:  "annotation_version",
 		AnnoTagGraph: "annotation_tag",
 		AnnoVerGraph: "annotation_history",
+		AnnoGroup:    "annotation_group",
 	}
 }
 
@@ -414,9 +415,8 @@ func TestGetAnnotationById(t *testing.T) {
 	ne, err := anrepo.GetAnnotationById("9999999")
 	if err == nil {
 		t.Fatalf(
-			"error in fetching annotation %s with identifier %s",
-			"9999999",
-			err,
+			"error in fetching annotation with identifier %s",
+			"10000000",
 		)
 	}
 	assert.True(
