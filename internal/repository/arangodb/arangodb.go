@@ -829,5 +829,8 @@ func (ar *arangorepository) ClearAnnotations() error {
 	if err := ar.anno.annotg.Remove(context.Background()); err != nil {
 		return err
 	}
+	if err := ar.anno.annog.Remove(context.Background()); err != nil {
+		return err
+	}
 	return nil
 }
