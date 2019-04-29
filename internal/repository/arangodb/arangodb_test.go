@@ -625,6 +625,39 @@ func TestGetAnnotationGroup(t *testing.T) {
 	)
 }
 
+func TestAppendToAnntationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(7)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml[:4], model2IdCallback)
+	groupId, _, err := anrepo.AddAnnotationGroup(ids)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	nids := testModelMaptoId(ml[4:], model2IdCallback)
+	egml, err := anrepo.AppendToAnnotationGroup(groupId, nids...)
+	if err != nil {
+		t.Fatalf("error in appending to group annotations %s", err)
+	}
+	assert := assert.New(t)
+	assert.ElementsMatch(
+		testModelMaptoId(egml, model2IdCallback),
+		append(ids, nids...),
+		"expected identical annotation identifiers after appending to the group",
+	)
+}
+
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	if err != nil {
