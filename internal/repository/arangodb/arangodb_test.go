@@ -584,15 +584,45 @@ func TestAddAnnotationGroup(t *testing.T) {
 		}
 		ml = append(ml, m)
 	}
-	ids := testModelMaptoId(ml, func(m *model.AnnoDoc) string {
-		return m.Key
-	})
+	ids := testModelMaptoId(ml, model2IdCallback)
 	_, gml, err := anrepo.AddAnnotationGroup(ids)
 	if err != nil {
 		t.Fatalf("error in adding annotation group %s", err)
 	}
 	assert := assert.New(t)
 	assert.Lenf(gml, len(ids), "should have %d annotations", len(ids))
+}
+
+func TestGetAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(4)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml, model2IdCallback)
+	groupId, gml, err := anrepo.AddAnnotationGroup(ids)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	eml, err := anrepo.GetAnnotationGroup(groupId)
+	if err != nil {
+		t.Fatalf("error in retrieving group with id %s %s", groupId, err)
+	}
+	assert := assert.New(t)
+	assert.ElementsMatch(
+		testModelMaptoId(gml, model2IdCallback),
+		testModelMaptoId(eml, model2IdCallback),
+		"expected identical annotation identifiers in the list",
+	)
 }
 
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
@@ -618,4 +648,8 @@ func testModelMaptoId(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []s
 		s = append(s, fn(m))
 	}
 	return s
+}
+
+func model2IdCallback(m *model.AnnoDoc) string {
+	return m.Key
 }
