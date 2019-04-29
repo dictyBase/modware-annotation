@@ -73,7 +73,7 @@ func getCollectionParams() *CollectionParams {
 	}
 }
 
-func loadAnnotaionObo() error {
+func loadAnnotationObo() error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("unable to get current dir %s", err)
@@ -131,7 +131,7 @@ func loadAnnotaionObo() error {
 	return nil
 }
 
-func newTestTaggedAnnotaionWithParams(tag, entryId string) *annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotationWithParams(tag, entryId string) *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
@@ -148,7 +148,7 @@ func newTestTaggedAnnotaionWithParams(tag, entryId string) *annotation.NewTagged
 	}
 }
 
-func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotation() *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
@@ -165,12 +165,12 @@ func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
 	}
 }
 
-func newTestTaggedAnnotaionsList() []*annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 	var nal []*annotation.NewTaggedAnnotation
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	max := 800000
 	min := 300000
-	for i := 0; i < 15; i++ {
+	for i := 0; i < num; i++ {
 		value := fmt.Sprintf("cool gene %s", tags[r.Intn(len(tags)-1)])
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
@@ -229,7 +229,7 @@ func TestMain(m *testing.M) {
 	apass = adocker.GetPassword()
 	ahost = adocker.GetIP()
 	aport = adocker.GetPort()
-	if err := loadAnnotaionObo(); err != nil {
+	if err := loadAnnotationObo(); err != nil {
 		log.Fatalf("error in loading test annotation obograph %s", err)
 	}
 	code := m.Run()
@@ -245,7 +245,7 @@ func TestAddAnnotation(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf("error in adding annotation %s", err)
@@ -297,7 +297,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	_, err = anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -306,7 +306,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 			err,
 		)
 	}
-	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	_, err = anrepo.AddAnnotation(nta2)
 	if err != nil {
 		t.Fatalf(
@@ -367,7 +367,7 @@ func TestGetAnnotationById(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -376,7 +376,7 @@ func TestGetAnnotationById(t *testing.T) {
 			err,
 		)
 	}
-	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	m2, err := anrepo.AddAnnotation(nta2)
 	if err != nil {
 		t.Fatalf(
@@ -432,7 +432,7 @@ func TestRemoveAnnotation(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -441,7 +441,7 @@ func TestRemoveAnnotation(t *testing.T) {
 			err,
 		)
 	}
-	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	m2, err := anrepo.AddAnnotation(nta2)
 	if err != nil {
 		t.Fatalf(
@@ -478,7 +478,7 @@ func TestEditAnnotation(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -519,7 +519,7 @@ func TestListAnnotations(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	tal := newTestTaggedAnnotaionsList()
+	tal := newTestTaggedAnnotationsList(15)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
 		if err != nil {
@@ -569,6 +569,32 @@ func TestListAnnotations(t *testing.T) {
 	testModelListSort(ml4, t)
 }
 
+func TestAddAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(8)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml, func(m *model.AnnoDoc) string {
+		return m.Key
+	})
+	_, gml, err := anrepo.AddAnnotationGroup(ids)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	assert := assert.New(t)
+	assert.Lenf(gml, len(ids), "should have %d annotations", len(ids))
+}
+
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	if err != nil {
@@ -584,4 +610,12 @@ func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 			cm.CreatedAt.String(),
 		)
 	}
+}
+
+func testModelMaptoId(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []string {
+	var s []string
+	for _, m := range am {
+		s = append(s, fn(m))
+	}
+	return s
 }

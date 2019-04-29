@@ -599,7 +599,6 @@ func (ar *arangorepository) AddAnnotationGroup(idslice []string) (string, []*mod
 		return "", am, errors.New("need at least more than one entry to form a group")
 	}
 	for _, id := range idslice {
-		m := &model.AnnoDoc{}
 		ok, err := ar.anno.annot.DocumentExists(context.Background(), id)
 		if err != nil {
 			return "", am, fmt.Errorf("error in checking for existence of identifier %s %s", id, err)
@@ -619,6 +618,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice []string) (string, []*mod
 		if err != nil {
 			return "", am, err
 		}
+		m := &model.AnnoDoc{}
 		if err := r.Read(m); err != nil {
 			return "", am, err
 		}
