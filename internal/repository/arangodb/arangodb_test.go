@@ -692,6 +692,38 @@ func TestDeleteAnnotationGroup(t *testing.T) {
 	)
 }
 
+func TestRemoveFromAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(9)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml, model2IdCallback)
+	groupId, _, err := anrepo.AddAnnotationGroup(ids)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	eml, err := anrepo.RemoveFromAnnotationGroup(groupId, ids[:4]...)
+	if err != nil {
+		t.Fatalf("error in removing annotations from group %s %s", groupId, err)
+	}
+	assert := assert.New(t)
+	assert.ElementsMatch(
+		ids[4:],
+		testModelMaptoId(eml, model2IdCallback),
+		"expected identical annotation identifiers after removing from the group",
+	)
+}
+
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	if err != nil {
