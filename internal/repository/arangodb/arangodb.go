@@ -575,7 +575,7 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...s
 }
 
 // Delete an annotation group
-func (ar *arangorepository) DeleteAnnotationGroup(groupId string) error {
+func (ar *arangorepository) RemoveAnnotationGroup(groupId string) error {
 	_, err := ar.anno.annog.RemoveDocument(
 		context.Background(),
 		groupId,

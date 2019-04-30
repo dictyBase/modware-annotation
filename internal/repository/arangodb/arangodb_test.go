@@ -658,7 +658,7 @@ func TestAppendToAnntationGroup(t *testing.T) {
 	)
 }
 
-func TestDeleteAnnotationGroup(t *testing.T) {
+func TestRemoveAnnotationGroup(t *testing.T) {
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
@@ -678,11 +678,11 @@ func TestDeleteAnnotationGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error in adding annotation group %s", err)
 	}
-	err = anrepo.DeleteAnnotationGroup(groupId)
+	err = anrepo.RemoveAnnotationGroup(groupId)
 	if err != nil {
 		t.Fatalf("error in deleting group %s %s", groupId, err)
 	}
-	err = anrepo.DeleteAnnotationGroup(groupId)
+	err = anrepo.RemoveAnnotationGroup(groupId)
 	assert := assert.New(t)
 	assert.True(assert.Error(err), "should return error")
 	assert.Contains(

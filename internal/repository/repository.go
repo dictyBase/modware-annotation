@@ -25,7 +25,7 @@ type TaggedAnnotationRepository interface {
 	// AppendToAnnotationGroup adds new annotations to an existing group
 	AppendToAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
 	// DeleteAnnotationGroup deletes an annotation group
-	DeleteAnnotationGroup(groupId string) error
+	RemoveAnnotationGroup(groupId string) error
 	// RemoveFromAnnotationGroup remove annotations from an existing group
 	RemoveFromAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
 	// ListAnnotationGroup provides a paginated list of annotation groups along
