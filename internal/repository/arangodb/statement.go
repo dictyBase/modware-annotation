@@ -115,6 +115,8 @@ const (
 			SORT ag.created_at DESC
 			LIMIT %d
 			RETURN {
+				created_at: ag.created_at,
+				updated_at: ag.updated_at,
 				group_id: ag._key,
 				annotations: annotations
 			}
@@ -147,6 +149,8 @@ const (
 			SORT ag.created_at DESC
 			LIMIT %d
 			RETURN {
+				created_at: ag.created_at,
+				updated_at: ag.updated_at,
 				group_id: ag._key,
 				annotations: annotations
 			}
@@ -168,6 +172,8 @@ const (
 			SORT ag.created_at DESC
 			LIMIT %d
 			RETURN {
+				created_at: ag.created_at,
+				updated_at: ag.updated_at,
 				group_id: ag._key,
 				annotations: annotations
 			}
@@ -190,6 +196,8 @@ const (
 			SORT ag.created_at DESC
 			LIMIT %d
 			RETURN {
+				created_at: ag.created_at,
+				updated_at: ag.updated_at,
 				group_id: ag._key,
 				annotations: annotations
 			}

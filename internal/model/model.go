@@ -29,6 +29,8 @@ type AnnoGroup struct {
 }
 
 type AnnoGroupList struct {
-	GroupId  string     `json:"group_id"`
-	AnnoDocs []*AnnoDoc `json:"annotations"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	GroupId   string     `json:"group_id"`
+	AnnoDocs  []*AnnoDoc `json:"annotations"`
 }
