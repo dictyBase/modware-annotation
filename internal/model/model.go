@@ -23,9 +23,11 @@ type AnnoDoc struct {
 }
 
 type AnnoGroup struct {
-	Group     []string  `json:"group"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	AnnoDocs  []*AnnoDoc `json:"annotations,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	GroupId   string     `json:"group_id"`
+	Group     []string   `json:"group"`
 }
 
 type AnnoGroupList struct {
