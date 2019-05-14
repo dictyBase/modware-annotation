@@ -439,43 +439,6 @@ func (ar *arangorepository) GetAnnotationGroup(groupId string) (*model.AnnoGroup
 	return g, nil
 }
 
-// GetAnnotationGroupByEntry retrieves an annotation group associated with an entry
-func (ar *arangorepository) GetAnnotationGroupByEntry(req *annotation.EntryAnnotationRequest) (*model.AnnoGroup, error) {
-	rg := &model.ReaderGroup{}
-	rs, err := ar.database.Search(
-		fmt.Sprintf(
-			annGetGroupByEntryQ,
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-			req.EntryId,
-			req.Rank,
-			req.IsObsolete,
-			req.Tag,
-			req.Ontology,
-			ar.anno.annog.Name(),
-			ar.anno.annot.Name(),
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-		),
-	)
-	if err != nil {
-		return rg.EmptyExchangeModel(), err
-	}
-	if rs.IsEmpty() {
-		return rg.EmptyExchangeModel(), &repository.GroupNotFound{}
-	}
-	for rs.Scan() {
-		m := rg.EmptyExchangeModel()
-		if err := rs.Read(m); err != nil {
-			return g, err
-		}
-		rg.AddMembers(m)
-	}
-	return rg.ToExchangeModel(), nil
-}
-
 // Add a new annotations to an existing group
 func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...string) (*model.AnnoGroup, error) {
 	g := &model.AnnoGroup{}
