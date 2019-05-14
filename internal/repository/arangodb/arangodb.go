@@ -465,7 +465,7 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...s
 	_, err = ar.anno.annog.UpdateDocument(
 		driver.WithReturnNew(context.Background(), dbg),
 		groupId,
-		&DbGroup{
+		&model.DbGroup{
 			UpdatedAt: time.Now(),
 			Group:     docToIds(aml),
 		})
@@ -495,21 +495,21 @@ func (ar *arangorepository) RemoveAnnotationGroup(groupId string) error {
 func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGroup, error) {
 	g := &model.AnnoGroup{}
 	if len(idslice) <= 1 {
-		return m, errors.New("need at least more than one entry to form a group")
+		return g, errors.New("need at least more than one entry to form a group")
 	}
 	// check if the annotations exists
-	if err := documentsExists(ar.anno.annot, idslice); err != nil {
+	if err := documentsExists(ar.anno.annot, idslice...); err != nil {
 		return g, err
 	}
 	// retrieve all annotations objects
-	ml, err := ar.getAllAnnotations(idslice)
+	ml, err := ar.getAllAnnotations(idslice...)
 	if err != nil {
 		return g, err
 	}
 	dbg := &model.DbGroup{}
 	_, err = ar.anno.annog.CreateDocument(
 		driver.WithReturnNew(context.Background(), dbg),
-		&DbGroup{
+		&model.DbGroup{
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 			Group:     idslice,
@@ -773,7 +773,7 @@ func documentsExists(c driver.Collection, ids ...string) error {
 	for _, k := range ids {
 		ok, err := c.DocumentExists(context.Background(), k)
 		if err != nil {
-			return false, fmt.Errorf("error in checking for existence of identifier %s %s", k, err)
+			return fmt.Errorf("error in checking for existence of identifier %s %s", k, err)
 		}
 		if !ok {
 			return &repository.AnnoNotFound{k}
@@ -782,7 +782,7 @@ func documentsExists(c driver.Collection, ids ...string) error {
 	return nil
 }
 
-func docToIds(ml []*model.AnnoDoc) string {
+func docToIds(ml []*model.AnnoDoc) []string {
 	var s []string
 	for _, m := range ml {
 		s = append(s, m.Key)
