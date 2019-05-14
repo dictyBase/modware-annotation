@@ -446,28 +446,37 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...s
 		return g, errors.New("need at least more than one entry to form a group")
 	}
 	// retrieve annotation objects for existing group
-	eml, err := ar.groupId2Anno(groupId)
+	gml, err := ar.groupId2Annotations(groupId)
 	if err != nil {
-		return g, err
-	}
-	// check if the annotations exists
-	if err := documentsExists(ar.anno.annot, idslice); err != nil {
 		return g, err
 	}
 	// retrieve annotation objects for given identifiers
-	// remove duplicates
-	rg.AddMemberIds(aphcollection.UniqueString(append(rg.MemberIds(), idslice...))...)
-	rg.AddMembers(uniqueAnno(rg.Members())...)
-	// update the new group
-	_, err = ar.anno.annog.UpdateDocument(
-		context.Background(),
-		groupId,
-		rg.ToStorageModel(),
-	)
+	ml, err := ar.getAllAnnotations(idslice...)
 	if err != nil {
-		return rg.EmptyExchangeModel(), fmt.Errorf("error in updating the group id %s %s", groupId, err)
+		return g, err
 	}
-	return rg.ToExchangeModel(), nil
+	// remove duplicates
+	var aml []*model.AnnoDoc
+	aml = append(aml, gml...)
+	aml = append(aml, ml...)
+	aml = uniqueAnno(aml)
+	// update the new group
+	dbg := &model.DbGroup{}
+	_, err = ar.anno.annog.UpdateDocument(
+		driver.WithReturnNew(context.Background(), dbg),
+		groupId,
+		&DbGroup{
+			UpdatedAt: time.Now(),
+			Group:     docToIds(aml),
+		})
+	if err != nil {
+		return g, fmt.Errorf("error in updating the group id %s %s", groupId, err)
+	}
+	g.CreatedAt = dbg.CreatedAt
+	g.UpdatedAt = dbg.UpdatedAt
+	g.GroupId = dbg.GroupId
+	g.AnnoDocs = aml
+	return g, nil
 }
 
 // Delete an annotation group
@@ -498,7 +507,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 		return g, err
 	}
 	dbg := &model.DbGroup{}
-	_, err := ar.anno.annog.CreateDocument(
+	_, err = ar.anno.annog.CreateDocument(
 		driver.WithReturnNew(context.Background(), dbg),
 		&DbGroup{
 			CreatedAt: time.Now(),
@@ -771,4 +780,12 @@ func documentsExists(c driver.Collection, ids ...string) error {
 		}
 	}
 	return nil
+}
+
+func docToIds(ml []*model.AnnoDoc) string {
+	var s []string
+	for _, m := range ml {
+		s = append(s, m.Key)
+	}
+	return s
 }
