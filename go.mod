@@ -7,7 +7,7 @@ require (
 	github.com/arangodb/go-driver v0.0.0-20181206080103-b1a864427d13
 	github.com/cenkalti/backoff v2.1.0+incompatible // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
-	github.com/dictyBase/apihelpers v0.0.0-20190424182615-184407ed5626
+	github.com/dictyBase/apihelpers v0.0.0-20190503212158-c71652809fbb
 	github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef
 	github.com/dictyBase/go-genproto v0.0.0-20190418124514-788941f8fef5
 	github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85

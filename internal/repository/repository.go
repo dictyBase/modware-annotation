@@ -21,14 +21,14 @@ type TaggedAnnotationRepository interface {
 	// GetAnnotationGroup retrieves an annotation group
 	GetAnnotationGroup(groudId string) (*model.AnnoGroup, error)
 	// GetAnnotationGroupByEntry retrieves an annotation group associated with an entry
-	GetAnnotationGroupByEntry(req *annotation.EntryAnnotationRequest) ([]*model.AnnoDoc, error)
+	GetAnnotationGroupByEntry(req *annotation.EntryAnnotationRequest) (*model.AnnoGroup, error)
 	// AppendToAnnotationGroup adds new annotations to an existing group
-	AppendToAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
+	AppendToAnnotationGroup(groupId string, idslice ...string) (*model.AnnoGroup, error)
 	// DeleteAnnotationGroup deletes an annotation group
 	RemoveAnnotationGroup(groupId string) error
 	// RemoveFromAnnotationGroup remove annotations from an existing group
-	RemoveFromAnnotationGroup(groupId string, idslice ...string) ([]*model.AnnoDoc, error)
+	RemoveFromAnnotationGroup(groupId string, idslice ...string) (*model.AnnoGroup, error)
 	// ListAnnotationGroup provides a paginated list of annotation groups along
 	// with optional filtering
-	ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroupList, error)
+	ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroup, error)
 }

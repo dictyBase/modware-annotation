@@ -28,6 +28,8 @@ github.com/dictyBase/apihelpers v0.0.0-20181218160245-dce81474776f h1:OK7SIEJdVW
 github.com/dictyBase/apihelpers v0.0.0-20181218160245-dce81474776f/go.mod h1:WMCcrIvQoc3UBfA643QFDQufK2a+7mYGgkGxVFWfJus=
 github.com/dictyBase/apihelpers v0.0.0-20190424182615-184407ed5626 h1:B0KWtzBSvW93w+iBPq/KwiCubYUqOm/LwHnnSa5V7Pk=
 github.com/dictyBase/apihelpers v0.0.0-20190424182615-184407ed5626/go.mod h1:WMCcrIvQoc3UBfA643QFDQufK2a+7mYGgkGxVFWfJus=
+github.com/dictyBase/apihelpers v0.0.0-20190503212158-c71652809fbb h1:mNfIzpTC4OeJ1gvuBLLS1IVAtksEvdZcSFImUWwh5CE=
+github.com/dictyBase/apihelpers v0.0.0-20190503212158-c71652809fbb/go.mod h1:WMCcrIvQoc3UBfA643QFDQufK2a+7mYGgkGxVFWfJus=
 github.com/dictyBase/arangomanager v0.0.0-20181207154211-de2560879efa h1:/UpF+Vd8c3S0lhkVzRQYzKE8k//xAb0otSG0yVm06pM=
 github.com/dictyBase/arangomanager v0.0.0-20181207154211-de2560879efa/go.mod h1:0H8JGH8tnla3cagGMgyAc2+KuseooHKsv4Byx3jeKO4=
 github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef h1:SYvSzPeNoGkAUiEZ0FExU+0bn3WPTsI94Y8MKW7r+fw=

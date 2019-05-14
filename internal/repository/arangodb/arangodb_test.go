@@ -724,6 +724,38 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	)
 }
 
+func TestListAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(60)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	j := 5
+	for i := 0; j <= len(ml); i += 5 {
+		ids := testModelMaptoId(ml[i:j], model2IdCallback)
+		_, _, err := anrepo.AddAnnotationGroup(ids)
+		if err != nil {
+			t.Fatalf("error in adding annotation group %s", err)
+		}
+		j += 5
+	}
+	gml, err := anrepo.ListAnnotationGroup(0, 5, "")
+	assert := assert.New(t)
+	assert.Len(gml, 5, "should have 5 groups")
+	for _, g := range gml {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+}
+
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	if err != nil {
