@@ -50,6 +50,20 @@ const (
 						{ tag: cvt.label, ontology: cv.metadata.namespace }
 					)
 	`
+	annGroupInst = `
+		INSERT {
+				created_at: DATE_ISO8601(DATE_NOW()),
+				updated_at: DATE_ISO8601(DATE_NOW()),
+				group: @group
+			   } IN @@anno_group_collection RETURN NEW
+	`
+	annGroupUpd = `
+		UPDATE { _key: @key }
+			WITH { 
+					updated_at: DATE_ISO8601(DATE_NOW()),
+					group: @group 
+				 } IN @@anno_group_collection RETURN NEW
+	`
 	annGetGroupByEntryQ = `
 		LET searchedAnnoKeys = (
 			FOR ann IN %s
