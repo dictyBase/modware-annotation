@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	validator "gopkg.in/go-playground/validator.v9"
 
@@ -291,7 +290,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	if err != nil {
 		return m, err
 	}
-	if r.IsEmpty() {
+	if rins.IsEmpty() {
 		m.NotFound = true
 		return m, fmt.Errorf("error in returning newly created document")
 	}
@@ -456,21 +455,22 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...s
 		return g, err
 	}
 	// remove duplicates
-	var aml []*model.AnnoDoc
-	aml = append(aml, gml...)
-	aml = append(aml, ml...)
-	aml = uniqueAnno(aml)
+	aml := uniqueAnno(append(gml, ml...))
 	// update the new group
-	dbg := &model.DbGroup{}
-	_, err = ar.anno.annog.UpdateDocument(
-		driver.WithReturnNew(context.Background(), dbg),
-		groupId,
-		&model.DbGroup{
-			UpdatedAt: time.Now(),
-			Group:     docToIds(aml),
-		})
+	r, err := ar.database.DoRun(
+		annGroupUpd,
+		map[string]interface{}{
+			"@anno_group_collection": ar.anno.annog.Name(),
+			"key":                    groupId,
+			"group":                  docToIds(aml),
+		},
+	)
 	if err != nil {
-		return g, fmt.Errorf("error in updating the group id %s %s", groupId, err)
+		return g, fmt.Errorf("error in updating group with id %s %s", groupId, err)
+	}
+	dbg := &model.DbGroup{}
+	if err := r.Read(dbg); err != nil {
+		return g, err
 	}
 	g.CreatedAt = dbg.CreatedAt
 	g.UpdatedAt = dbg.UpdatedAt
@@ -507,16 +507,18 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 		return g, err
 	}
 	dbg := &model.DbGroup{}
-	_, err = ar.anno.annog.CreateDocument(
-		driver.WithReturnNew(context.Background(), dbg),
-		&model.DbGroup{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			Group:     idslice,
+	r, err := ar.database.DoRun(
+		annGroupInst,
+		map[string]interface{}{
+			"@anno_group_collection": ar.anno.annog.Name(),
+			"group":                  idslice,
 		},
 	)
 	if err != nil {
 		return g, fmt.Errorf("error in creating group %s", err)
+	}
+	if err := r.Read(dbg); err != nil {
+		return g, err
 	}
 	g.CreatedAt = dbg.CreatedAt
 	g.UpdatedAt = dbg.UpdatedAt
@@ -552,25 +554,31 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 	if err != nil {
 		return g, fmt.Errorf("error in retrieving the group %s", err)
 	}
-	dbg.Group = aphcollection.Remove(dbg.Group, idslice...)
+	nids := aphcollection.Remove(dbg.Group, idslice...)
 	// retrieve the annotation objects
-	ml, err := ar.getAllAnnotations(dbg.Group...)
+	ml, err := ar.getAllAnnotations(nids...)
 	if err != nil {
 		return g, err
 	}
 	// update the new group
-	dbg.UpdatedAt = time.Now()
-	_, err = ar.anno.annog.UpdateDocument(
-		context.Background(),
-		groupId,
-		dbg,
+	r, err := ar.database.DoRun(
+		annGroupUpd,
+		map[string]interface{}{
+			"@anno_group_collection": ar.anno.annog.Name(),
+			"key":                    groupId,
+			"group":                  nids,
+		},
 	)
 	if err != nil {
-		return g, fmt.Errorf("error in updating the group id %s %s", groupId, err)
+		return g, fmt.Errorf("error in removing group members with id %s %s", groupId, err)
 	}
-	g.CreatedAt = dbg.CreatedAt
-	g.UpdatedAt = dbg.UpdatedAt
-	g.GroupId = dbg.GroupId
+	ndbg := &model.DbGroup{}
+	if err := r.Read(ndbg); err != nil {
+		return g, err
+	}
+	g.CreatedAt = ndbg.CreatedAt
+	g.UpdatedAt = ndbg.UpdatedAt
+	g.GroupId = ndbg.GroupId
 	g.AnnoDocs = ml
 	return g, nil
 }
