@@ -753,12 +753,49 @@ func TestListAnnotationGroup(t *testing.T) {
 		}
 		j += 5
 	}
-	egl, err := anrepo.ListAnnotationGroup(0, 6, "")
+	egl, err := anrepo.ListAnnotationGroup(0, 4, "")
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
 	assert := assert.New(t)
-	assert.Len(egl, 6, "should have 5 groups")
+	assert.Len(egl, 4, "should have 4 groups")
 	for _, g := range egl {
 		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
 	}
+	egl2, err := anrepo.ListAnnotationGroup(
+		toTimestamp(egl[len(egl)-1].CreatedAt),
+		6,
+		"",
+	)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert.Len(egl2, 6, "should have 6 groups")
+	for _, g := range egl2 {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+	assert.Exactly(
+		egl[len(egl)-1],
+		egl2[0],
+		"should have identical model objects",
+	)
+	egl3, err := anrepo.ListAnnotationGroup(
+		toTimestamp(egl2[len(egl2)-1].CreatedAt),
+		6,
+		"",
+	)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert.Len(egl3, 4, "should have 4 groups")
+	for _, g := range egl3 {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+	assert.Exactly(
+		egl2[len(egl2)-1],
+		egl3[0],
+		"should have identical model objects",
+	)
 }
 
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
