@@ -13,6 +13,7 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
@@ -68,10 +69,11 @@ func getCollectionParams() *CollectionParams {
 		AnnoVersion:  "annotation_version",
 		AnnoTagGraph: "annotation_tag",
 		AnnoVerGraph: "annotation_history",
+		AnnoGroup:    "annotation_group",
 	}
 }
 
-func loadAnnotaionObo() error {
+func loadAnnotationObo() error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("unable to get current dir %s", err)
@@ -129,7 +131,7 @@ func loadAnnotaionObo() error {
 	return nil
 }
 
-func newTestTaggedAnnotaionWithParams(tag, entryId string) *annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotationWithParams(tag, entryId string) *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
@@ -146,7 +148,7 @@ func newTestTaggedAnnotaionWithParams(tag, entryId string) *annotation.NewTagged
 	}
 }
 
-func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotation() *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
@@ -163,12 +165,12 @@ func newTestTaggedAnnotaion() *annotation.NewTaggedAnnotation {
 	}
 }
 
-func newTestTaggedAnnotaionsList() []*annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 	var nal []*annotation.NewTaggedAnnotation
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	max := 800000
 	min := 300000
-	for i := 0; i < 15; i++ {
+	for i := 0; i < num; i++ {
 		value := fmt.Sprintf("cool gene %s", tags[r.Intn(len(tags)-1)])
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
@@ -227,7 +229,7 @@ func TestMain(m *testing.M) {
 	apass = adocker.GetPassword()
 	ahost = adocker.GetIP()
 	aport = adocker.GetPort()
-	if err := loadAnnotaionObo(); err != nil {
+	if err := loadAnnotationObo(); err != nil {
 		log.Fatalf("error in loading test annotation obograph %s", err)
 	}
 	code := m.Run()
@@ -243,7 +245,7 @@ func TestAddAnnotation(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf("error in adding annotation %s", err)
@@ -295,7 +297,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	_, err = anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -304,7 +306,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 			err,
 		)
 	}
-	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	_, err = anrepo.AddAnnotation(nta2)
 	if err != nil {
 		t.Fatalf(
@@ -349,9 +351,13 @@ func TestGetAnnotationByEntry(t *testing.T) {
 		Ontology: nta2.Data.Attributes.Ontology,
 		EntryId:  "DDB_G0277853",
 	})
-	if err != nil {
+	if err == nil {
 		t.Fatalf("error in retrieving entry %s %s", "DDB_G0277853", err)
 	}
+	assert.True(
+		repository.IsAnnotationNotFound(err),
+		"the entry should not exist",
+	)
 	assert.True(em.NotFound, "the entry should not exist")
 }
 
@@ -361,7 +367,7 @@ func TestGetAnnotationById(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -370,7 +376,7 @@ func TestGetAnnotationById(t *testing.T) {
 			err,
 		)
 	}
-	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	m2, err := anrepo.AddAnnotation(nta2)
 	if err != nil {
 		t.Fatalf(
@@ -407,13 +413,16 @@ func TestGetAnnotationById(t *testing.T) {
 	assert.Equal(m2.EnrtyId, em2.EnrtyId, "should match entry identifier")
 
 	ne, err := anrepo.GetAnnotationById("9999999")
-	if err != nil {
+	if err == nil {
 		t.Fatalf(
-			"error in fetching annotation %s with identifier %s",
-			"9999999",
-			err,
+			"error in fetching annotation with identifier %s",
+			"10000000",
 		)
 	}
+	assert.True(
+		repository.IsAnnotationNotFound(err),
+		"entry should not exist",
+	)
 	assert.True(ne.NotFound, "entry should not exist")
 }
 
@@ -423,7 +432,7 @@ func TestRemoveAnnotation(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -432,7 +441,7 @@ func TestRemoveAnnotation(t *testing.T) {
 			err,
 		)
 	}
-	nta2 := newTestTaggedAnnotaionWithParams("curation", "DDB_G0287317")
+	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	m2, err := anrepo.AddAnnotation(nta2)
 	if err != nil {
 		t.Fatalf(
@@ -469,7 +478,7 @@ func TestEditAnnotation(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	nta := newTestTaggedAnnotaion()
+	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
 		t.Fatalf(
@@ -510,7 +519,7 @@ func TestListAnnotations(t *testing.T) {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
 	defer anrepo.ClearAnnotations()
-	tal := newTestTaggedAnnotaionsList()
+	tal := newTestTaggedAnnotationsList(15)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
 		if err != nil {
@@ -560,14 +569,243 @@ func TestListAnnotations(t *testing.T) {
 	testModelListSort(ml4, t)
 }
 
+func TestAddAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(8)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml, model2IdCallback)
+	g, err := anrepo.AddAnnotationGroup(ids...)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	assert := assert.New(t)
+	assert.Lenf(g.AnnoDocs, len(ids), "should have %d annotations", len(ids))
+}
+
+func TestGetAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(4)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml, model2IdCallback)
+	g, err := anrepo.AddAnnotationGroup(ids...)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	eg, err := anrepo.GetAnnotationGroup(g.GroupId)
+	if err != nil {
+		t.Fatalf("error in retrieving group with id %s %s", g.GroupId, err)
+	}
+	assert := assert.New(t)
+	assert.ElementsMatch(
+		testModelMaptoId(g.AnnoDocs, model2IdCallback),
+		testModelMaptoId(eg.AnnoDocs, model2IdCallback),
+		"expected identical annotation identifiers in the list",
+	)
+}
+
+func TestAppendToAnntationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(7)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml[:4], model2IdCallback)
+	g, err := anrepo.AddAnnotationGroup(ids...)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	nids := testModelMaptoId(ml[4:], model2IdCallback)
+	eg, err := anrepo.AppendToAnnotationGroup(g.GroupId, nids...)
+	if err != nil {
+		t.Fatalf("error in appending to group annotations %s", err)
+	}
+	assert := assert.New(t)
+	assert.ElementsMatch(
+		testModelMaptoId(eg.AnnoDocs, model2IdCallback),
+		append(ids, nids...),
+		"expected identical annotation identifiers after appending to the group",
+	)
+}
+
+func TestRemoveAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(7)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml, model2IdCallback)
+	g, err := anrepo.AddAnnotationGroup(ids...)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	err = anrepo.RemoveAnnotationGroup(g.GroupId)
+	if err != nil {
+		t.Fatalf("error in deleting group %s %s", g.GroupId, err)
+	}
+	err = anrepo.RemoveAnnotationGroup(g.GroupId)
+	assert := assert.New(t)
+	assert.True(assert.Error(err), "should return error")
+	assert.Contains(
+		err.Error(),
+		"removing group",
+		"should contain removing group phrase",
+	)
+}
+
+func TestRemoveFromAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(9)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	ids := testModelMaptoId(ml, model2IdCallback)
+	g, err := anrepo.AddAnnotationGroup(ids...)
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+	eg, err := anrepo.RemoveFromAnnotationGroup(g.GroupId, ids[:5]...)
+	if err != nil {
+		t.Fatalf("error in removing annotations from group %s %s", eg.GroupId, err)
+	}
+	assert := assert.New(t)
+	assert.ElementsMatch(
+		testModelMaptoId(g.AnnoDocs, model2IdCallback),
+		ids,
+		"should match no of documents",
+	)
+	assert.ElementsMatch(
+		ids[5:],
+		testModelMaptoId(eg.AnnoDocs, model2IdCallback),
+		"expected identical annotation identifiers after removing from the group",
+	)
+}
+
+func TestListAnnotationGroup(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsList(60)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	j := 5
+	for i := 0; j <= len(ml); i += 5 {
+		ids := testModelMaptoId(ml[i:j], model2IdCallback)
+		_, err := anrepo.AddAnnotationGroup(ids...)
+		if err != nil {
+			t.Fatalf("error in adding annotation group %s", err)
+		}
+		j += 5
+	}
+	egl, err := anrepo.ListAnnotationGroup(0, 4, "")
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert := assert.New(t)
+	assert.Len(egl, 4, "should have 4 groups")
+	for _, g := range egl {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+	egl2, err := anrepo.ListAnnotationGroup(
+		toTimestamp(egl[len(egl)-1].CreatedAt),
+		6,
+		"",
+	)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert.Len(egl2, 6, "should have 6 groups")
+	for _, g := range egl2 {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+	assert.Exactly(
+		egl[len(egl)-1],
+		egl2[0],
+		"should have identical model objects",
+	)
+	egl3, err := anrepo.ListAnnotationGroup(
+		toTimestamp(egl2[len(egl2)-1].CreatedAt),
+		6,
+		"",
+	)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert.Len(egl3, 4, "should have 4 groups")
+	for _, g := range egl3 {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+	assert.Exactly(
+		egl2[len(egl2)-1],
+		egl3[0],
+		"should have identical model objects",
+	)
+}
+
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
-	it, err := NewPairWiseIterator(m)
+	it, err := NewModelAnnoDocPairWiseIterator(m)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert := assert.New(t)
-	for it.NextPair() {
-		cm, nm := it.Pair()
+	for it.NextModelAnnoDocPair() {
+		cm, nm := it.ModelAnnoDocPair()
 		assert.Truef(
 			nm.CreatedAt.Before(cm.CreatedAt),
 			"date %s should be before %s",
@@ -575,4 +813,16 @@ func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 			cm.CreatedAt.String(),
 		)
 	}
+}
+
+func testModelMaptoId(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []string {
+	var s []string
+	for _, m := range am {
+		s = append(s, fn(m))
+	}
+	return s
+}
+
+func model2IdCallback(m *model.AnnoDoc) string {
+	return m.Key
 }
