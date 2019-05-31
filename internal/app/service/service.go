@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/dictyBase/arangomanager/query"
+	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/dictyBase/apihelpers/aphgrpc"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
@@ -19,6 +22,7 @@ type AnnotationService struct {
 	*aphgrpc.Service
 	repo      repository.TaggedAnnotationRepository
 	publisher message.Publisher
+	group     string
 }
 
 func defaultOptions() *aphgrpc.ServiceOptions {
@@ -26,7 +30,10 @@ func defaultOptions() *aphgrpc.ServiceOptions {
 }
 
 // NewAnnotationService is the constructor for creating a new instance of AnnotationService
-func NewAnnotationService(repo repository.TaggedAnnotationRepository, pub message.Publisher, opt ...aphgrpc.Option) *AnnotationService {
+func NewAnnotationService(
+	repo repository.TaggedAnnotationRepository,
+	pub message.Publisher, grp string, opt ...aphgrpc.Option) *AnnotationService {
+
 	so := defaultOptions()
 	for _, optfn := range opt {
 		optfn(so)
@@ -37,7 +44,12 @@ func NewAnnotationService(repo repository.TaggedAnnotationRepository, pub messag
 		Service:   srv,
 		repo:      repo,
 		publisher: pub,
+		group:     grp,
 	}
+}
+
+func (s *AnnotationService) GetGroupResourceName() string {
+	return s.group
 }
 
 func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.AnnotationId) (*annotation.TaggedAnnotation, error) {
@@ -102,6 +114,82 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 	return ta, nil
 }
 
+func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotation.ListGroupParameters) (*annotation.TaggedAnnotationGroupCollection, error) {
+	gc := &annotation.TaggedAnnotationGroupCollection{}
+	// default value of limit
+	limit := int64(10)
+	if r.Limit > 0 {
+		limit = r.Limit
+	}
+	var astmt string
+	if len(r.Filter) > 0 {
+		p, err := query.ParseFilterString(r.Filter)
+		if err != nil {
+			return gc, aphgrpc.HandleInvalidParamError(
+				ctx,
+				fmt.Errorf("error in parsing filter string"),
+			)
+		}
+		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap, p)
+		if err != nil {
+			return gc, aphgrpc.HandleInvalidParamError(
+				ctx,
+				fmt.Errorf("error in generating aql statement"),
+			)
+		}
+		astmt = q
+	}
+	mgc, err := s.repo.ListAnnotationGroup(r.Cursor, limit, astmt)
+	if err != nil {
+		if repository.IsAnnotationGroupListNotFound(err) {
+			return gc, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return gc, aphgrpc.HandleGetError(ctx, err)
+	}
+	var gcdata []*annotation.TaggedAnnotationGroupCollection_Data
+	for _, mg := range mgc {
+		var gdata []*annotation.TaggedAnnotationGroup_Data
+		for _, m := range mg.AnnoDocs {
+			gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
+				Type: s.GetResourceName(),
+				Id:   m.Key,
+				Attributes: &annotation.TaggedAnnotationAttributes{
+					Value:         m.Value,
+					EditableValue: m.EditableValue,
+					CreatedBy:     m.CreatedBy,
+					CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
+					Version:       m.Version,
+					EntryId:       m.EnrtyId,
+					Rank:          m.Rank,
+					IsObsolete:    m.IsObsolete,
+					Tag:           m.Tag,
+					Ontology:      m.Ontology,
+				},
+			})
+		}
+		gcdata = append(gcdata, &annotation.TaggedAnnotationGroupCollection_Data{
+			Type: s.GetGroupResourceName(),
+			Group: &annotation.TaggedAnnotationGroup{
+				Data:      gdata,
+				GroupId:   mg.GroupId,
+				CreatedAt: aphgrpc.TimestampProto(mg.CreatedAt),
+				UpdatedAt: aphgrpc.TimestampProto(mg.UpdatedAt),
+			},
+		})
+	}
+	if len(gcdata) < int(limit)-2 { //fewer result than limit
+		gc.Data = gcdata
+		gc.Meta = &annotation.Meta{Limit: r.Limit}
+		return gc, nil
+	}
+	gc.Data = gcdata[:len(gcdata)-1]
+	gc.Meta = &annotation.Meta{
+		Limit:      limit,
+		NextCursor: genNextCursorVal(gcdata[len(gcdata)-1].Group.CreatedAt),
+	}
+	return gc, nil
+}
+
 func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.ListParameters) (*annotation.TaggedAnnotationCollection, error) {
 	tac := &annotation.TaggedAnnotationCollection{}
 	if len(r.Filter) > 0 {
@@ -150,7 +238,7 @@ func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.L
 	tac.Data = tcdata[:len(tcdata)-1]
 	tac.Meta = &annotation.Meta{
 		Limit:      limit,
-		NextCursor: genNextCursorVal(tcdata[len(tcdata)-1]),
+		NextCursor: genNextCursorVal(tcdata[len(tcdata)-1].Attributes.CreatedAt),
 	}
 	return tac, nil
 }
@@ -230,9 +318,9 @@ func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.
 	return e, nil
 }
 
-func genNextCursorVal(tcd *annotation.TaggedAnnotationCollection_Data) int64 {
+func genNextCursorVal(t *timestamp.Timestamp) int64 {
 	tint, _ := strconv.ParseInt(
-		fmt.Sprintf("%d%d", tcd.Attributes.CreatedAt.GetSeconds(), tcd.Attributes.CreatedAt.GetNanos()),
+		fmt.Sprintf("%d%d", t.GetSeconds(), t.GetNanos()),
 		10,
 		64,
 	)
