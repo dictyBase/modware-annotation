@@ -68,6 +68,8 @@ github.com/dictyBase/go-genproto v0.0.0-20190524140414-dd7f614b66a5 h1:Uy3R7eGqM
 github.com/dictyBase/go-genproto v0.0.0-20190524140414-dd7f614b66a5/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
 github.com/dictyBase/go-genproto v0.0.0-20190531003641-7931c8007faa h1:2/+DPImzNcAyWtFOjmI1VUCPftsEmf44UpUvFoMa+p0=
 github.com/dictyBase/go-genproto v0.0.0-20190531003641-7931c8007faa/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
+github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756 h1:N5cYGUXxIWnKGKjPwUZLaCp0UVEfwfaDA7lkM/h+5OA=
+github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
 github.com/dictyBase/go-middlewares v0.0.0-20180704154106-0fd6848b3e92/go.mod h1:DPbz2QP7K7kHh9pCuStlQ6qDEwYyUiWNS6WGCdgb3Nk=
 github.com/dictyBase/go-obograph v0.0.0-20181023195506-aa9860c41a41 h1:4tSl8LsE/Y00nerWNWdORHMSlQP7ShrHNWRpxDMACWk=
 github.com/dictyBase/go-obograph v0.0.0-20181023195506-aa9860c41a41/go.mod h1:WH6g1pCASh/lU4l1hLfIcav5WkGhLfLO3C461HpRs8Q=

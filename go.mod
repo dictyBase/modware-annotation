@@ -11,7 +11,7 @@ require (
 	github.com/coreos/go-iptables v0.4.0 // indirect
 	github.com/dictyBase/apihelpers v0.0.0-20190516195304-f1adf8d9f18d
 	github.com/dictyBase/arangomanager v0.0.0-20190530184338-a1110e8e3d1b
-	github.com/dictyBase/go-genproto v0.0.0-20190531003641-7931c8007faa
+	github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756
 	github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85
 	github.com/dictybase/apihelpers v0.0.0-20190424182615-184407ed5626
 	github.com/gliderlabs/ssh v0.1.4 // indirect

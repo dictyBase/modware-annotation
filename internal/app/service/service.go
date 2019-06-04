@@ -114,7 +114,7 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 	return ta, nil
 }
 
-func (s *AnnotationService) DeleteAnnotationGroup(ctx context.Context, r *annotation.AnnotationEntryId) (*empty.Empty, error) {
+func (s *AnnotationService) DeleteAnnotationGroup(ctx context.Context, r *annotation.GroupEntryId) (*empty.Empty, error) {
 	e := &empty.Empty{}
 	if err := r.Validate(); err != nil {
 		return e, aphgrpc.HandleInvalidParamError(ctx, err)
@@ -123,6 +123,44 @@ func (s *AnnotationService) DeleteAnnotationGroup(ctx context.Context, r *annota
 		return e, aphgrpc.HandleDeleteError(ctx, err)
 	}
 	return e, nil
+}
+
+func (s *AnnotationService) AddToAnnotationGroup(ctx context.Context, r *annotation.AnnotationGroupId) (*annotation.TaggedAnnotationGroup, error) {
+	g := &annotation.TaggedAnnotationGroup{}
+	if err := r.Validate(); err != nil {
+		return g, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	mg, err := s.repo.AppendToAnnotationGroup(r.GroupId, r.Id)
+	if err != nil {
+		if repository.IsGroupNotFound(err) {
+			return g, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return g, aphgrpc.HandleUpdateError(ctx, err)
+	}
+	var gdata []*annotation.TaggedAnnotationGroup_Data
+	for _, m := range mg.AnnoDocs {
+		gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
+			Type: s.GetResourceName(),
+			Id:   m.Key,
+			Attributes: &annotation.TaggedAnnotationAttributes{
+				Value:         m.Value,
+				EditableValue: m.EditableValue,
+				CreatedBy:     m.CreatedBy,
+				CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
+				Version:       m.Version,
+				EntryId:       m.EnrtyId,
+				Rank:          m.Rank,
+				IsObsolete:    m.IsObsolete,
+				Tag:           m.Tag,
+				Ontology:      m.Ontology,
+			},
+		})
+	}
+	g.Data = gdata
+	g.GroupId = mg.GroupId
+	g.CreatedAt = aphgrpc.TimestampProto(mg.CreatedAt)
+	g.UpdatedAt = aphgrpc.TimestampProto(mg.UpdatedAt)
+	return g, nil
 }
 
 func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotation.ListGroupParameters) (*annotation.TaggedAnnotationGroupCollection, error) {
