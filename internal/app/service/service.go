@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/dictyBase/arangomanager/query"
+	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -125,6 +126,21 @@ func (s *AnnotationService) DeleteAnnotationGroup(ctx context.Context, r *annota
 	return e, nil
 }
 
+func (s *AnnotationService) GetAnnotationGroup(ctx context.Context, r *annotation.GroupEntryId) (*annotation.TaggedAnnotationGroup, error) {
+	g := &annotation.TaggedAnnotationGroup{}
+	if err := r.Validate(); err != nil {
+		return g, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	mg, err := s.repo.GetAnnotationGroup(r.GroupId)
+	if err != nil {
+		if repository.IsGroupNotFound(err) {
+			return g, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return g, aphgrpc.HandleGetError(ctx, err)
+	}
+	return s.getGroup(mg), nil
+}
+
 func (s *AnnotationService) AddToAnnotationGroup(ctx context.Context, r *annotation.AnnotationGroupId) (*annotation.TaggedAnnotationGroup, error) {
 	g := &annotation.TaggedAnnotationGroup{}
 	if err := r.Validate(); err != nil {
@@ -137,30 +153,7 @@ func (s *AnnotationService) AddToAnnotationGroup(ctx context.Context, r *annotat
 		}
 		return g, aphgrpc.HandleUpdateError(ctx, err)
 	}
-	var gdata []*annotation.TaggedAnnotationGroup_Data
-	for _, m := range mg.AnnoDocs {
-		gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
-			Type: s.GetResourceName(),
-			Id:   m.Key,
-			Attributes: &annotation.TaggedAnnotationAttributes{
-				Value:         m.Value,
-				EditableValue: m.EditableValue,
-				CreatedBy:     m.CreatedBy,
-				CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-				Version:       m.Version,
-				EntryId:       m.EnrtyId,
-				Rank:          m.Rank,
-				IsObsolete:    m.IsObsolete,
-				Tag:           m.Tag,
-				Ontology:      m.Ontology,
-			},
-		})
-	}
-	g.Data = gdata
-	g.GroupId = mg.GroupId
-	g.CreatedAt = aphgrpc.TimestampProto(mg.CreatedAt)
-	g.UpdatedAt = aphgrpc.TimestampProto(mg.UpdatedAt)
-	return g, nil
+	return s.getGroup(mg), nil
 }
 
 func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotation.ListGroupParameters) (*annotation.TaggedAnnotationGroupCollection, error) {
@@ -365,6 +358,34 @@ func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.
 		return e, aphgrpc.HandleDeleteError(ctx, err)
 	}
 	return e, nil
+}
+
+func (s *AnnotationService) getGroup(mg *model.AnnoGroup) *annotation.TaggedAnnotationGroup {
+	g := &annotation.TaggedAnnotationGroup{}
+	var gdata []*annotation.TaggedAnnotationGroup_Data
+	for _, m := range mg.AnnoDocs {
+		gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
+			Type: s.GetResourceName(),
+			Id:   m.Key,
+			Attributes: &annotation.TaggedAnnotationAttributes{
+				Value:         m.Value,
+				EditableValue: m.EditableValue,
+				CreatedBy:     m.CreatedBy,
+				CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
+				Version:       m.Version,
+				EntryId:       m.EnrtyId,
+				Rank:          m.Rank,
+				IsObsolete:    m.IsObsolete,
+				Tag:           m.Tag,
+				Ontology:      m.Ontology,
+			},
+		})
+	}
+	g.Data = gdata
+	g.GroupId = mg.GroupId
+	g.CreatedAt = aphgrpc.TimestampProto(mg.CreatedAt)
+	g.UpdatedAt = aphgrpc.TimestampProto(mg.UpdatedAt)
+	return g
 }
 
 func genNextCursorVal(t *timestamp.Timestamp) int64 {
