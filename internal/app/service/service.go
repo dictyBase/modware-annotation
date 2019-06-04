@@ -141,6 +141,21 @@ func (s *AnnotationService) GetAnnotationGroup(ctx context.Context, r *annotatio
 	return s.getGroup(mg), nil
 }
 
+func (s *AnnotationService) CreateAnnotationGroup(ctx context.Context, r *annotation.AnnotationIdList) (*annotation.TaggedAnnotationGroup, error) {
+	g := &annotation.TaggedAnnotationGroup{}
+	if err := r.Validate(); err != nil {
+		return g, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	mg, err := s.repo.AddAnnotationGroup(r.Ids...)
+	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return g, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return g, aphgrpc.HandleInsertError(ctx, err)
+	}
+	return s.getGroup(mg), nil
+}
+
 func (s *AnnotationService) AddToAnnotationGroup(ctx context.Context, r *annotation.AnnotationGroupId) (*annotation.TaggedAnnotationGroup, error) {
 	g := &annotation.TaggedAnnotationGroup{}
 	if err := r.Validate(); err != nil {
