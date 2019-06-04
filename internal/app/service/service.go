@@ -114,6 +114,17 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 	return ta, nil
 }
 
+func (s *AnnotationService) DeleteAnnotationGroup(ctx context.Context, r *annotation.AnnotationEntryId) (*empty.Empty, error) {
+	e := &empty.Empty{}
+	if err := r.Validate(); err != nil {
+		return e, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	if err := s.repo.RemoveAnnotationGroup(r.GroupId); err != nil {
+		return e, aphgrpc.HandleDeleteError(ctx, err)
+	}
+	return e, nil
+}
+
 func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotation.ListGroupParameters) (*annotation.TaggedAnnotationGroupCollection, error) {
 	gc := &annotation.TaggedAnnotationGroupCollection{}
 	// default value of limit
