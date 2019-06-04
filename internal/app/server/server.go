@@ -14,9 +14,9 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/app/service"
 	"github.com/dictyBase/modware-annotation/internal/message/nats"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
-	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	gnats "github.com/nats-io/go-nats"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -75,6 +75,7 @@ func RunServer(c *cli.Context) error {
 		service.NewAnnotationService(
 			anrepo,
 			ms,
+			"groups",
 			aphgrpc.TopicsOption(
 				map[string]string{
 					"annotationCreate": "AnnotationService.Create",

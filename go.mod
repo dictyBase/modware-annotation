@@ -10,11 +10,10 @@ require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/coreos/go-iptables v0.4.0 // indirect
 	github.com/dictyBase/apihelpers v0.0.0-20190516195304-f1adf8d9f18d
-	github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef
-	github.com/dictyBase/go-genproto v0.0.0-20190419013406-7b67707bd07a
+	github.com/dictyBase/arangomanager v0.0.0-20190530184338-a1110e8e3d1b
+	github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756
 	github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85
 	github.com/dictybase/apihelpers v0.0.0-20190424182615-184407ed5626
-	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/gliderlabs/ssh v0.1.4 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/golang/mock v1.3.1 // indirect
@@ -51,8 +50,7 @@ require (
 	golang.org/x/tools v0.0.0-20190516173022-abbb706b23e2 // indirect
 	google.golang.org/appengine v1.6.0 // indirect
 	google.golang.org/grpc v1.20.1
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
-	gopkg.in/go-playground/validator.v9 v9.28.0
+	gopkg.in/go-playground/validator.v9 v9.29.0
 	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
 	gopkg.in/src-d/go-git-fixtures.v3 v3.5.0 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect

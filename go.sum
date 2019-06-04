@@ -31,6 +31,7 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/coreos/go-iptables v0.4.0/go.mod h1:/mVI274lEDI2ns62jHCDnCyBF9Iwsmekav8Dbxlm1MU=
+github.com/coreos/go-iptables v0.4.1/go.mod h1:/mVI274lEDI2ns62jHCDnCyBF9Iwsmekav8Dbxlm1MU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -49,6 +50,8 @@ github.com/dictyBase/arangomanager v0.0.0-20181207154211-de2560879efa h1:/UpF+Vd
 github.com/dictyBase/arangomanager v0.0.0-20181207154211-de2560879efa/go.mod h1:0H8JGH8tnla3cagGMgyAc2+KuseooHKsv4Byx3jeKO4=
 github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef h1:SYvSzPeNoGkAUiEZ0FExU+0bn3WPTsI94Y8MKW7r+fw=
 github.com/dictyBase/arangomanager v0.0.0-20181218130251-d14408fc23ef/go.mod h1:0H8JGH8tnla3cagGMgyAc2+KuseooHKsv4Byx3jeKO4=
+github.com/dictyBase/arangomanager v0.0.0-20190530184338-a1110e8e3d1b h1:eFUC0/nJiZSyoj8TAoXquHG/z6bYqS/fQ9UG4PN96rA=
+github.com/dictyBase/arangomanager v0.0.0-20190530184338-a1110e8e3d1b/go.mod h1:ZKfo7JHpT9KfmJEJwZLhwoyCRBxIPW+IeX+13eUEIlg=
 github.com/dictyBase/go-genproto v0.0.0-20181203170714-0c5a42137f21 h1:0/FBz5pDIax33VWWgsUkhkVuYLmC1JV+eMZxwuToA3k=
 github.com/dictyBase/go-genproto v0.0.0-20181203170714-0c5a42137f21/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
 github.com/dictyBase/go-genproto v0.0.0-20190412175108-4e77e27483c8 h1:h7hBkys6Lp3hLgapgKK6HBPWnRWu8raXqPJddBX5Ro8=
@@ -61,6 +64,12 @@ github.com/dictyBase/go-genproto v0.0.0-20190418124514-788941f8fef5 h1:KSV9Ns1Pw
 github.com/dictyBase/go-genproto v0.0.0-20190418124514-788941f8fef5/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
 github.com/dictyBase/go-genproto v0.0.0-20190419013406-7b67707bd07a h1:qGdhBfXCqQBzxfIGP1bnkVC5NrW+hr3+7HC04QIXjBE=
 github.com/dictyBase/go-genproto v0.0.0-20190419013406-7b67707bd07a/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
+github.com/dictyBase/go-genproto v0.0.0-20190524140414-dd7f614b66a5 h1:Uy3R7eGqMZXjr6soNoBGIipcGRtQHgj+8fphUwmXtFU=
+github.com/dictyBase/go-genproto v0.0.0-20190524140414-dd7f614b66a5/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
+github.com/dictyBase/go-genproto v0.0.0-20190531003641-7931c8007faa h1:2/+DPImzNcAyWtFOjmI1VUCPftsEmf44UpUvFoMa+p0=
+github.com/dictyBase/go-genproto v0.0.0-20190531003641-7931c8007faa/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
+github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756 h1:N5cYGUXxIWnKGKjPwUZLaCp0UVEfwfaDA7lkM/h+5OA=
+github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
 github.com/dictyBase/go-middlewares v0.0.0-20180704154106-0fd6848b3e92/go.mod h1:DPbz2QP7K7kHh9pCuStlQ6qDEwYyUiWNS6WGCdgb3Nk=
 github.com/dictyBase/go-obograph v0.0.0-20181023195506-aa9860c41a41 h1:4tSl8LsE/Y00nerWNWdORHMSlQP7ShrHNWRpxDMACWk=
 github.com/dictyBase/go-obograph v0.0.0-20181023195506-aa9860c41a41/go.mod h1:WH6g1pCASh/lU4l1hLfIcav5WkGhLfLO3C461HpRs8Q=
@@ -153,6 +162,8 @@ github.com/jackc/pgx v3.4.0+incompatible/go.mod h1:0ZGrqGqkRlliWnWB4zKnWtjbSWbGk
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
+github.com/jinzhu/now v0.0.0-20181116074157-8ec929ed50c3/go.mod h1:oHTiXerJ20+SfYcrdlBO7rzZRJWGwSTQ0iUY2jI6Gfc=
+github.com/jinzhu/now v1.0.0 h1:6WV8LvwPpDhKjo5U9O6b4+xdG/jTXNPwlDme/MTo8Ns=
 github.com/jinzhu/now v1.0.0/go.mod h1:oHTiXerJ20+SfYcrdlBO7rzZRJWGwSTQ0iUY2jI6Gfc=
 github.com/jmoiron/sqlx v1.2.0 h1:41Ip0zITnmWNR/vHV+S4m+VoUivnWY5E4OJfLZjCJMA=
 github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
@@ -365,8 +376,11 @@ gopkg.in/go-playground/assert.v1 v1.2.1 h1:xoYuJVE7KT85PYWrN730RguIQO0ePzVRfFMXa
 gopkg.in/go-playground/assert.v1 v1.2.1/go.mod h1:9RXL0bg/zibRAgZUYszZSwO/z8Y/a8bDuhia5mkpMnE=
 gopkg.in/go-playground/validator.v9 v9.23.0 h1:oq297iqu7qsywIbeW5DBUTtV1nV750Y4q+H8MnDh0Yc=
 gopkg.in/go-playground/validator.v9 v9.23.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
+gopkg.in/go-playground/validator.v9 v9.24.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
 gopkg.in/go-playground/validator.v9 v9.28.0 h1:6pzvnzx1RWaaQiAmv6e1DvCFULRaz5cKoP5j1VcrLsc=
 gopkg.in/go-playground/validator.v9 v9.28.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
+gopkg.in/go-playground/validator.v9 v9.29.0 h1:5ofssLNYgAA/inWn6rTZ4juWpRJUwEnXc1LG2IeXwgQ=
+gopkg.in/go-playground/validator.v9 v9.29.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
 gopkg.in/mgutz/dat.v2 v2.0.0-20171004160617-d76e4f81c4ef h1:qD+M6IiDd7s+KtfGDOGWVnk1MgeDs153K00sSLTmpTI=
 gopkg.in/mgutz/dat.v2 v2.0.0-20171004160617-d76e4f81c4ef/go.mod h1:5gQ9u/67w+i03GWDRWDw1l4kDMRc5Jx0CRMxMPy+oSg=
 gopkg.in/resty.v1 v1.12.0/go.mod h1:mDo4pnntr5jdWRML875a/NmxYqAlA73dVijT2AXvQQo=
