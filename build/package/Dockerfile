@@ -6,9 +6,8 @@ WORKDIR /modware-annotation
 ADD cmd cmd
 ADD internal internal
 COPY go.mod go.sum ./
-RUN go get ./... \ 
-    && go mod tidy \ 
-    && go build cmd/modware-annotation/main.go -o app
+RUN go get ./...
+RUN go build -o app cmd/modware-annotation/main.go
 
 FROM alpine:3.7
 RUN apk --no-cache add ca-certificates
