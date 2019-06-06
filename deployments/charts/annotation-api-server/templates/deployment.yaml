@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "annotation-api.fullname" . }}
+  labels:
+    app: {{ template "annotation-api.fullname" . }}
+    chart: {{ template "annotation-api.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "annotation-api.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "annotation-api.fullname" . }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: [
+            "--log-level",
+            "{{ .Values.logLevel }}",
+            "start-server",
+        {{- if .Values.database }}
+          {{- with .Values.database }}
+            "--user",
+            "{{ .user }}",
+            "--pass",
+            "{{ .password }}",
+            "--db",
+            "{{ .name }}",
+          {{- end }}
+            "--port",
+            "{{ .Values.service.port }}",
+          {{- if eq .Values.endpoint "https" }}
+            "--is-secure",
+            "true"
+          {{- end }}
+        {{- else }}    
+          {{required "A value for .Values.database is required" .Values.database }}
+        {{- end }}
+          ]
+          ports:
+            - name: {{ .Values.service.name }}
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
