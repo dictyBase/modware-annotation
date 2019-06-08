@@ -9,7 +9,7 @@ require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/dictyBase/apihelpers v0.0.0-20190516195304-f1adf8d9f18d
 	github.com/dictyBase/arangomanager v0.0.0-20190530184338-a1110e8e3d1b
-	github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756
+	github.com/dictyBase/go-genproto v0.0.0-20190608110615-02f4ede4f72a
 	github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85
 	github.com/gliderlabs/ssh v0.1.4 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
