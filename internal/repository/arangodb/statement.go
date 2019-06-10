@@ -38,17 +38,29 @@ const (
 		RETURN n[0]
 	`
 	annListQ = `
-		FOR ann IN %s
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
-				FOR cv IN %s
-					FILTER ann.is_obsolete == false
+		FOR a IN @@anno_collection
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
 					FILTER cvt.graph_id == cv._id
-					SORT ann.created_at DESC
-					LIMIT %d
-					RETURN MERGE(
-						ann,
-						{ tag: cvt.label, ontology: cv.metadata.namespace }
-					)
+					COLLECT
+						entry_id = a.entry_id
+						label = cvt.label
+						ontology = cv.metadata.namespace
+						AGGREGATE version = MAX(a.version)
+				RETURN FIRST(
+					FOR ann IN @@anno_collection
+						FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+							FOR cv IN @@cv_collection
+								FILTER ann.version == version
+								FILTER ann.is_obsolete == false
+								FILTER cvt.graph_id == cv._id
+								SORT ann.created_at DESC
+								LIMIT @limit
+									RETURN MERGE(
+										ann,
+										{ tag: cvt.label, ontology: cv.metadata.namespace }
+									)
+				)
 	`
 	annGroupInst = `
 		INSERT {
@@ -217,18 +229,30 @@ const (
 			}
 	`
 	annListWithCursorQ = `
-		FOR ann IN %s
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
-				FOR cv IN %s
-					FILTER ann.is_obsolete == false
+		FOR a IN @@anno_collection
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
 					FILTER cvt.graph_id == cv._id
-					FILTER ann.created_at <= DATE_ISO8601(%d)
-					SORT ann.created_at DESC
-					LIMIT %d
-					RETURN MERGE(
-						ann,
-						{ tag: cvt.label, ontology:cv.metadata.namespace }
-					)
+					COLLECT
+						entry_id = a.entry_id
+						label = cvt.label
+						ontology = cv.metadata.namespace
+						AGGREGATE version = MAX(a.version)
+				RETURN FIRST(
+					FOR ann IN @@anno_collection
+						FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+							FOR cv IN @@cv_collection
+								FILTER ann.version == version
+								FILTER ann.is_obsolete == false
+								FILTER cvt.graph_id == cv._id
+								FILTER ann.created_at <= DATE_ISO8601(@cursor)
+								SORT ann.created_at DESC
+								LIMIT @limit
+									RETURN MERGE(
+										ann,
+										{ tag: cvt.label, ontology: cv.metadata.namespace }
+									)
+				)
 	`
 	annVerInst = `
 		LET n = (
