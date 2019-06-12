@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	validator "gopkg.in/go-playground/validator.v9"
 
@@ -325,25 +326,37 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 		return m, err
 	}
 	// create annotation document
-	bindVars := map[string]interface{}{
-		"@anno_collection":     ar.anno.annot.Name(),
-		"@anno_cv_collection":  ar.anno.term.Name(),
-		"@anno_ver_collection": ar.anno.ver.Name(),
-		"value":                attr.Value,
-		"editable_value":       attr.EditableValue,
-		"created_by":           attr.CreatedBy,
-		"entry_id":             m.EnrtyId,
-		"rank":                 m.Rank,
-		"version":              m.Version + 1,
-		"to":                   m.CvtId,
-		"prev":                 m.ID.String(),
+	bindParams := []interface{}{
+		ar.anno.annot.Name(),
+		ar.anno.term.Name(),
+		ar.anno.ver.Name(),
+		attr.Value,
+		attr.EditableValue,
+		attr.CreatedBy,
+		m.EnrtyId,
+		m.Rank,
+		m.Version + 1,
+		m.CvtId,
+		m.ID.String(),
 	}
-	um := &model.AnnoDoc{}
-	rupd, err := ar.database.DoRun(annVerInst, bindVars)
+	dbh := ar.database.Handler()
+	i, err := dbh.Transaction(
+		context.Background(),
+		annVerInstFn,
+		&driver.TransactionOptions{
+			WriteCollections: []string{
+				ar.anno.annot.Name(),
+				ar.anno.term.Name(),
+				ar.anno.ver.Name(),
+			},
+			Params:             bindParams,
+			MaxTransactionSize: 10000,
+		})
 	if err != nil {
-		return um, err
+		return m, err
 	}
-	if err := rupd.Read(um); err != nil {
+	um, err := convToModel(i)
+	if err != nil {
 		return um, err
 	}
 	um.Ontology = m.Ontology
@@ -378,26 +391,18 @@ func (ar *arangorepository) RemoveAnnotation(id string) error {
 
 func (ar *arangorepository) ListAnnotations(cursor int64, limit int64) ([]*model.AnnoDoc, error) {
 	var am []*model.AnnoDoc
-	var stmt string
-	if cursor == 0 { // no cursor so return first set of result
-		stmt = fmt.Sprintf(
-			annListQ,
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-			limit+1,
-		)
-	} else {
-		stmt = fmt.Sprintf(
-			annListWithCursorQ,
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-			cursor,
-			limit+1,
-		)
+	stmt := annListQ
+	bindVars := map[string]interface{}{
+		"@anno_collection":  ar.anno.annot.Name(),
+		"@cv_collection":    ar.onto.cv.Name(),
+		"anno_cvterm_graph": ar.anno.annotg.Name(),
+		"limit":             limit + 1,
 	}
-	rs, err := ar.database.Search(stmt)
+	if cursor != 0 { // with cursor
+		stmt = annListWithCursorQ
+		bindVars["cursor"] = cursor
+	}
+	rs, err := ar.database.SearchRows(stmt, bindVars)
 	if err != nil {
 		return am, err
 	}
@@ -796,4 +801,26 @@ func docToIds(ml []*model.AnnoDoc) []string {
 		s = append(s, m.Key)
 	}
 	return s
+}
+
+func convToModel(i interface{}) (*model.AnnoDoc, error) {
+	c := i.(map[string]interface{})
+	m := &model.AnnoDoc{
+		Value:         c["value"].(string),
+		EditableValue: c["editable_value"].(string),
+		CreatedBy:     c["created_by"].(string),
+		EnrtyId:       c["entry_id"].(string),
+		Rank:          int64(c["rank"].(float64)),
+		IsObsolete:    c["is_obsolete"].(bool),
+		Version:       int64(c["version"].(float64)),
+	}
+	dstr := c["created_at"].(string)
+	t, err := time.Parse(time.RFC3339, dstr)
+	if err != nil {
+		return m, err
+	}
+	m.CreatedAt = t
+	m.DocumentMeta.Key = c["_key"].(string)
+	m.DocumentMeta.Rev = c["_rev"].(string)
+	return m, nil
 }
