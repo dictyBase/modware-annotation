@@ -39,13 +39,13 @@ const (
 	`
 	annListQ = `
 		FOR a IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
-				FOR cv IN @@cv_collection
-					FILTER cvt.graph_id == cv._id
+			FOR v IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR c IN @@cv_collection
+					FILTER v.graph_id == c._id
 					COLLECT
-						entry_id = a.entry_id
-						label = cvt.label
-						ontology = cv.metadata.namespace
+						entry_id = a.entry_id,
+						ontology = c.metadata.namespace,
+						label = v.label
 						AGGREGATE version = MAX(a.version)
 				RETURN FIRST(
 					FOR ann IN @@anno_collection
@@ -230,13 +230,13 @@ const (
 	`
 	annListWithCursorQ = `
 		FOR a IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
-				FOR cv IN @@cv_collection
-					FILTER cvt.graph_id == cv._id
+			FOR v IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR c IN @@cv_collection
+					FILTER v.graph_id == c._id
 					COLLECT
-						entry_id = a.entry_id
-						label = cvt.label
-						ontology = cv.metadata.namespace
+						entry_id = a.entry_id,
+						ontology = c.metadata.namespace,
+						label = v.label
 						AGGREGATE version = MAX(a.version)
 				RETURN FIRST(
 					FOR ann IN @@anno_collection
@@ -267,9 +267,37 @@ const (
 					created_at: DATE_ISO8601(DATE_NOW())
 				   } IN @@anno_collection RETURN NEW
 		)
+		UPDATE @prev WITH { is_obsolete: true } IN @@anno_collection
 		INSERT { _from: n[0]._id, _to: @to } IN @@anno_cv_collection
 		INSERT { _from: @prev, _to: n[0]._id } IN @@anno_ver_collection
 		RETURN n[0]
+	`
+	annVerInstFn = `
+		function (params) {
+			var db = require('@arangodb').db
+			var d = new Date(Date.now())
+			var annoc = db._collection(params[0])
+			var n = annoc.save({
+				value: params[3],
+				editable_value: params[4],
+				created_by: params[5],
+				entry_id: params[6],
+				rank: params[7],
+				is_obsolete: false,
+				version: params[8],
+				created_at: d.toISOString()
+			}, { returnNew: true})
+			annoc.update(params[10],{ is_obsolete: true })
+			db._collection(params[1]).save({
+				_from: n._id,
+				_to: params[9]
+			})
+			db._collection(params[2]).save({
+				_from: params[10],
+				_to: n._id
+			})
+			return n.new
+		}
 	`
 	annGetQ = `
 		FOR ann IN %s
