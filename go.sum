@@ -26,6 +26,7 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/coreos/go-iptables v0.4.0/go.mod h1:/mVI274lEDI2ns62jHCDnCyBF9Iwsmekav8Dbxlm1MU=
+github.com/coreos/go-iptables v0.4.1/go.mod h1:/mVI274lEDI2ns62jHCDnCyBF9Iwsmekav8Dbxlm1MU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -34,6 +35,8 @@ github.com/dictyBase/apihelpers v0.0.0-20190516195304-f1adf8d9f18d h1:ei76DTgFMN
 github.com/dictyBase/apihelpers v0.0.0-20190516195304-f1adf8d9f18d/go.mod h1:9WgbGsASNIV484GDZ9SrfA98CKmmWExuSOcEs0NNAIM=
 github.com/dictyBase/arangomanager v0.0.0-20190530184338-a1110e8e3d1b h1:eFUC0/nJiZSyoj8TAoXquHG/z6bYqS/fQ9UG4PN96rA=
 github.com/dictyBase/arangomanager v0.0.0-20190530184338-a1110e8e3d1b/go.mod h1:ZKfo7JHpT9KfmJEJwZLhwoyCRBxIPW+IeX+13eUEIlg=
+github.com/dictyBase/arangomanager v0.0.0-20190611150137-a945fd12a72e h1:2NNf5qMrU8Bky3a921gMbhsPtOnkD5yoz1PQSWbfXLk=
+github.com/dictyBase/arangomanager v0.0.0-20190611150137-a945fd12a72e/go.mod h1:ZKfo7JHpT9KfmJEJwZLhwoyCRBxIPW+IeX+13eUEIlg=
 github.com/dictyBase/go-genproto v0.0.0-20190419013406-7b67707bd07a h1:qGdhBfXCqQBzxfIGP1bnkVC5NrW+hr3+7HC04QIXjBE=
 github.com/dictyBase/go-genproto v0.0.0-20190419013406-7b67707bd07a/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
 github.com/dictyBase/go-genproto v0.0.0-20190604204343-b736a45b1756 h1:N5cYGUXxIWnKGKjPwUZLaCp0UVEfwfaDA7lkM/h+5OA=
@@ -43,10 +46,15 @@ github.com/dictyBase/go-genproto v0.0.0-20190608110615-02f4ede4f72a/go.mod h1:uv
 github.com/dictyBase/go-middlewares v0.0.0-20180704154106-0fd6848b3e92/go.mod h1:DPbz2QP7K7kHh9pCuStlQ6qDEwYyUiWNS6WGCdgb3Nk=
 github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85 h1:6XQA5bdGkDIg8LleZYWzYj9sLENmXzfknbgvQWPpEA4=
 github.com/dictyBase/go-obograph v0.0.0-20181218160047-ae86816bde85/go.mod h1:WH6g1pCASh/lU4l1hLfIcav5WkGhLfLO3C461HpRs8Q=
+github.com/dictyBase/go-obograph v0.0.0-20190610204508-9d51ccaa43a2 h1:At82WlMLavkFqSgj/9qJM6fbYlRaHh4r5eqYMOLE0Is=
+github.com/dictyBase/go-obograph v0.0.0-20190610204508-9d51ccaa43a2/go.mod h1:WH6g1pCASh/lU4l1hLfIcav5WkGhLfLO3C461HpRs8Q=
+github.com/dictyBase/go-obograph v0.0.0-20190610204951-a63b8ecfb278 h1:XJRNDj1B2DKkfbpaai+lQBwlbevjF4c0QWayW0GVsWA=
+github.com/dictyBase/go-obograph v0.0.0-20190610204951-a63b8ecfb278/go.mod h1:WH6g1pCASh/lU4l1hLfIcav5WkGhLfLO3C461HpRs8Q=
 github.com/docker/distribution v2.7.1+incompatible h1:a5mlkVzth6W5A4fOsS3D2EO5BUmsJpcB+cRlLU7cSug=
 github.com/docker/distribution v2.7.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
 github.com/docker/docker v1.13.1 h1:5VBhsO6ckUxB0A8CE5LlUJdXzik9cbEbBTQ/ggeml7M=
 github.com/docker/docker v1.13.1/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
+github.com/docker/engine v0.0.0-20180816081446-320063a2ad06 h1:CcxlLWAS/9b46iqHDTBlALJZF9atXVNjeymdCNrUfnY=
 github.com/docker/engine v0.0.0-20180816081446-320063a2ad06/go.mod h1:3CPr2caMgTHxxIAZgEMd3uLYPDlRvPqCpyeRf6ncPcY=
 github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=
 github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
