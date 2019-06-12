@@ -38,17 +38,18 @@ const (
 		RETURN n[0]
 	`
 	annListQ = `
-		FOR ann IN %s
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
-				FOR cv IN %s
+		FOR ann IN @@anno_collection
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
 					SORT ann.created_at DESC
-					LIMIT %d
-					RETURN MERGE(
-						ann,
-						{ tag: cvt.label, ontology: cv.metadata.namespace }
-					)
+					LIMIT @limit
+						RETURN MERGE(
+							ann,
+							{ tag: cvt.label, 
+							  ontology: cv.metadata.namespace 
+							})
 	`
 	annGroupInst = `
 		INSERT {
@@ -217,18 +218,18 @@ const (
 			}
 	`
 	annListWithCursorQ = `
-		FOR ann IN %s
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
-				FOR cv IN %s
+		FOR ann IN @@anno_collection
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
-					FILTER ann.created_at <= DATE_ISO8601(%d)
+					FILTER ann.created_at <= DATE_ISO8601(@cursor)
 					SORT ann.created_at DESC
-					LIMIT %d
-					RETURN MERGE(
-						ann,
-						{ tag: cvt.label, ontology:cv.metadata.namespace }
-					)
+					LIMIT @limit
+						RETURN MERGE(
+							ann,
+							{ tag: cvt.label, ontology: cv.metadata.namespace }
+						)
 	`
 	annVerInst = `
 		LET n = (
@@ -243,9 +244,37 @@ const (
 					created_at: DATE_ISO8601(DATE_NOW())
 				   } IN @@anno_collection RETURN NEW
 		)
+		UPDATE @prev WITH { is_obsolete: true } IN @@anno_collection
 		INSERT { _from: n[0]._id, _to: @to } IN @@anno_cv_collection
 		INSERT { _from: @prev, _to: n[0]._id } IN @@anno_ver_collection
 		RETURN n[0]
+	`
+	annVerInstFn = `
+		function (params) {
+			var db = require('@arangodb').db
+			var d = new Date(Date.now())
+			var annoc = db._collection(params[0])
+			var n = annoc.save({
+				value: params[3],
+				editable_value: params[4],
+				created_by: params[5],
+				entry_id: params[6],
+				rank: params[7],
+				is_obsolete: false,
+				version: params[8],
+				created_at: d.toISOString()
+			}, { returnNew: true})
+			annoc.update(params[10],{ is_obsolete: true })
+			db._collection(params[1]).save({
+				_from: n._id,
+				_to: params[9]
+			})
+			db._collection(params[2]).save({
+				_from: params[10],
+				_to: n._id
+			})
+			return n.new
+		}
 	`
 	annGetQ = `
 		FOR ann IN %s
