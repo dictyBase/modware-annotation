@@ -1,7 +1,6 @@
 package arangodb
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math/rand"
@@ -12,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/dictyBase/arangomanager/testarango"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/assert"
 
@@ -21,7 +20,6 @@ import (
 	araobo "github.com/dictyBase/go-obograph/storage/arangodb"
 	"github.com/dictyBase/modware-annotation/internal/model"
 
-	"github.com/dictyBase/apihelpers/aphdocker"
 	manager "github.com/dictyBase/arangomanager"
 )
 
@@ -191,51 +189,24 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 }
 
 func TestMain(m *testing.M) {
-	adocker, err := aphdocker.NewArangoDockerWithImage("arangodb:3.3.15")
+	ta, err := testarango.NewTestArangoFromEnv(true)
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		log.Fatalf("unable to construct new TestArango instance %s", err)
 	}
-	aresource, err := adocker.Run()
+	dbh, err := ta.DB(ta.Database)
 	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		log.Fatalf("unable to get database %s", err)
 	}
-	client, err := adocker.RetryConnection()
-	if err != nil {
-		log.Fatalf("unable to get client connection %s", err)
-	}
-	adb = aphdocker.RandString(6)
-	dbh, err := client.CreateDatabase(context.Background(), adb, &driver.CreateDatabaseOptions{})
-	if err != nil {
-		log.Fatalf("could not create arangodb database %s %s\n", adb, err)
-	}
-	cp := getCollectionParams()
-	_, err = dbh.CreateCollection(context.Background(), cp.Term, &driver.CreateCollectionOptions{})
-	if err != nil {
-		log.Fatalf("unable to create collection %s %s", cp.Term, err)
-	}
-	_, err = dbh.CreateCollection(context.Background(), cp.GraphInfo, &driver.CreateCollectionOptions{})
-	if err != nil {
-		log.Fatalf("unable to create collection %s %s", cp.GraphInfo, err)
-	}
-	_, err = dbh.CreateCollection(
-		context.Background(),
-		cp.Relationship,
-		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
-	)
-	if err != nil {
-		log.Fatalf("unable to create edge collection %s %s", cp.Relationship, err)
-	}
-	auser = adocker.GetUser()
-	apass = adocker.GetPassword()
-	ahost = adocker.GetIP()
-	aport = adocker.GetPort()
+	auser = ta.User
+	apass = ta.Pass
+	ahost = ta.Host
+	aport = strconv.Itoa(ta.Port)
+	adb = ta.Database
 	if err := loadAnnotationObo(); err != nil {
 		log.Fatalf("error in loading test annotation obograph %s", err)
 	}
 	code := m.Run()
-	if err = adocker.Purge(aresource); err != nil {
-		log.Fatalf("unable to remove arangodb container %s\n", err)
-	}
+	dbh.Drop()
 	os.Exit(code)
 }
 

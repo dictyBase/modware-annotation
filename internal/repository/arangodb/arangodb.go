@@ -395,7 +395,7 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64) ([]*model
 	bindVars := map[string]interface{}{
 		"@anno_collection":  ar.anno.annot.Name(),
 		"@cv_collection":    ar.onto.cv.Name(),
-		"anno_cvterm_graph": fmt.Sprintf("'%s'", ar.anno.annotg.Name()),
+		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"limit":             limit + 1,
 	}
 	if cursor != 0 { // with cursor
