@@ -6,7 +6,7 @@ require (
 	github.com/dictyBase/apihelpers v0.0.0-20190516195304-f1adf8d9f18d
 	github.com/dictyBase/arangomanager v0.0.0-20190611150137-a945fd12a72e
 	github.com/dictyBase/go-genproto v0.0.0-20190608110615-02f4ede4f72a
-	github.com/dictyBase/go-obograph v0.0.0-20190610204951-a63b8ecfb278
+	github.com/dictyBase/go-obograph v0.0.0-20190724233317-feab79fdbe15
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/golang/protobuf v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
