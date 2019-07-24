@@ -44,6 +44,7 @@ func RunServer(c *cli.Context) error {
 		AnnoVersion:  c.String("annover-collection"),
 		AnnoTagGraph: c.String("annoterm-graph"),
 		AnnoVerGraph: c.String("annover-graph"),
+		AnnoGroup:    c.String("annogroup-collection"),
 	}
 	anrepo, err := arangodb.NewTaggedAnnotationRepo(connP, collP)
 	if err != nil {

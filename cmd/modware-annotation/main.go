@@ -95,6 +95,11 @@ func getServerFlags() []cli.Flag {
 				Value: "annotation_version",
 			},
 			cli.StringFlag{
+				Name:  "annogroup-collection",
+				Usage: "arangodb collection for storing annotation group",
+				Value: "annotation_group",
+			},
+			cli.StringFlag{
 				Name:  "annoterm-graph",
 				Usage: "arangodb named graph for managing relations between annotation and ontology term",
 				Value: "annotation_tag",
