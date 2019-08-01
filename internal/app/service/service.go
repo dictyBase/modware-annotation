@@ -3,13 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"strconv"
+	"time"
 
 	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/dictyBase/apihelpers/aphgrpc"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
@@ -242,7 +241,7 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 	gc.Data = gcdata[:len(gcdata)-1]
 	gc.Meta = &annotation.Meta{
 		Limit:      limit,
-		NextCursor: genNextCursorVal(gcdata[len(gcdata)-1].Group.CreatedAt),
+		NextCursor: genNextCursorVal(mgc[len(mgc)-1].CreatedAt),
 	}
 	return gc, nil
 }
@@ -295,7 +294,7 @@ func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.L
 	tac.Data = tcdata[:len(tcdata)-1]
 	tac.Meta = &annotation.Meta{
 		Limit:      limit,
-		NextCursor: genNextCursorVal(tcdata[len(tcdata)-1].Attributes.CreatedAt),
+		NextCursor: genNextCursorVal(mc[len(mc)-1].CreatedAt),
 	}
 	return tac, nil
 }
@@ -403,11 +402,8 @@ func (s *AnnotationService) getGroup(mg *model.AnnoGroup) *annotation.TaggedAnno
 	return g
 }
 
-func genNextCursorVal(t *timestamp.Timestamp) int64 {
-	tint, _ := strconv.ParseInt(
-		fmt.Sprintf("%d%d", t.GetSeconds(), t.GetNanos()),
-		10,
-		64,
-	)
-	return tint / 1000000
+// genNextCursorVal converts to epoch(https://en.wikipedia.org/wiki/Unix_time)
+// in milliseconds
+func genNextCursorVal(t time.Time) int64 {
+	return t.UnixNano() / 1000000
 }
