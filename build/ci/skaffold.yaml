@@ -11,7 +11,7 @@ build:
             buildContext:
               localDir: {}
             cache: 
-                repo: dictybase/modanno-cache
+                repo: dictybase/modware-annotation-cache
     cluster:
         namespace: kaniko
         pullSecretName: docker-secret
