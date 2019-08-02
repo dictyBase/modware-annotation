@@ -9,6 +9,7 @@ github.com/arangodb/go-driver v0.0.0-20181206080103-b1a864427d13 h1:i8EIpjb3Fe+C
 github.com/arangodb/go-driver v0.0.0-20181206080103-b1a864427d13/go.mod h1:NcDoR4f0FdFia/QizCc+B69DggPGLP3nCKg5IUtudm0=
 github.com/arangodb/go-driver v0.0.0-20190514134119-4cd2eb482d16 h1:D0+YgwcHnePwiKuV1lOzJLPZb6Tw8hHK2qKSQGqN28s=
 github.com/arangodb/go-driver v0.0.0-20190514134119-4cd2eb482d16/go.mod h1:5nMxlcbN6PHA05uGUw2EH6PIQHvdRVTrg/S/GM8jG4w=
+github.com/arangodb/go-driver v0.0.0-20190724115106-663f655c9ebe h1:q3w+bO7eVEHQwEuFRkQePXBFtEtKU5SMbQah6eCHJLo=
 github.com/arangodb/go-driver v0.0.0-20190724115106-663f655c9ebe/go.mod h1:5nMxlcbN6PHA05uGUw2EH6PIQHvdRVTrg/S/GM8jG4w=
 github.com/arangodb/go-velocypack v0.0.0-20180928134037-d177e3455691 h1:62SGGAvrKTXOrewra74du0H98Yg/eufQ/tO3RoIP8Bs=
 github.com/arangodb/go-velocypack v0.0.0-20180928134037-d177e3455691/go.mod h1:7QCjpWXdB49P6fql1CxmsBWd8z/T4L4pqFLTnc10xNM=
@@ -95,6 +96,7 @@ github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJS
 github.com/jinzhu/now v0.0.0-20181116074157-8ec929ed50c3/go.mod h1:oHTiXerJ20+SfYcrdlBO7rzZRJWGwSTQ0iUY2jI6Gfc=
 github.com/jinzhu/now v1.0.0 h1:6WV8LvwPpDhKjo5U9O6b4+xdG/jTXNPwlDme/MTo8Ns=
 github.com/jinzhu/now v1.0.0/go.mod h1:oHTiXerJ20+SfYcrdlBO7rzZRJWGwSTQ0iUY2jI6Gfc=
+github.com/jinzhu/now v1.0.1 h1:HjfetcXq097iXP0uoPCdnM4Efp5/9MsM0/M+XOTeR3M=
 github.com/jinzhu/now v1.0.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
 github.com/jmoiron/sqlx v1.2.0 h1:41Ip0zITnmWNR/vHV+S4m+VoUivnWY5E4OJfLZjCJMA=
 github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
@@ -221,6 +223,7 @@ golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20190422165155-953cdadca894/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190516110030-61b9204099cb h1:k07iPOt0d6nEnwXF+kHB+iEg+WSuKe/SOQuFM2QoD+E=
 golang.org/x/sys v0.0.0-20190516110030-61b9204099cb/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 h1:LepdCS8Gf/MVejFIt8lsiexZATdoGVyp5bcyS+rYoUI=
 golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
@@ -252,6 +255,7 @@ gopkg.in/go-playground/validator.v9 v9.28.0 h1:6pzvnzx1RWaaQiAmv6e1DvCFULRaz5cKo
 gopkg.in/go-playground/validator.v9 v9.28.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
 gopkg.in/go-playground/validator.v9 v9.29.0 h1:5ofssLNYgAA/inWn6rTZ4juWpRJUwEnXc1LG2IeXwgQ=
 gopkg.in/go-playground/validator.v9 v9.29.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
+gopkg.in/go-playground/validator.v9 v9.29.1 h1:SvGtYmN60a5CVKTOzMSyfzWDeZRxRuGvRQyEAKbw1xc=
 gopkg.in/go-playground/validator.v9 v9.29.1/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
 gopkg.in/mgutz/dat.v2 v2.0.0-20171004160617-d76e4f81c4ef h1:qD+M6IiDd7s+KtfGDOGWVnk1MgeDs153K00sSLTmpTI=
 gopkg.in/mgutz/dat.v2 v2.0.0-20171004160617-d76e4f81c4ef/go.mod h1:5gQ9u/67w+i03GWDRWDw1l4kDMRc5Jx0CRMxMPy+oSg=
