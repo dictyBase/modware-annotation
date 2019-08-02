@@ -90,10 +90,10 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 	}
 	m, err := s.repo.GetAnnotationByEntry(r)
 	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return ta, aphgrpc.HandleNotFoundError(ctx, err)
+		}
 		return ta, aphgrpc.HandleGetError(ctx, err)
-	}
-	if m.NotFound {
-		return ta, aphgrpc.HandleNotFoundError(ctx, err)
 	}
 	ta.Data = &annotation.TaggedAnnotation_Data{
 		Type: s.GetResourceName(),
