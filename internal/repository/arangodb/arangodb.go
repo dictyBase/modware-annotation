@@ -250,7 +250,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, fmt.Errorf("ontology %s and tag %s does not exist %s", attr.Ontology, attr.Tag, err)
+		return m, fmt.Errorf("ontology %s and tag %s does not exist", attr.Ontology, attr.Tag)
 	}
 	var cvtid string
 	if err := r.Read(&cvtid); err != nil {
