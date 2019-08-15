@@ -12,7 +12,7 @@ type TaggedAnnotationRepository interface {
 	GetAnnotationByEntry(req *annotation.EntryAnnotationRequest) (*model.AnnoDoc, error)
 	AddAnnotation(na *annotation.NewTaggedAnnotation) (*model.AnnoDoc, error)
 	EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error)
-	RemoveAnnotation(id string) error
+	RemoveAnnotation(id string, purge bool) error
 	ListAnnotations(cursor int64, limit int64) ([]*model.AnnoDoc, error)
 	ClearAnnotations() error
 	Clear() error

@@ -364,17 +364,22 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 	return um, nil
 }
 
-func (ar *arangorepository) RemoveAnnotation(id string) error {
+func (ar *arangorepository) RemoveAnnotation(id string, purge bool) error {
 	m := &model.AnnoDoc{}
 	_, err := ar.anno.annot.ReadDocument(context.Background(), id, m)
 	if err != nil {
 		if driver.IsNotFound(err) {
-			return fmt.Errorf("annotation record with id %s does not exist %s", id, err)
+			return &repository.AnnoNotFound{id}
 		}
 		return err
 	}
 	if m.IsObsolete {
 		return fmt.Errorf("annotation with id %s has already been obsolete", m.Key)
+	}
+	if purge {
+		if _, err := ar.anno.annot.RemoveDocument(context.Background(), m.Key); err != nil {
+			return fmt.Errorf("unable to purge annotation with id %s %s", m.Key, err)
+		}
 	}
 	_, err = ar.anno.annot.UpdateDocument(
 		context.Background(),
@@ -384,7 +389,7 @@ func (ar *arangorepository) RemoveAnnotation(id string) error {
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("unable to remove annotation with id %s", m.Key)
+		return fmt.Errorf("unable to remove annotation with id %s %s", m.Key, err)
 	}
 	return nil
 }
