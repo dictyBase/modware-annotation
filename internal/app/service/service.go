@@ -59,6 +59,9 @@ func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.Ann
 	}
 	m, err := s.repo.GetAnnotationById(r.Id)
 	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return ta, aphgrpc.HandleNotFoundError(ctx, err)
+		}
 		return ta, aphgrpc.HandleGetError(ctx, err)
 	}
 	if m.NotFound {
@@ -363,12 +366,15 @@ func (s *AnnotationService) UpdateAnnotation(ctx context.Context, r *annotation.
 	return ta, nil
 }
 
-func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.AnnotationId) (*empty.Empty, error) {
+func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.DeleteAnnotationRequest) (*empty.Empty, error) {
 	e := &empty.Empty{}
 	if err := r.Validate(); err != nil {
 		return e, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	if err := s.repo.RemoveAnnotation(r.Id); err != nil {
+	if err := s.repo.RemoveAnnotation(r.EntryId, r.Purge); err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return e, aphgrpc.HandleNotFoundError(ctx, err)
+		}
 		return e, aphgrpc.HandleDeleteError(ctx, err)
 	}
 	return e, nil
