@@ -380,6 +380,7 @@ func (ar *arangorepository) RemoveAnnotation(id string, purge bool) error {
 		if _, err := ar.anno.annot.RemoveDocument(context.Background(), m.Key); err != nil {
 			return fmt.Errorf("unable to purge annotation with id %s %s", m.Key, err)
 		}
+		return nil
 	}
 	_, err = ar.anno.annot.UpdateDocument(
 		context.Background(),

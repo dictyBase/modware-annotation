@@ -421,7 +421,7 @@ func TestRemoveAnnotation(t *testing.T) {
 			err,
 		)
 	}
-	err = anrepo.RemoveAnnotation(m.Key)
+	err = anrepo.RemoveAnnotation(m.Key, true)
 	if err != nil {
 		t.Fatalf(
 			"error in removing annotation %s with entry id %s",
@@ -429,7 +429,7 @@ func TestRemoveAnnotation(t *testing.T) {
 			err,
 		)
 	}
-	err = anrepo.RemoveAnnotation(m2.Key)
+	err = anrepo.RemoveAnnotation(m2.Key, false)
 	if err != nil {
 		t.Fatalf(
 			"error in removing annotation %s with entry id %s",
@@ -437,7 +437,7 @@ func TestRemoveAnnotation(t *testing.T) {
 			err,
 		)
 	}
-	err = anrepo.RemoveAnnotation(m2.Key)
+	err = anrepo.RemoveAnnotation(m2.Key, false)
 	assert := assert.New(t)
 	assert.True(assert.Error(err), "should return error")
 	assert.Contains(err.Error(), "obsolete", "should contain obsolete message")
