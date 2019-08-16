@@ -6,3 +6,6 @@ server supports gRPC protocol for data exchange.
 ## gRPC
 The protocol buffer definitions and service apis are documented
 [here](https://github.com/dictyBase/dictybaseapis/blob/master/dictybase/annotation/annotation.proto).
+
+# Developers
+<a href="https://sourcerer.io/cybersiddhu"><img src="https://sourcerer.io/assets/avatar/cybersiddhu" height="80px" alt="Sourcerer"></a>
