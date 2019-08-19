@@ -13,7 +13,9 @@ type TaggedAnnotationRepository interface {
 	AddAnnotation(na *annotation.NewTaggedAnnotation) (*model.AnnoDoc, error)
 	EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error)
 	RemoveAnnotation(id string, purge bool) error
-	ListAnnotations(cursor int64, limit int64) ([]*model.AnnoDoc, error)
+	// ListAnnotationGroup provides a paginated list of annotation along
+	// with optional filtering
+	ListAnnotations(cursor int64, limit int64, filter string) ([]*model.AnnoDoc, error)
 	ClearAnnotations() error
 	Clear() error
 	// AddAnnotationGroup creates a new annotation group
