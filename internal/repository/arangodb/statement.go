@@ -72,7 +72,6 @@ const (
 				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
-					FILTER @filter
 					FILTER ann.created_at <= DATE_ISO8601(@cursor)
 					SORT ann.created_at DESC
 					LIMIT @limit
@@ -87,6 +86,7 @@ const (
 				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
+					FILTER @filter
 					FILTER ann.created_at <= DATE_ISO8601(@cursor)
 					SORT ann.created_at DESC
 					LIMIT @limit

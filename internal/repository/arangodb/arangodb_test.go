@@ -497,7 +497,7 @@ func TestListAnnotations(t *testing.T) {
 			t.Fatalf("error in adding annotation with entry id %s %s", anno.Data.Attributes.EntryId, err)
 		}
 	}
-	ml, err := anrepo.ListAnnotations(0, 4)
+	ml, err := anrepo.ListAnnotations(0, 4, "")
 	if err != nil {
 		t.Fatalf("error in fetching annotation list %s", err)
 	}
@@ -514,6 +514,7 @@ func TestListAnnotations(t *testing.T) {
 	ml2, err := anrepo.ListAnnotations(
 		toTimestamp(ml[len(ml)-1].CreatedAt),
 		4,
+		"",
 	)
 	if err != nil {
 		t.Fatalf("error in fetching annotation list %s", err)
@@ -524,6 +525,7 @@ func TestListAnnotations(t *testing.T) {
 	ml3, err := anrepo.ListAnnotations(
 		toTimestamp(ml2[len(ml2)-1].CreatedAt),
 		4,
+		"",
 	)
 	assert.Len(ml3, 5, "should have five annotations")
 	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
@@ -531,6 +533,7 @@ func TestListAnnotations(t *testing.T) {
 	ml4, err := anrepo.ListAnnotations(
 		toTimestamp(ml3[len(ml3)-1].CreatedAt),
 		4,
+		"",
 	)
 	assert.Len(ml4, 3, "should have three annotations")
 	assert.Exactly(ml3[len(ml3)-1], ml4[0], "should have identical model objects")
