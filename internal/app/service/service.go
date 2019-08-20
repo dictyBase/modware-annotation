@@ -251,24 +251,35 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 
 func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.ListParameters) (*annotation.TaggedAnnotationCollection, error) {
 	tac := &annotation.TaggedAnnotationCollection{}
-	if len(r.Filter) > 0 {
-		return tac,
-			aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("filter parameter is not yet implemented"),
-			)
-	}
 	// default value of limit
 	limit := int64(10)
 	if r.Limit > 0 {
 		limit = r.Limit
 	}
-	mc, err := s.repo.ListAnnotations(r.Cursor, limit)
-	if err != nil {
-		return tac, aphgrpc.HandleGetError(ctx, err)
+	var astmt string
+	if len(r.Filter) > 0 {
+		p, err := query.ParseFilterString(r.Filter)
+		if err != nil {
+			return tac, aphgrpc.HandleInvalidParamError(
+				ctx,
+				fmt.Errorf("error in parsing filter string"),
+			)
+		}
+		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap, p)
+		if err != nil {
+			return tac, aphgrpc.HandleInvalidParamError(
+				ctx,
+				fmt.Errorf("error in generating aql statement"),
+			)
+		}
+		astmt = q
 	}
-	if len(mc) == 0 {
-		return tac, aphgrpc.HandleNotFoundError(ctx, err)
+	mc, err := s.repo.ListAnnotations(r.Cursor, limit, astmt)
+	if err != nil {
+		if repository.IsAnnotationListNotFound(err) {
+			return tac, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return tac, aphgrpc.HandleGetError(ctx, err)
 	}
 	var tcdata []*annotation.TaggedAnnotationCollection_Data
 	for _, m := range mc {
