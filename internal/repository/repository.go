@@ -8,6 +8,7 @@ import (
 // TaggedAnnotationRepository is an interface for accessing annotation
 // data from its data sources
 type TaggedAnnotationRepository interface {
+	// GetAnnotationById retrieves an annotation
 	GetAnnotationById(id string) (*model.AnnoDoc, error)
 	GetAnnotationByEntry(req *annotation.EntryAnnotationRequest) (*model.AnnoDoc, error)
 	AddAnnotation(na *annotation.NewTaggedAnnotation) (*model.AnnoDoc, error)
