@@ -51,6 +51,50 @@ const (
 							  ontology: cv.metadata.namespace 
 							})
 	`
+	annListFilterQ = `
+		FOR ann IN @@anno_collection
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
+					FILTER ann.is_obsolete == false
+					FILTER cvt.graph_id == cv._id
+					FILTER @filter
+					SORT ann.created_at DESC
+					LIMIT @limit
+						RETURN MERGE(
+							ann,
+							{ tag: cvt.label, 
+							  ontology: cv.metadata.namespace 
+							})
+	`
+	annListWithCursorQ = `
+		FOR ann IN @@anno_collection
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
+					FILTER ann.is_obsolete == false
+					FILTER cvt.graph_id == cv._id
+					FILTER @filter
+					FILTER ann.created_at <= DATE_ISO8601(@cursor)
+					SORT ann.created_at DESC
+					LIMIT @limit
+						RETURN MERGE(
+							ann,
+							{ tag: cvt.label, ontology: cv.metadata.namespace }
+						)
+	`
+	annListFilterWithCursorQ = `
+		FOR ann IN @@anno_collection
+			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
+					FILTER ann.is_obsolete == false
+					FILTER cvt.graph_id == cv._id
+					FILTER ann.created_at <= DATE_ISO8601(@cursor)
+					SORT ann.created_at DESC
+					LIMIT @limit
+						RETURN MERGE(
+							ann,
+							{ tag: cvt.label, ontology: cv.metadata.namespace }
+						)
+	`
 	annGroupInst = `
 		INSERT {
 				created_at: DATE_ISO8601(DATE_NOW()),
@@ -216,20 +260,6 @@ const (
 				group_id: ag._key,
 				annotations: annotations
 			}
-	`
-	annListWithCursorQ = `
-		FOR ann IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
-				FOR cv IN @@cv_collection
-					FILTER ann.is_obsolete == false
-					FILTER cvt.graph_id == cv._id
-					FILTER ann.created_at <= DATE_ISO8601(@cursor)
-					SORT ann.created_at DESC
-					LIMIT @limit
-						RETURN MERGE(
-							ann,
-							{ tag: cvt.label, ontology: cv.metadata.namespace }
-						)
 	`
 	annVerInst = `
 		LET n = (
