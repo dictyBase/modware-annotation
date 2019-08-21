@@ -405,11 +405,10 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 		"limit":             limit + 1,
 	}
 	if len(filter) > 0 { // filter string is present
-		bindVars["filter"] = filter
 		if cursor == 0 { // no cursor, return first set of result
-			stmt = annListFilterQ
+			stmt = fmt.Sprintf(annListFilterQ, filter)
 		} else {
-			stmt = annListFilterWithCursorQ
+			stmt = fmt.Sprintf(annListFilterWithCursorQ, filter)
 			bindVars["cursor"] = cursor
 		}
 	} else {

@@ -40,6 +40,8 @@ var tags = []string{
 	"note",
 }
 
+var ddbg = []string{"DDB_G0286429", "DDB_G0294491"}
+
 func toTimestamp(t time.Time) int64 {
 	return t.UnixNano() / 1000000
 }
@@ -161,6 +163,45 @@ func newTestTaggedAnnotation() *annotation.NewTaggedAnnotation {
 			},
 		},
 	}
+}
+
+func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAnnotation {
+	var nal []*annotation.NewTaggedAnnotation
+	value := fmt.Sprintf("cool gene %s", tags[0])
+	for z := 0; z < num/2; z++ {
+		nal = append(nal, &annotation.NewTaggedAnnotation{
+			Data: &annotation.NewTaggedAnnotation_Data{
+				Type: "annotations",
+				Attributes: &annotation.NewTaggedAnnotationAttributes{
+					Value:         value,
+					EditableValue: value,
+					CreatedBy:     "sidd@gmail.com",
+					Tag:           tags[0],
+					Ontology:      "dicty_annotation",
+					EntryId:       ddbg[0],
+					Rank:          int64(z),
+				},
+			},
+		})
+	}
+	value = fmt.Sprintf("cool gene %s", tags[1])
+	for y := num / 2; y < num; y++ {
+		nal = append(nal, &annotation.NewTaggedAnnotation{
+			Data: &annotation.NewTaggedAnnotation_Data{
+				Type: "annotations",
+				Attributes: &annotation.NewTaggedAnnotationAttributes{
+					Value:         value,
+					EditableValue: value,
+					CreatedBy:     "basu@gmail.com",
+					Tag:           tags[1],
+					Ontology:      "dicty_annotation",
+					EntryId:       ddbg[1],
+					Rank:          int64(y),
+				},
+			},
+		})
+	}
+	return nal
 }
 
 func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
@@ -482,6 +523,85 @@ func TestEditAnnotation(t *testing.T) {
 	assert.NotEqual(ua.Data.Id, um.Key, "identifier should not match")
 	assert.Equal(ua.Data.Attributes.Value, um.Value, "should matches the value")
 	assert.Equal(ua.Data.Attributes.CreatedBy, um.CreatedBy, "should matches created by")
+}
+
+func TestListAnnotationsWithFilter(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsListForFiltering(20)
+	for _, anno := range tal {
+		_, err := anrepo.AddAnnotation(anno)
+		if err != nil {
+			t.Fatalf("error in adding annotation with entry id %s %s", anno.Data.Attributes.EntryId, err)
+		}
+	}
+	filterOne := `FILTER ann.entry_id == 'DDB_G0286429'
+				  AND cvt.label == 'private note'
+				  AND cv.metadata.namespace == 'dicty_annotation'
+	`
+	ml, err := anrepo.ListAnnotations(0, 4, filterOne)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
+	assert := assert.New(t)
+	assert.Len(ml, 5, "should have 5 annotations")
+	for _, m := range ml {
+		assert.Equal(m.CreatedBy, "sidd@gmail.com", "should match created by")
+		assert.Equal(m.Tag, tags[0], "should match the tag")
+		assert.Equal(m.EnrtyId, ddbg[0], "should match the entry id")
+	}
+	ml2, err := anrepo.ListAnnotations(
+		toTimestamp(ml[len(ml)-1].CreatedAt),
+		4,
+		filterOne,
+	)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
+	assert.Len(ml2, 5, "should have five annotations")
+	assert.Exactly(ml[len(ml)-1], ml2[0], "should have identical model objects")
+
+	ml3, err := anrepo.ListAnnotations(
+		toTimestamp(ml2[len(ml2)-1].CreatedAt),
+		4,
+		filterOne,
+	)
+	assert.Len(ml3, 2, "should have two annotations")
+	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
+
+	filterTwo := `FILTER ann.entry_id == 'DDB_G0294491'
+				  AND cvt.label == 'name description'
+				  AND cv.metadata.namespace == 'dicty_annotation'
+	`
+	ml4, err := anrepo.ListAnnotations(0, 6, filterTwo)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
+	assert.Len(ml4, 7, "should have 7 annotations")
+	for _, m := range ml4 {
+		assert.Equal(m.CreatedBy, "basu@gmail.com", "should match created by")
+		assert.Equal(m.Tag, tags[1], "should match the tag")
+		assert.Equal(m.EnrtyId, ddbg[1], "should match the entry id")
+	}
+	ml5, err := anrepo.ListAnnotations(
+		toTimestamp(ml4[len(ml4)-1].CreatedAt),
+		4,
+		filterTwo,
+	)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
+	assert.Len(ml5, 4, "should have four annotations")
+	assert.Exactly(ml4[len(ml4)-1], ml5[0], "should have identical model objects")
+
+	testModelListSort(ml, t)
+	testModelListSort(ml2, t)
+	testModelListSort(ml3, t)
+	testModelListSort(ml4, t)
+	testModelListSort(ml5, t)
 }
 
 func TestListAnnotations(t *testing.T) {
