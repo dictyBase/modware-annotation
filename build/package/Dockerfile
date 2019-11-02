@@ -1,5 +1,6 @@
 FROM golang:1.11.13-alpine3.10
 LABEL maintainer="Siddhartha Basu <siddhartha-basu@northwestern.edu>"
+ENV GOPROXY https://proxy.golang.org
 RUN apk add --no-cache git build-base
 RUN mkdir -p /modware-annotation
 WORKDIR /modware-annotation
