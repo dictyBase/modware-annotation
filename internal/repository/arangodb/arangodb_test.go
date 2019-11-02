@@ -823,6 +823,94 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	)
 }
 
+func TestListAnnotationGroupWithFilter(t *testing.T) {
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	if err != nil {
+		t.Fatalf("cannot connect to annotation repository %s", err)
+	}
+	defer anrepo.ClearAnnotations()
+	tal := newTestTaggedAnnotationsListForFiltering(20)
+	var ml []*model.AnnoDoc
+	for _, ann := range tal {
+		m, err := anrepo.AddAnnotation(ann)
+		if err != nil {
+			t.Fatalf("error in adding annotation %s", err)
+		}
+		ml = append(ml, m)
+	}
+	j := 5
+	for i := 0; j <= len(ml); i += 5 {
+		ids := testModelMaptoId(ml[i:j], model2IdCallback)
+		_, err := anrepo.AddAnnotationGroup(ids...)
+		if err != nil {
+			t.Fatalf("error in adding annotation group %s", err)
+		}
+		j += 5
+	}
+	if err != nil {
+		t.Fatalf("error in adding annotation group %s", err)
+	}
+
+	filterOne := `FILTER ann.entry_id == 'DDB_G0286429'
+				  AND cvt.label == 'private note'
+				  AND cv.metadata.namespace == 'dicty_annotation'
+	`
+	egl, err := anrepo.ListAnnotationGroup(0, 10, filterOne)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert := assert.New(t)
+	assert.Len(egl, 2, "should have 2 groups")
+	for _, g := range egl {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+		for _, d := range g.AnnoDocs {
+			assert.Equal(d.Tag, tags[0], "should have "+tags[0]+" as the tag")
+			assert.Equal(d.CreatedBy, "sidd@gmail.com", "should be created by sidd@gmail.com")
+			assert.Equal(d.Ontology, "dicty_annotation", "should have dicty_annotation ontology")
+			assert.Equal(d.EnrtyId, ddbg[0], "should have "+ddbg[0]+" as entry id")
+		}
+	}
+	filterTwo := `FILTER ann.entry_id == 'DDB_G0294491'
+				  AND cvt.label == 'name description'
+				  AND cv.metadata.namespace == 'dicty_annotation'
+	`
+	egl2, err := anrepo.ListAnnotationGroup(0, 10, filterTwo)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert.Len(egl2, 2, "should have 2 groups")
+	for _, g := range egl2 {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+		for _, d := range g.AnnoDocs {
+			assert.Equal(d.Tag, tags[1], "should have "+tags[1]+" as the tag")
+			assert.Equal(d.CreatedBy, "basu@gmail.com", "should be created by basu@gmail.com")
+			assert.Equal(d.Ontology, "dicty_annotation", "should have dicty_annotation ontology")
+			assert.Equal(d.EnrtyId, ddbg[1], "should have "+ddbg[1]+" as entry id")
+		}
+	}
+	filterThree := `FILTER cv.metadata.namespace == 'dicty_annotation'`
+	egl3, err := anrepo.ListAnnotationGroup(0, 2, filterThree)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert.Len(egl3, 2, "should have two groups")
+	for _, g := range egl3 {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+	egl4, err := anrepo.ListAnnotationGroup(
+		toTimestamp(egl3[len(egl3)-1].CreatedAt),
+		4,
+		filterThree,
+	)
+	if err != nil {
+		t.Fatalf("error in fetching group list %s", err)
+	}
+	assert.Len(egl4, 3, "should have three groups")
+	for _, g := range egl4 {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+	}
+}
+
 func TestListAnnotationGroup(t *testing.T) {
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	if err != nil {
