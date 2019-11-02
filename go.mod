@@ -23,7 +23,7 @@ require (
 	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/appengine v1.6.0 // indirect
 	google.golang.org/grpc v1.21.1
-	gopkg.in/go-playground/validator.v9 v9.29.1
+	gopkg.in/go-playground/validator.v9 v9.30.0
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
