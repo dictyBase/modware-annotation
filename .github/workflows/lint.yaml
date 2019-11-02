@@ -1,23 +1,13 @@
 name: Lint golang code 
-on: 
-  pull_request:
-    types: [opened,reopened,edited,synchronize]
+on: [pull_request]
 jobs:
   lint:
     runs-on: ubuntu-18.04
     steps:
-      - name: set up golang
-        uses: actions/setup-go@v1
-        with:
-            go-version: 1.11.13
       - name: check out code
         uses: actions/checkout@v1
-      - name: install golangci-lint
-        run: go get -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.19.1
-        env:
-            GO111MODULE: on
-            GOPROXY: https://proxy.golang.org
       - name: run linter
-        run: $(go env GOPATH)/bin/golangci-lint run -v 
-        env:
-            GO111MODULE: on
+        uses: reviewdog/action-golangci-lint@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+          golangci_lint_flags: "--enable-all --exclude-use-default=false"
