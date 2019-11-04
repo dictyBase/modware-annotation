@@ -525,7 +525,7 @@ func TestEditAnnotation(t *testing.T) {
 	assert.Equal(ua.Data.Attributes.CreatedBy, um.CreatedBy, "should matches created by")
 }
 
-func TestListAnnotationsWithFilter(t *testing.T) {
+func TestListAnnoFilter(t *testing.T) {
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
@@ -823,7 +823,7 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	)
 }
 
-func TestListAnnotationGroupWithFilter(t *testing.T) {
+func TestListAnnoGroupFilter(t *testing.T) {
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
