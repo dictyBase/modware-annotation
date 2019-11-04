@@ -859,17 +859,7 @@ func TestListAnnotationGroupWithFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error in fetching group list %s", err)
 	}
-	assert := assert.New(t)
-	assert.Len(egl, 2, "should have 2 groups")
-	for _, g := range egl {
-		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
-		for _, d := range g.AnnoDocs {
-			assert.Equal(d.Tag, tags[0], "should have "+tags[0]+" as the tag")
-			assert.Equal(d.CreatedBy, "sidd@gmail.com", "should be created by sidd@gmail.com")
-			assert.Equal(d.Ontology, "dicty_annotation", "should have dicty_annotation ontology")
-			assert.Equal(d.EnrtyId, ddbg[0], "should have "+ddbg[0]+" as entry id")
-		}
-	}
+	testGroupMember(egl, 2, 0, "sidd@gmail.com", t)
 	filterTwo := `FILTER ann.entry_id == 'DDB_G0294491'
 				  AND cvt.label == 'name description'
 				  AND cv.metadata.namespace == 'dicty_annotation'
@@ -878,21 +868,13 @@ func TestListAnnotationGroupWithFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error in fetching group list %s", err)
 	}
-	assert.Len(egl2, 2, "should have 2 groups")
-	for _, g := range egl2 {
-		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
-		for _, d := range g.AnnoDocs {
-			assert.Equal(d.Tag, tags[1], "should have "+tags[1]+" as the tag")
-			assert.Equal(d.CreatedBy, "basu@gmail.com", "should be created by basu@gmail.com")
-			assert.Equal(d.Ontology, "dicty_annotation", "should have dicty_annotation ontology")
-			assert.Equal(d.EnrtyId, ddbg[1], "should have "+ddbg[1]+" as entry id")
-		}
-	}
+	testGroupMember(egl2, 2, 1, "basu@gmail.com", t)
 	filterThree := `FILTER cv.metadata.namespace == 'dicty_annotation'`
 	egl3, err := anrepo.ListAnnotationGroup(0, 2, filterThree)
 	if err != nil {
 		t.Fatalf("error in fetching group list %s", err)
 	}
+	assert := assert.New(t)
 	assert.Len(egl3, 2, "should have two groups")
 	for _, g := range egl3 {
 		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
@@ -994,6 +976,20 @@ func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 			nm.CreatedAt.String(),
 			cm.CreatedAt.String(),
 		)
+	}
+}
+
+func testGroupMember(gl []*model.AnnoGroup, count, idx int, email string, t *testing.T) {
+	assert := assert.New(t)
+	assert.Lenf(gl, count, "should have %d groups", count)
+	for _, g := range gl {
+		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
+		for _, d := range g.AnnoDocs {
+			assert.Equalf(d.Tag, tags[idx], "should have %d as the tag", idx)
+			assert.Equalf(d.CreatedBy, email, "should be created by %s", email)
+			assert.Equal(d.Ontology, "dicty_annotation", "should have dicty_annotation ontology")
+			assert.Equalf(d.EnrtyId, ddbg[idx], "should have %d as entry id", idx)
+		}
 	}
 }
 
