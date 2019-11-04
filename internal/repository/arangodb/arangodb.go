@@ -68,82 +68,35 @@ type arangorepository struct {
 	onto     *ontoc
 }
 
-func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams) (repository.TaggedAnnotationRepository, error) {
-	ar := &arangorepository{}
-	validate := validator.New()
-	if err := validate.Struct(collP); err != nil {
-		return ar, err
-	}
-	sess, db, err := manager.NewSessionDb(connP)
-	if err != nil {
-		return ar, err
-	}
-	ar.sess = sess
-	ar.database = db
-	termc, err := db.FindOrCreateCollection(collP.Term, &driver.CreateCollectionOptions{})
-	if err != nil {
-		return ar, err
-	}
-	relc, err := db.FindOrCreateCollection(
-		collP.Relationship,
-		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
-	)
-	if err != nil {
-		return ar, err
-	}
-	graphc, err := db.FindOrCreateCollection(
-		collP.GraphInfo,
-		&driver.CreateCollectionOptions{},
-	)
-	if err != nil {
-		return ar, err
-	}
-	obog, err := db.FindOrCreateGraph(
-		collP.OboGraph,
-		[]driver.EdgeDefinition{
-			driver.EdgeDefinition{
-				Collection: relc.Name(),
-				From:       []string{termc.Name()},
-				To:         []string{termc.Name()},
-			},
-		},
-	)
-	if err != nil {
-		return ar, err
-	}
-	ar.onto = &ontoc{
-		term: termc,
-		rel:  relc,
-		cv:   graphc,
-		obog: obog,
-	}
+func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
+	ac := &annoc{}
 	anno, err := db.FindOrCreateCollection(
 		collP.Annotation,
 		&driver.CreateCollectionOptions{},
 	)
 	if err != nil {
-		return ar, err
+		return ac, err
 	}
 	annogrp, err := db.FindOrCreateCollection(
 		collP.AnnoGroup,
 		&driver.CreateCollectionOptions{},
 	)
 	if err != nil {
-		return ar, err
+		return ac, err
 	}
 	annocvt, err := db.FindOrCreateCollection(
 		collP.AnnoTerm,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
 	if err != nil {
-		return ar, err
+		return ac, err
 	}
 	annov, err := db.FindOrCreateCollection(
 		collP.AnnoVersion,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
 	if err != nil {
-		return ar, err
+		return ac, err
 	}
 	verg, err := db.FindOrCreateGraph(
 		collP.AnnoVerGraph,
@@ -156,7 +109,7 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 		},
 	)
 	if err != nil {
-		return ar, err
+		return ac, err
 	}
 	annotg, err := db.FindOrCreateGraph(
 		collP.AnnoTagGraph,
@@ -164,22 +117,78 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 			driver.EdgeDefinition{
 				Collection: annocvt.Name(),
 				From:       []string{anno.Name()},
-				To:         []string{termc.Name()},
+				To:         []string{onto.term.Name()},
 			},
 		},
 	)
-	if err != nil {
-		return ar, err
-	}
-	ar.anno = &annoc{
+	return &annoc{
 		annot:  anno,
 		term:   annocvt,
 		ver:    annov,
 		verg:   verg,
 		annotg: annotg,
 		annog:  annogrp,
+	}, err
+}
+
+func setOntologyCollection(db *manager.Database, collP *CollectionParams) (*ontoc, error) {
+	oc := &ontoc{}
+	termc, err := db.FindOrCreateCollection(collP.Term, &driver.CreateCollectionOptions{})
+	if err != nil {
+		return oc, err
 	}
-	return ar, nil
+	relc, err := db.FindOrCreateCollection(
+		collP.Relationship,
+		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
+	)
+	if err != nil {
+		return oc, err
+	}
+	graphc, err := db.FindOrCreateCollection(
+		collP.GraphInfo,
+		&driver.CreateCollectionOptions{},
+	)
+	if err != nil {
+		return oc, err
+	}
+	obog, err := db.FindOrCreateGraph(
+		collP.OboGraph,
+		[]driver.EdgeDefinition{
+			driver.EdgeDefinition{
+				Collection: relc.Name(),
+				From:       []string{termc.Name()},
+				To:         []string{termc.Name()},
+			},
+		},
+	)
+	return &ontoc{
+		term: termc,
+		rel:  relc,
+		cv:   graphc,
+		obog: obog,
+	}, err
+}
+
+func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams) (repository.TaggedAnnotationRepository, error) {
+	ar := &arangorepository{}
+	if err := validator.New().Struct(collP); err != nil {
+		return ar, err
+	}
+	sess, db, err := manager.NewSessionDb(connP)
+	if err != nil {
+		return ar, err
+	}
+	ontoc, err := setOntologyCollection(db, collP)
+	if err != nil {
+		return ar, err
+	}
+	annoc, err := setAnnotationCollection(db, ontoc, collP)
+	return &arangorepository{
+		sess:     sess,
+		database: db,
+		onto:     ontoc,
+		anno:     annoc,
+	}, err
 }
 
 func (ar *arangorepository) GetAnnotationById(id string) (*model.AnnoDoc, error) {
