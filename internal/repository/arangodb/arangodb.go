@@ -618,55 +618,35 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroup, error) {
 	var gm []*model.AnnoGroup
 	var stmt string
-	if len(filter) > 0 { // filter string is present
-		if cursor == 0 { // no cursor, return first set of result
-			stmt = fmt.Sprintf(
-				annGroupListFilterQ,
-				ar.anno.annot.Name(),
-				ar.anno.annotg.Name(),
-				ar.onto.cv.Name(),
-				filter,
-				ar.anno.annog.Name(),
-				ar.anno.annot.Name(),
-				ar.anno.annotg.Name(),
-				ar.onto.cv.Name(),
-				limit,
-			)
-		} else {
-			stmt = fmt.Sprintf(
-				annGroupListFilterWithCursorQ,
-				ar.anno.annot.Name(),
-				ar.anno.annotg.Name(),
-				ar.onto.cv.Name(),
-				filter,
-				ar.anno.annog.Name(),
-				ar.anno.annot.Name(),
-				ar.anno.annotg.Name(),
-				ar.onto.cv.Name(),
-				cursor,
-				limit,
+	if len(filter) > 0 { // filter
+		// no cursor
+		stmt = fmt.Sprintf(annGroupListFilterQ,
+			ar.anno.annot.Name(), ar.anno.annotg.Name(), ar.onto.cv.Name(),
+			filter, ar.anno.annog.Name(), ar.anno.annot.Name(),
+			ar.anno.annotg.Name(), ar.onto.cv.Name(),
+			limit,
+		)
+		if cursor != 0 { // with cursor
+			stmt = fmt.Sprintf(annGroupListFilterWithCursorQ,
+				ar.anno.annot.Name(), ar.anno.annotg.Name(),
+				ar.onto.cv.Name(), filter,
+				ar.anno.annog.Name(), ar.anno.annot.Name(),
+				ar.anno.annotg.Name(), ar.onto.cv.Name(),
+				cursor, limit,
 			)
 		}
 	} else { // no filter
-		if cursor == 0 { // no cursor
-			stmt = fmt.Sprintf(
-				annGroupListQ,
-				ar.anno.annog.Name(),
-				ar.anno.annot.Name(),
-				ar.anno.annotg.Name(),
-				ar.onto.cv.Name(),
-				limit,
-			)
-
-		} else { // with cursor
-			stmt = fmt.Sprintf(
-				annGroupListWithCursorQ,
-				ar.anno.annog.Name(),
-				ar.anno.annot.Name(),
-				ar.anno.annotg.Name(),
-				ar.onto.cv.Name(),
-				cursor,
-				limit,
+		// no cursor
+		stmt = fmt.Sprintf(annGroupListQ,
+			ar.anno.annog.Name(), ar.anno.annot.Name(),
+			ar.anno.annotg.Name(), ar.onto.cv.Name(),
+			limit,
+		)
+		if cursor != 0 { // with cursor
+			stmt = fmt.Sprintf(annGroupListWithCursorQ,
+				ar.anno.annog.Name(), ar.anno.annot.Name(),
+				ar.anno.annotg.Name(), ar.onto.cv.Name(),
+				cursor, limit,
 			)
 		}
 	}
