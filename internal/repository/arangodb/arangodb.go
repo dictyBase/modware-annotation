@@ -14,6 +14,7 @@ import (
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
+	repo "github.com/dictyBase/modware-annotation/internal/repository"
 )
 
 // CollectionParams are the arangodb collections required for storing
@@ -169,7 +170,7 @@ func setOntologyCollection(db *manager.Database, collP *CollectionParams) (*onto
 	}, err
 }
 
-func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams) (repository.TaggedAnnotationRepository, error) {
+func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams) (repo.TaggedAnnotationRepository, error) {
 	ar := &arangorepository{}
 	if err := validator.New().Struct(collP); err != nil {
 		return ar, err
