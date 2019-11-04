@@ -322,9 +322,6 @@ func (s *AnnotationService) CreateAnnotation(ctx context.Context, r *annotation.
 	if err != nil {
 		return ta, aphgrpc.HandleInsertError(ctx, err)
 	}
-	if m.NotFound {
-		return ta, aphgrpc.HandleNotFoundError(ctx, err)
-	}
 	ta.Data = &annotation.TaggedAnnotation_Data{
 		Type: s.GetResourceName(),
 		Id:   m.Key,

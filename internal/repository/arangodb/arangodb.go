@@ -259,7 +259,6 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 		return m, fmt.Errorf("error in running obograph retrieving query %s", err)
 	}
 	if r.IsEmpty() {
-		m.NotFound = true
 		return m, fmt.Errorf("ontology %s and tag %s does not exist", attr.Ontology, attr.Tag)
 	}
 	var cvtid string
@@ -302,7 +301,6 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 		return m, err
 	}
 	if rins.IsEmpty() {
-		m.NotFound = true
 		return m, fmt.Errorf("error in returning newly created document")
 	}
 	if err := rins.Read(m); err != nil {
