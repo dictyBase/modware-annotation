@@ -210,20 +210,9 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 		var gdata []*annotation.TaggedAnnotationGroup_Data
 		for _, m := range mg.AnnoDocs {
 			gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
-				Type: s.GetResourceName(),
-				Id:   m.Key,
-				Attributes: &annotation.TaggedAnnotationAttributes{
-					Value:         m.Value,
-					EditableValue: m.EditableValue,
-					CreatedBy:     m.CreatedBy,
-					CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-					Version:       m.Version,
-					EntryId:       m.EnrtyId,
-					Rank:          m.Rank,
-					IsObsolete:    m.IsObsolete,
-					Tag:           m.Tag,
-					Ontology:      m.Ontology,
-				},
+				Type:       s.GetResourceName(),
+				Id:         m.Key,
+				Attributes: getAnnoAttributes(m),
 			})
 		}
 		gcdata = append(gcdata, &annotation.TaggedAnnotationGroupCollection_Data{
@@ -237,16 +226,18 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 		})
 	}
 	if len(gcdata) < int(limit)-2 { //fewer result than limit
-		gc.Data = gcdata
-		gc.Meta = &annotation.Meta{Limit: r.Limit}
-		return gc, nil
+		return &annotation.TaggedAnnotationGroupCollection{
+			Data: gcdata,
+			Meta: &annotation.Meta{Limit: r.Limit},
+		}, nil
 	}
-	gc.Data = gcdata[:len(gcdata)-1]
-	gc.Meta = &annotation.Meta{
-		Limit:      limit,
-		NextCursor: genNextCursorVal(mgc[len(mgc)-1].CreatedAt),
-	}
-	return gc, nil
+	return &annotation.TaggedAnnotationGroupCollection{
+		Data: gcdata[:len(gcdata)-1],
+		Meta: &annotation.Meta{
+			Limit:      limit,
+			NextCursor: genNextCursorVal(mgc[len(mgc)-1].CreatedAt),
+		},
+	}, nil
 }
 
 func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.ListParameters) (*annotation.TaggedAnnotationCollection, error) {
@@ -284,20 +275,9 @@ func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.L
 	var tcdata []*annotation.TaggedAnnotationCollection_Data
 	for _, m := range mc {
 		tcdata = append(tcdata, &annotation.TaggedAnnotationCollection_Data{
-			Type: s.GetResourceName(),
-			Id:   m.Key,
-			Attributes: &annotation.TaggedAnnotationAttributes{
-				Value:         m.Value,
-				EditableValue: m.EditableValue,
-				CreatedBy:     m.CreatedBy,
-				CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-				Version:       m.Version,
-				EntryId:       m.EnrtyId,
-				Rank:          m.Rank,
-				IsObsolete:    m.IsObsolete,
-				Tag:           m.Tag,
-				Ontology:      m.Ontology,
-			},
+			Type:       s.GetResourceName(),
+			Id:         m.Key,
+			Attributes: getAnnoAttributes(m),
 		})
 	}
 	if len(tcdata) < int(limit)-2 { // fewer result than limit
@@ -420,4 +400,19 @@ func (s *AnnotationService) getGroup(mg *model.AnnoGroup) *annotation.TaggedAnno
 // in milliseconds
 func genNextCursorVal(t time.Time) int64 {
 	return t.UnixNano() / 1000000
+}
+
+func getAnnoAttributes(m *model.AnnoDoc) *annotation.TaggedAnnotationAttributes {
+	return &annotation.TaggedAnnotationAttributes{
+		Value:         m.Value,
+		EditableValue: m.EditableValue,
+		CreatedBy:     m.CreatedBy,
+		CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
+		Version:       m.Version,
+		EntryId:       m.EnrtyId,
+		Rank:          m.Rank,
+		IsObsolete:    m.IsObsolete,
+		Tag:           m.Tag,
+		Ontology:      m.Ontology,
+	}
 }
