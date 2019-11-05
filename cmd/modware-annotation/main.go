@@ -51,67 +51,67 @@ func main() {
 
 func getServerFlags() []cli.Flag {
 	var f []cli.Flag
-	f = append(
-		f,
-		[]cli.Flag{
-			cli.StringFlag{
-				Name:  "port",
-				Usage: "tcp port at which the server will be available",
-				Value: "9560",
-			},
-			cli.StringFlag{
-				Name:  "term-collection",
-				Usage: "arangodb collection for storing ontoloy terms",
-				Value: "cvterm",
-			},
-			cli.StringFlag{
-				Name:  "rel-collection",
-				Usage: "arangodb collection for storing cvterm relationships",
-				Value: "cvterm_relationship",
-			},
-			cli.StringFlag{
-				Name:  "cv-collection",
-				Usage: "arangodb collection for storing ontology information",
-				Value: "cv",
-			},
-			cli.StringFlag{
-				Name:  "obograph",
-				Usage: "arangodb named graph for managing ontology graph",
-				Value: "obograph",
-			},
-			cli.StringFlag{
-				Name:  "anno-collection",
-				Usage: "arangodb collection for storing annotations",
-				Value: "annotation",
-			},
-			cli.StringFlag{
-				Name:  "annoterm-collection",
-				Usage: "arangodb edge collection for storing links between annotation and ontology term",
-				Value: "annotation_cvterm",
-			},
-			cli.StringFlag{
-				Name:  "annover-collection",
-				Usage: "arangodb edge collection to link different versions of annotation",
-				Value: "annotation_version",
-			},
-			cli.StringFlag{
-				Name:  "annogroup-collection",
-				Usage: "arangodb collection for storing annotation group",
-				Value: "annotation_group",
-			},
-			cli.StringFlag{
-				Name:  "annoterm-graph",
-				Usage: "arangodb named graph for managing relations between annotation and ontology term",
-				Value: "annotation_tag",
-			},
-			cli.StringFlag{
-				Name:  "annover-graph",
-				Usage: "arangodb named graph for managing relations betweens different versions of annotation",
-				Value: "annotation_history",
-			},
-		}...,
-	)
+	f = append(f, commonFlags()...)
 	f = append(f, arangoflag.ArangodbFlags()...)
-	f = append(f, apiflag.NatsFlag()...)
-	return f
+	return append(f, apiflag.NatsFlag()...)
+}
+
+func commonFlags() []cli.Flag {
+	return []cli.Flag{
+		cli.StringFlag{
+			Name:  "port",
+			Usage: "tcp port at which the server will be available",
+			Value: "9560",
+		},
+		cli.StringFlag{
+			Name:  "term-collection",
+			Usage: "arangodb collection for storing ontoloy terms",
+			Value: "cvterm",
+		},
+		cli.StringFlag{
+			Name:  "rel-collection",
+			Usage: "arangodb collection for storing cvterm relationships",
+			Value: "cvterm_relationship",
+		},
+		cli.StringFlag{
+			Name:  "cv-collection",
+			Usage: "arangodb collection for storing ontology information",
+			Value: "cv",
+		},
+		cli.StringFlag{
+			Name:  "obograph",
+			Usage: "arangodb named graph for managing ontology graph",
+			Value: "obograph",
+		},
+		cli.StringFlag{
+			Name:  "anno-collection",
+			Usage: "arangodb collection for storing annotations",
+			Value: "annotation",
+		},
+		cli.StringFlag{
+			Name:  "annoterm-collection",
+			Usage: "arangodb edge collection for storing links between annotation and ontology term",
+			Value: "annotation_cvterm",
+		},
+		cli.StringFlag{
+			Name:  "annover-collection",
+			Usage: "arangodb edge collection to link different versions of annotation",
+			Value: "annotation_version",
+		},
+		cli.StringFlag{
+			Name:  "annogroup-collection",
+			Usage: "arangodb collection for storing annotation group",
+			Value: "annotation_group",
+		},
+		cli.StringFlag{
+			Name:  "annoterm-graph",
+			Usage: "arangodb named graph for managing relations between annotation and ontology term",
+			Value: "annotation_tag",
+		},
+		cli.StringFlag{
+			Name:  "annover-graph",
+			Usage: "arangodb named graph for managing relations betweens different versions of annotation",
+			Value: "annotation_history",
+		},
+	}
 }
