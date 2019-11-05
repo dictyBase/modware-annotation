@@ -687,7 +687,7 @@ func TestAddAnnotationGroup(t *testing.T) {
 		}
 		ml = append(ml, m)
 	}
-	ids := testModelMaptoId(ml, model2IdCallback)
+	ids := testModelMaptoID(ml, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	if err != nil {
 		t.Fatalf("error in adding annotation group %s", err)
@@ -711,7 +711,7 @@ func TestGetAnnotationGroup(t *testing.T) {
 		}
 		ml = append(ml, m)
 	}
-	ids := testModelMaptoId(ml, model2IdCallback)
+	ids := testModelMaptoID(ml, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	if err != nil {
 		t.Fatalf("error in adding annotation group %s", err)
@@ -722,8 +722,8 @@ func TestGetAnnotationGroup(t *testing.T) {
 	}
 	assert := assert.New(t)
 	assert.ElementsMatch(
-		testModelMaptoId(g.AnnoDocs, model2IdCallback),
-		testModelMaptoId(eg.AnnoDocs, model2IdCallback),
+		testModelMaptoID(g.AnnoDocs, model2IdCallback),
+		testModelMaptoID(eg.AnnoDocs, model2IdCallback),
 		"expected identical annotation identifiers in the list",
 	)
 }
@@ -743,19 +743,19 @@ func TestAppendToAnntationGroup(t *testing.T) {
 		}
 		ml = append(ml, m)
 	}
-	ids := testModelMaptoId(ml[:4], model2IdCallback)
+	ids := testModelMaptoID(ml[:4], model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	if err != nil {
 		t.Fatalf("error in adding annotation group %s", err)
 	}
-	nids := testModelMaptoId(ml[4:], model2IdCallback)
+	nids := testModelMaptoID(ml[4:], model2IdCallback)
 	eg, err := anrepo.AppendToAnnotationGroup(g.GroupId, nids...)
 	if err != nil {
 		t.Fatalf("error in appending to group annotations %s", err)
 	}
 	assert := assert.New(t)
 	assert.ElementsMatch(
-		testModelMaptoId(eg.AnnoDocs, model2IdCallback),
+		testModelMaptoID(eg.AnnoDocs, model2IdCallback),
 		append(ids, nids...),
 		"expected identical annotation identifiers after appending to the group",
 	)
@@ -776,7 +776,7 @@ func TestRemoveAnnotationGroup(t *testing.T) {
 		}
 		ml = append(ml, m)
 	}
-	ids := testModelMaptoId(ml, model2IdCallback)
+	ids := testModelMaptoID(ml, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	if err != nil {
 		t.Fatalf("error in adding annotation group %s", err)
@@ -810,7 +810,7 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 		}
 		ml = append(ml, m)
 	}
-	ids := testModelMaptoId(ml, model2IdCallback)
+	ids := testModelMaptoID(ml, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	if err != nil {
 		t.Fatalf("error in adding annotation group %s", err)
@@ -821,13 +821,13 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	}
 	assert := assert.New(t)
 	assert.ElementsMatch(
-		testModelMaptoId(g.AnnoDocs, model2IdCallback),
+		testModelMaptoID(g.AnnoDocs, model2IdCallback),
 		ids,
 		"should match no of documents",
 	)
 	assert.ElementsMatch(
 		ids[5:],
-		testModelMaptoId(eg.AnnoDocs, model2IdCallback),
+		testModelMaptoID(eg.AnnoDocs, model2IdCallback),
 		"expected identical annotation identifiers after removing from the group",
 	)
 }
@@ -849,7 +849,7 @@ func TestListAnnoGroupFilter(t *testing.T) {
 	}
 	j := 5
 	for i := 0; j <= len(ml); i += 5 {
-		ids := testModelMaptoId(ml[i:j], model2IdCallback)
+		ids := testModelMaptoID(ml[i:j], model2IdCallback)
 		_, err := anrepo.AddAnnotationGroup(ids...)
 		if err != nil {
 			t.Fatalf("error in adding annotation group %s", err)
@@ -919,7 +919,7 @@ func TestListAnnotationGroup(t *testing.T) {
 	}
 	j := 5
 	for i := 0; j <= len(ml); i += 5 {
-		ids := testModelMaptoId(ml[i:j], model2IdCallback)
+		ids := testModelMaptoID(ml[i:j], model2IdCallback)
 		_, err := anrepo.AddAnnotationGroup(ids...)
 		if err != nil {
 			t.Fatalf("error in adding annotation group %s", err)
@@ -1002,7 +1002,7 @@ func testGroupMember(gl []*model.AnnoGroup, count, idx int, email string, t *tes
 	}
 }
 
-func testModelMaptoId(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []string {
+func testModelMaptoID(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []string {
 	var s []string
 	for _, m := range am {
 		s = append(s, fn(m))
