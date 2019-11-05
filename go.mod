@@ -16,6 +16,7 @@ require (
 	github.com/nats-io/go-nats v1.7.2
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.3.1-0.20190311161405-34c6fa2dc709
+	github.com/urfave/cli v1.22.1
 	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f // indirect
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
 	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 // indirect
@@ -24,7 +25,6 @@ require (
 	google.golang.org/grpc v1.24.0
 	gopkg.in/go-playground/validator.v9 v9.29.1
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
-	gopkg.in/urfave/cli.v1 v1.20.0
 )
 
 replace github.com/docker/docker v1.13.1 => github.com/docker/engine v0.0.0-20180816081446-320063a2ad06

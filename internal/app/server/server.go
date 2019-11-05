@@ -19,9 +19,9 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	gnats "github.com/nats-io/go-nats"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"gopkg.in/urfave/cli.v1"
 )
 
 func RunServer(c *cli.Context) error {
