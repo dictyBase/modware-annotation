@@ -50,17 +50,17 @@ func RunServer(c *cli.Context) error {
 			grpc_logrus.UnaryServerInterceptor(getLogger(c)),
 		),
 	)
-	annotation.RegisterTaggedAnnotationServiceServer(
-		grpcS,
-		service.NewAnnotationService(
-			anrepo, ms, "groups",
-			aphgrpc.TopicsOption(map[string]string{
-				"annotationCreate": "AnnotationService.Create",
-				"annotationDelete": "AnnotationService.Delete",
-				"annotationUpdate": "AnnotationService.Update",
-			}),
-		),
-	)
+	srv, err := service.NewAnnotationService(
+		&service.ServiceParams{
+			Repository: anrepo,
+			Publisher:  ms,
+			Group:      "groups",
+			Options:    getGrpcOpt(),
+		})
+	if err != nil {
+		return cli.NewExitError(err.Error(), 2)
+	}
+	annotation.RegisterTaggedAnnotationServiceServer(grpcS, srv)
 	reflection.Register(grpcS)
 	// create listener
 	endP := fmt.Sprintf(":%s", c.String("port"))
@@ -128,5 +128,15 @@ func getCollParams(c *cli.Context) *arangodb.CollectionParams {
 		AnnoTagGraph: c.String("annoterm-graph"),
 		AnnoVerGraph: c.String("annover-graph"),
 		AnnoGroup:    c.String("annogroup-collection"),
+	}
+}
+
+func getGrpcOpt() []aphgrpc.Option {
+	return []aphgrpc.Option{
+		aphgrpc.TopicsOption(map[string]string{
+			"annotationCreate": "AnnotationService.Create",
+			"annotationDelete": "AnnotationService.Delete",
+			"annotationUpdate": "AnnotationService.Update",
+		}),
 	}
 }

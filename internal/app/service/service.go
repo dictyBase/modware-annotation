@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/go-playground/validator.v9"
+
 	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
@@ -25,27 +27,35 @@ type AnnotationService struct {
 	group     string
 }
 
+// ServiceParams are the attributes that are required for creating new AnnotationService
+type ServiceParams struct {
+	Repository repository.TaggedAnnotationRepository `validate:"required"`
+	Publisher  message.Publisher                     `validate:"required"`
+	Group      string                                `validate:"required"`
+	Options    []aphgrpc.Option                      `validate:"required"`
+}
+
 func defaultOptions() *aphgrpc.ServiceOptions {
 	return &aphgrpc.ServiceOptions{Resource: "annotations"}
 }
 
 // NewAnnotationService is the constructor for creating a new instance of AnnotationService
-func NewAnnotationService(
-	repo repository.TaggedAnnotationRepository,
-	pub message.Publisher, grp string, opt ...aphgrpc.Option) *AnnotationService {
-
+func NewAnnotationService(srvP *ServiceParams) (*AnnotationService, error) {
+	if err := validator.New().Struct(srvP); err != nil {
+		return &AnnotationService{}, err
+	}
 	so := defaultOptions()
-	for _, optfn := range opt {
+	for _, optfn := range srvP.Options {
 		optfn(so)
 	}
 	srv := &aphgrpc.Service{}
 	aphgrpc.AssignFieldsToStructs(so, srv)
 	return &AnnotationService{
 		Service:   srv,
-		repo:      repo,
-		publisher: pub,
-		group:     grp,
-	}
+		repo:      srvP.Repository,
+		publisher: srvP.Publisher,
+		group:     srvP.Group,
+	}, nil
 }
 
 func (s *AnnotationService) GetGroupResourceName() string {
