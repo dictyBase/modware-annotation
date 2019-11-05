@@ -109,44 +109,6 @@ const (
 					group: @group 
 				 } IN @@anno_group_collection RETURN NEW
 	`
-	annGetGroupByEntryQ = `
-		LET searchedAnnoKeys = (
-			FOR ann IN %s
-				FOR v IN 1..1 OUTBOUND ann GRAPH '%s'
-					FOR cv IN %s
-						FILTER ann.entry_id == '%s'
-						FILTER ann.rank == %d
-						FILTER ann.is_obsolete == %t
-						FILTER v.label == '%s'
-						FILTER v.graph_id == cv._id
-						FILTER cv.metadata.namespace == '%s'
-						SORT ann.version DESC
-						LIMIT 1
-						RETURN MERGE(
-							ann, 
-							{ ontology: cv.metadata.namespace, tag: v.label }
-						)
-		)
-		LET annoids = (
-			FOR akey IN searchedAnnoKeys
-				FOR grp IN %s
-					FOR ann IN %s
-						FILTER akey ANY IN grp.group
-						FOR k IN grp.group
-							FILTER k == ann._key
-							RETURN ann._id
-		)
-		FOR id IN annoids
-			FOR ann IN %s
-				FOR v IN 1..1 OUTBOUND id GRAPH '%s'
-					FOR cv IN %s
-						FILTER ann._id == id
-						FILTER v.graph_id == cv._id
-						RETURN MERGE(
-							ann,
-							{ ontology: cv.metadata.namespace, tag: v.label, cvtid: v._id}
-						)
-	`
 	annGroupListFilterQ = `
 		LET filterannos = (
 			FOR ann IN %s
@@ -260,24 +222,6 @@ const (
 				group_id: ag._key,
 				annotations: annotations
 			}
-	`
-	annVerInst = `
-		LET n = (
-			INSERT {
-					value: @value,
-					editable_value: @editable_value,
-					created_by: @created_by,
-					entry_id: @entry_id,
-					rank: @rank,
-					is_obsolete: false,
-					version: @version,
-					created_at: DATE_ISO8601(DATE_NOW())
-				   } IN @@anno_collection RETURN NEW
-		)
-		UPDATE @prev WITH { is_obsolete: true } IN @@anno_collection
-		INSERT { _from: n[0]._id, _to: @to } IN @@anno_cv_collection
-		INSERT { _from: @prev, _to: n[0]._id } IN @@anno_ver_collection
-		RETURN n[0]
 	`
 	annVerInstFn = `
 		function (params) {
