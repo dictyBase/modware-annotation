@@ -569,6 +569,9 @@ func TestListAnnoFilter(t *testing.T) {
 		4,
 		filterOne,
 	)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
 	assert.Len(ml3, 2, "should have two annotations")
 	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
 
@@ -647,6 +650,9 @@ func TestListAnnotations(t *testing.T) {
 		4,
 		"",
 	)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
 	assert.Len(ml3, 5, "should have five annotations")
 	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
 
@@ -655,6 +661,9 @@ func TestListAnnotations(t *testing.T) {
 		4,
 		"",
 	)
+	if err != nil {
+		t.Fatalf("error in fetching annotation list %s", err)
+	}
 	assert.Len(ml4, 3, "should have three annotations")
 	assert.Exactly(ml3[len(ml3)-1], ml4[0], "should have identical model objects")
 	testModelListSort(ml, t)
