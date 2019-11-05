@@ -25,28 +25,9 @@ import (
 )
 
 func RunServer(c *cli.Context) error {
-	arPort, _ := strconv.Atoi(c.String("arangodb-port"))
-	connP := &manager.ConnectParams{
-		User:     c.String("arangodb-user"),
-		Pass:     c.String("arangodb-pass"),
-		Database: c.String("arangodb-database"),
-		Host:     c.String("arangodb-host"),
-		Port:     arPort,
-		Istls:    c.Bool("is-secure"),
-	}
-	collP := &arangodb.CollectionParams{
-		Term:         c.String("term-collection"),
-		Relationship: c.String("rel-collection"),
-		GraphInfo:    c.String("cv-collection"),
-		OboGraph:     c.String("obograph"),
-		Annotation:   c.String("anno-collection"),
-		AnnoTerm:     c.String("annoterm-collection"),
-		AnnoVersion:  c.String("annover-collection"),
-		AnnoTagGraph: c.String("annoterm-graph"),
-		AnnoVerGraph: c.String("annover-graph"),
-		AnnoGroup:    c.String("annogroup-collection"),
-	}
-	anrepo, err := arangodb.NewTaggedAnnotationRepo(connP, collP)
+	anrepo, err := arangodb.NewTaggedAnnotationRepo(
+		getConnParams(c), getCollParams(c),
+	)
 	if err != nil {
 		return cli.NewExitError(
 			fmt.Sprintf("cannot connect to arangodb annotation repository %s", err.Error()),
@@ -54,10 +35,8 @@ func RunServer(c *cli.Context) error {
 		)
 	}
 	ms, err := nats.NewPublisher(
-		c.String("nats-host"),
-		c.String("nats-port"),
-		gnats.MaxReconnects(-1),
-		gnats.ReconnectWait(2*time.Second),
+		c.String("nats-host"), c.String("nats-port"),
+		gnats.MaxReconnects(-1), gnats.ReconnectWait(2*time.Second),
 	)
 	if err != nil {
 		return cli.NewExitError(
@@ -74,26 +53,21 @@ func RunServer(c *cli.Context) error {
 	annotation.RegisterTaggedAnnotationServiceServer(
 		grpcS,
 		service.NewAnnotationService(
-			anrepo,
-			ms,
-			"groups",
-			aphgrpc.TopicsOption(
-				map[string]string{
-					"annotationCreate": "AnnotationService.Create",
-					"annotationDelete": "AnnotationService.Delete",
-					"annotationUpdate": "AnnotationService.Update",
-				}),
+			anrepo, ms, "groups",
+			aphgrpc.TopicsOption(map[string]string{
+				"annotationCreate": "AnnotationService.Create",
+				"annotationDelete": "AnnotationService.Delete",
+				"annotationUpdate": "AnnotationService.Update",
+			}),
 		),
 	)
 	reflection.Register(grpcS)
-
 	// create listener
 	endP := fmt.Sprintf(":%s", c.String("port"))
 	lis, err := net.Listen("tcp", endP)
 	if err != nil {
 		return cli.NewExitError(
-			fmt.Sprintf("failed to listen %s", err),
-			2,
+			fmt.Sprintf("failed to listen %s", err), 2,
 		)
 	}
 	log.Printf("starting grpc server on %s", endP)
@@ -128,4 +102,31 @@ func getLogger(c *cli.Context) *logrus.Entry {
 		log.Level = logrus.PanicLevel
 	}
 	return logrus.NewEntry(log)
+}
+
+func getConnParams(c *cli.Context) *manager.ConnectParams {
+	arPort, _ := strconv.Atoi(c.String("arangodb-port"))
+	return &manager.ConnectParams{
+		User:     c.String("arangodb-user"),
+		Pass:     c.String("arangodb-pass"),
+		Database: c.String("arangodb-database"),
+		Host:     c.String("arangodb-host"),
+		Port:     arPort,
+		Istls:    c.Bool("is-secure"),
+	}
+}
+
+func getCollParams(c *cli.Context) *arangodb.CollectionParams {
+	return &arangodb.CollectionParams{
+		Term:         c.String("term-collection"),
+		Relationship: c.String("rel-collection"),
+		GraphInfo:    c.String("cv-collection"),
+		OboGraph:     c.String("obograph"),
+		Annotation:   c.String("anno-collection"),
+		AnnoTerm:     c.String("annoterm-collection"),
+		AnnoVersion:  c.String("annover-collection"),
+		AnnoTagGraph: c.String("annoterm-graph"),
+		AnnoVerGraph: c.String("annover-graph"),
+		AnnoGroup:    c.String("annogroup-collection"),
+	}
 }
