@@ -208,7 +208,7 @@ func (ar *arangorepository) GetAnnotationById(id string) (*model.AnnoDoc, error)
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, &repository.AnnoNotFound{id}
+		return m, &repository.AnnoNotFound{Id: id}
 	}
 	if err := r.Read(m); err != nil {
 		return m, err
@@ -236,7 +236,7 @@ func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotation
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, &repository.AnnoNotFound{req.EntryId}
+		return m, &repository.AnnoNotFound{Id: req.EntryId}
 	}
 	if err := r.Read(m); err != nil {
 		return m, err
@@ -328,7 +328,7 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 	}
 	if r.IsEmpty() {
 		m.NotFound = true
-		return m, &repository.AnnoNotFound{ua.Data.Id}
+		return m, &repository.AnnoNotFound{Id: ua.Data.Id}
 	}
 	if err := r.Read(m); err != nil {
 		return m, err
@@ -377,7 +377,7 @@ func (ar *arangorepository) RemoveAnnotation(id string, purge bool) error {
 	_, err := ar.anno.annot.ReadDocument(context.Background(), id, m)
 	if err != nil {
 		if driver.IsNotFound(err) {
-			return &repository.AnnoNotFound{id}
+			return &repository.AnnoNotFound{Id: id}
 		}
 		return err
 	}
@@ -794,7 +794,7 @@ func documentsExists(c driver.Collection, ids ...string) error {
 			return fmt.Errorf("error in checking for existence of identifier %s %s", k, err)
 		}
 		if !ok {
-			return &repository.AnnoNotFound{k}
+			return &repository.AnnoNotFound{Id: k}
 		}
 	}
 	return nil
