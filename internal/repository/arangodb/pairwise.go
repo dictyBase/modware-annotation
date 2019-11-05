@@ -45,8 +45,8 @@ func (p *StringPairWiseIterator) NextStringPair() bool {
 	if p.secondIdx == p.lastIdx {
 		return false
 	}
-	p.firstIdx += 1
-	p.secondIdx += 1
+	p.firstIdx++
+	p.secondIdx++
 	return true
 }
 
@@ -94,8 +94,8 @@ func (p *ModelAnnoDocPairWiseIterator) NextModelAnnoDocPair() bool {
 	if p.secondIdx == p.lastIdx {
 		return false
 	}
-	p.firstIdx += 1
-	p.secondIdx += 1
+	p.firstIdx++
+	p.secondIdx++
 	return true
 }
 

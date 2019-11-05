@@ -6,7 +6,7 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-func ValidateServerArgs(c *cli.Context) error {
+func ServerArgs(c *cli.Context) error {
 	for _, p := range []string{
 		"arangodb-pass",
 		"arangodb-database",

@@ -447,7 +447,7 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 // Retrieves an annotation group
 func (ar *arangorepository) GetAnnotationGroup(groupId string) (*model.AnnoGroup, error) {
 	g := &model.AnnoGroup{}
-	ml, err := ar.groupId2Annotations(groupId)
+	ml, err := ar.groupID2Annotations(groupId)
 	if err != nil {
 		return g, err
 	}
@@ -475,7 +475,7 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...s
 		return g, errors.New("need at least more than one entry to form a group")
 	}
 	// retrieve annotation objects for existing group
-	gml, err := ar.groupId2Annotations(groupId)
+	gml, err := ar.groupID2Annotations(groupId)
 	if err != nil {
 		return g, err
 	}
@@ -723,7 +723,7 @@ func (ar *arangorepository) ClearAnnotations() error {
 	return nil
 }
 
-func (ar *arangorepository) groupId2Annotations(groupId string) ([]*model.AnnoDoc, error) {
+func (ar *arangorepository) groupID2Annotations(groupId string) ([]*model.AnnoDoc, error) {
 	var ml []*model.AnnoDoc
 	// check if the group exists
 	ok, err := ar.anno.annog.DocumentExists(
