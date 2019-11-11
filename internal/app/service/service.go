@@ -199,7 +199,7 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 				fmt.Errorf("error in parsing filter string"),
 			)
 		}
-		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap, p)
+		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
 		if err != nil {
 			return gc, aphgrpc.HandleInvalidParamError(
 				ctx,
@@ -266,7 +266,7 @@ func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.L
 				fmt.Errorf("error in parsing filter string"),
 			)
 		}
-		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap, p)
+		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
 		if err != nil {
 			return tac, aphgrpc.HandleInvalidParamError(
 				ctx,
@@ -328,7 +328,10 @@ func (s *AnnotationService) CreateAnnotation(ctx context.Context, r *annotation.
 			Ontology:      r.Data.Attributes.Ontology,
 		},
 	}
-	s.publisher.Publish(s.Topics["annotationCreate"], ta)
+	err = s.publisher.Publish(s.Topics["annotationCreate"], ta)
+	if err != nil {
+		return ta, aphgrpc.HandleInsertError(ctx, err)
+	}
 	return ta, nil
 }
 
@@ -360,7 +363,10 @@ func (s *AnnotationService) UpdateAnnotation(ctx context.Context, r *annotation.
 			Ontology:      m.Ontology,
 		},
 	}
-	s.publisher.Publish(s.Topics["annotationUpdate"], ta)
+	err = s.publisher.Publish(s.Topics["annotationUpdate"], ta)
+	if err != nil {
+		return ta, aphgrpc.HandleUpdateError(ctx, err)
+	}
 	return ta, nil
 }
 

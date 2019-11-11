@@ -247,7 +247,9 @@ func TestMain(m *testing.M) {
 		log.Fatalf("error in loading test annotation obograph %s", err)
 	}
 	code := m.Run()
-	dbh.Drop()
+	if err := dbh.Drop(); err != nil {
+		log.Printf("error in dropping database %s", err)
+	}
 	os.Exit(code)
 }
 
@@ -256,7 +258,7 @@ func TestAddAnnotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
@@ -308,7 +310,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
 	_, err = anrepo.AddAnnotation(nta)
 	if err != nil {
@@ -378,7 +380,7 @@ func TestGetAnnotationById(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
@@ -1012,4 +1014,10 @@ func testModelMaptoID(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []s
 
 func model2IdCallback(m *model.AnnoDoc) string {
 	return m.Key
+}
+
+func annoCleanUp(anrepo repository.TaggedAnnotationRepository, t *testing.T) {
+	if err := anrepo.ClearAnnotations(); err != nil {
+		t.Fatalf("error in pruning test annotation data %s", err)
+	}
 }
