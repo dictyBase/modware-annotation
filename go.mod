@@ -1,29 +1,29 @@
 module github.com/dictyBase/modware-annotation
 
 require (
-	github.com/arangodb/go-driver v0.0.0-20190724115106-663f655c9ebe
-	github.com/arangodb/go-velocypack v0.0.0-20190507125159-f60205f092de // indirect
-	github.com/dictyBase/apihelpers v0.0.0-20190606002341-93c3bfd61731
-	github.com/dictyBase/arangomanager v0.0.0-20190611150137-a945fd12a72e
+	github.com/arangodb/go-driver v0.0.0-20191107140416-095263e288cd
+	github.com/dictyBase/apihelpers v0.0.0-20191111194131-fa122d776698
+	github.com/dictyBase/arangomanager v0.0.1
 	github.com/dictyBase/go-genproto v0.0.0-20190815233815-aec1f112d97c
-	github.com/dictyBase/go-obograph v0.0.0-20190725115558-aebe2f03bf50
+	github.com/dictyBase/go-obograph v1.0.0
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
-	github.com/jinzhu/now v1.0.1 // indirect
+	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
+	github.com/mwitkow/go-proto-validators v0.2.0 // indirect
 	github.com/nats-io/go-nats v1.7.2
+	github.com/nats-io/nkeys v0.1.3 // indirect
 	github.com/sirupsen/logrus v1.4.2
-	github.com/stretchr/testify v1.3.1-0.20190311161405-34c6fa2dc709
+	github.com/stretchr/testify v1.4.0
 	github.com/urfave/cli v1.22.1
-	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f // indirect
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
-	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/crypto v0.0.0-20191108234033-bd318be0434a // indirect
+	golang.org/x/net v0.0.0-20191109021931-daa7c04131f5 // indirect
+	golang.org/x/sys v0.0.0-20191110163157-d32e6e3b99c4 // indirect
 	google.golang.org/appengine v1.6.0 // indirect
 	google.golang.org/grpc v1.24.0
-	gopkg.in/go-playground/validator.v9 v9.29.1
+	gopkg.in/go-playground/validator.v9 v9.30.0
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 )
 

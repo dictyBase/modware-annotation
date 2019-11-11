@@ -71,7 +71,9 @@ func RunServer(c *cli.Context) error {
 		)
 	}
 	log.Printf("starting grpc server on %s", endP)
-	grpcS.Serve(lis)
+	if err := grpcS.Serve(lis); err != nil {
+		return cli.NewExitError(err.Error(), 2)
+	}
 	return nil
 }
 
