@@ -1,7 +1,5 @@
 name: Test coverage
-on: 
- pull_request:
-    types: [opened,reopened,edited,synchronize]
+on: [pull_request]
 jobs:
   test:
     runs-on: ubuntu-18.04
