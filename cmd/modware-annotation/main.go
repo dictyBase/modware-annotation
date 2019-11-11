@@ -10,7 +10,7 @@ import (
 	obovalidate "github.com/dictyBase/go-obograph/command/validate"
 	"github.com/dictyBase/modware-annotation/internal/app/server"
 	"github.com/dictyBase/modware-annotation/internal/app/validate"
-	cli "gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli"
 )
 
 func main() {
