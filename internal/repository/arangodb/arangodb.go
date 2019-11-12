@@ -572,7 +572,7 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 		return g, fmt.Errorf("error in checking for existence of group identifier %s %s", groupId, err)
 	}
 	if !ok {
-		return g, &repository.GroupNotFound{groupId}
+		return g, &repository.GroupNotFound{Id: groupId}
 	}
 	// retrieve all annotations ids for the group
 	dbg := &model.DbGroup{}
@@ -734,7 +734,7 @@ func (ar *arangorepository) groupID2Annotations(groupId string) ([]*model.AnnoDo
 		return ml, fmt.Errorf("error in checking for existence of group identifier %s %s", groupId, err)
 	}
 	if !ok {
-		return ml, &repository.GroupNotFound{groupId}
+		return ml, &repository.GroupNotFound{Id: groupId}
 	}
 	// retrieve group object
 	dbg := &model.DbGroup{}
