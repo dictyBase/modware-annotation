@@ -445,7 +445,11 @@ func TestRemoveAnnotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
@@ -491,7 +495,11 @@ func TestEditAnnotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	if err != nil {
@@ -532,7 +540,11 @@ func TestListAnnoFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsListForFiltering(20)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
@@ -614,7 +626,11 @@ func TestListAnnotations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsList(15)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
@@ -679,7 +695,11 @@ func TestAddAnnotationGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsList(8)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -703,7 +723,11 @@ func TestGetAnnotationGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsList(4)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -735,7 +759,11 @@ func TestAppendToAnntationGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsList(7)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -768,7 +796,11 @@ func TestRemoveAnnotationGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsList(7)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -802,7 +834,11 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsList(9)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -834,12 +870,16 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	)
 }
 
-func TestListAnnoGroupFilter(t *testing.T) {
+func TestListAnnGrFilter(t *testing.T) {
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsListForFiltering(20)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -909,7 +949,11 @@ func TestListAnnotationGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot connect to annotation repository %s", err)
 	}
-	defer anrepo.ClearAnnotations()
+	defer func() {
+		if err := anrepo.ClearAnnotations(); err != nil {
+			t.Fatalf("error in pruning annotations %s", err)
+		}
+	}()
 	tal := newTestTaggedAnnotationsList(60)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
