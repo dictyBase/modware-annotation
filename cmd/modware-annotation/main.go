@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	apiflag "github.com/dictyBase/apihelpers/command/flag"
@@ -46,7 +47,9 @@ func main() {
 			Flags:  oboflag.OntologyFlags(),
 		},
 	}
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		log.Fatalf("error in running command %s", err)
+	}
 }
 
 func getServerFlags() []cli.Flag {
