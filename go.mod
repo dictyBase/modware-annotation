@@ -29,7 +29,7 @@ require (
 	golang.org/x/tools v0.0.0-20191112173320-dce577ffce43 // indirect
 	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
 	google.golang.org/appengine v1.6.0 // indirect
-	google.golang.org/grpc v1.24.0
+	google.golang.org/grpc v1.25.1
 	gopkg.in/go-playground/validator.v9 v9.30.0
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
