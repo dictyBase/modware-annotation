@@ -49,4 +49,19 @@ jobs:
       - name: login to docker hub
         run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
       - name: push to docker hub
-        run: docker push dictybase/modware-annotation:develop-$(git rev-parse --short HEAD)
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-18.04
+    env:
+      KUBEPATH: ${GITHUB_WORKSPACE}/.kube
+      KUBECONFIG: ${KUBEPATH}/dictykube
+      PROJECT_ID: ${{ secrets.DEV_KUBERNETES_PROJECT }}
+      APPLICATION_CREDENTIALS: ${{ secrets.DEV_SERVICE_ACCOUNT_KEY }}
+    steps:
+      - name: create config folder
+        run: mkdir -p ${KUBEPATH}
+      - name: retrieve kubernetes credentials
+        uses: actions-hub/gcloud@master
+        with:
+          args: container clusters get-credentials ${{ secrets.DEVSIDD_CLUSTER_NAME }} --zone ${{ secrets.DICTY_ZONE }} --project ${{ secrets.DEV_KUBERNETES_PROJECT }}
