@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"time"
 
-	validator "gopkg.in/go-playground/validator.v9"
+	"github.com/go-playground/validator/v10"
 
 	driver "github.com/arangodb/go-driver"
-	"github.com/dictyBase/apihelpers/aphcollection"
 	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/thoas/go-funk"
 )
 
 // CollectionParams are the arangodb collections required for storing
@@ -584,7 +584,7 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 	if err != nil {
 		return g, fmt.Errorf("error in retrieving the group %s", err)
 	}
-	nids := aphcollection.Remove(dbg.Group, idslice...)
+	nids := removeStringItems(dbg.Group, idslice...)
 	// retrieve the annotation objects
 	ml, err := ar.getAllAnnotations(nids...)
 	if err != nil {
@@ -828,4 +828,16 @@ func convToModel(i interface{}) (*model.AnnoDoc, error) {
 	m.DocumentMeta.Key = c["_key"].(string)
 	m.DocumentMeta.Rev = c["_rev"].(string)
 	return m, nil
+}
+
+// removeStringItems removes elements from a that are present in
+// items
+func removeStringItems(a []string, items ...string) []string {
+	var s []string
+	for _, v := range a {
+		if !funk.ContainsString(items, v) {
+			s = append(s, v)
+		}
+	}
+	return s
 }
