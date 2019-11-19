@@ -39,6 +39,8 @@ github.com/dictyBase/apihelpers v0.0.0-20191111194131-fa122d776698 h1:3pBVbQhbwP
 github.com/dictyBase/apihelpers v0.0.0-20191111194131-fa122d776698/go.mod h1:gGX/LeefIXOXRrprS225Zod4nWKT2Ty6KGnL6i8EFTs=
 github.com/dictyBase/arangomanager v0.0.1 h1:e4+bdfW7aRf1GwzmsH/qqYM5ywIZLRVGjRWAkTEcRQw=
 github.com/dictyBase/arangomanager v0.0.1/go.mod h1:BAgqy5oLbDbrxGq7t6XPaNfDYc7Gy2zs5h60ciCCjQM=
+github.com/dictyBase/arangomanager v0.1.1 h1:NGbC8ny94XsUutzaJmwQ4udvkdv7839iW+f3ALH4uPU=
+github.com/dictyBase/arangomanager v0.1.1/go.mod h1:nHdTk0NcnwBELSRQTzqGfA2kkH/3d85Sd1omtSWCLvs=
 github.com/dictyBase/go-genproto v0.0.0-20190419013406-7b67707bd07a h1:qGdhBfXCqQBzxfIGP1bnkVC5NrW+hr3+7HC04QIXjBE=
 github.com/dictyBase/go-genproto v0.0.0-20190419013406-7b67707bd07a/go.mod h1:uvt0ErfvhRMAzfRo4y/99/XVhM1EduGOLxTZ9SYetRY=
 github.com/dictyBase/go-genproto v0.0.0-20190815233815-aec1f112d97c h1:FqMllJ1WxuM7TDBusd6JqqtiGoLDs03VKUJtADlVFzM=
@@ -78,6 +80,7 @@ github.com/gliderlabs/ssh v0.1.1 h1:j3L6gSLQalDETeEg/Jg0mGY0/y/N6zI2xX1978P0Uqw=
 github.com/gliderlabs/ssh v0.1.1/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
 github.com/go-ini/ini v1.42.0 h1:TWr1wGj35+UiWHlBA8er89seFXxzwFn11spilrrj+38=
 github.com/go-ini/ini v1.42.0/go.mod h1:ByCAeIL28uOIIG0E3PJtZPDL8WnHpFKFOtgjp+3Ies8=
+github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=
 github.com/go-playground/locales v0.12.1 h1:2FITxuFt/xuCNP1Acdhv62OzaCiviiE4kotfhkmOqEc=
 github.com/go-playground/locales v0.12.1/go.mod h1:IUMDtCfWo/w/mtMfIE/IG2K+Ey3ygWanZIBtBW0W2TM=
 github.com/go-playground/locales v0.13.0 h1:HyWk6mgj5qFqCT5fjGBuRArbVDfE4hi8+e8ceBS/t7Q=
@@ -86,6 +89,8 @@ github.com/go-playground/universal-translator v0.16.0 h1:X++omBR/4cE2MNg91AoC3rm
 github.com/go-playground/universal-translator v0.16.0/go.mod h1:1AnU7NaIRDWWzGEKwgtJRd2xk99HeFyHw3yid4rvQIY=
 github.com/go-playground/universal-translator v0.17.0 h1:icxd5fm+REJzpZx7ZfpaD876Lmtgy7VtROAbHHXk8no=
 github.com/go-playground/universal-translator v0.17.0/go.mod h1:UkSxE5sNxxRwHyU+Scu5vgOQjsIJAF8j9muTVoKLVtA=
+github.com/go-playground/validator/v10 v10.0.1 h1:QgDDZpXlR/L3atIL2PbFt0TpazbtN7N6PxTGcgcyEUg=
+github.com/go-playground/validator/v10 v10.0.1/go.mod h1:uOYAAleCW8F/7oMFd6aG0GOhaH6EGOAJShg8Id5JGkI=
 github.com/go-sql-driver/mysql v1.4.0 h1:7LxgVwFb2hIQtMm87NdgAVfXjnt4OePseqT1tKx+opk=
 github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/go-sql-driver/mysql v1.4.1 h1:g24URVg0OFbNUTx9qqY1IRZ9D9z3iPyi5zKhQZpNwpA=

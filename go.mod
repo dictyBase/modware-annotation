@@ -4,7 +4,7 @@ require (
 	github.com/arangodb/go-driver v0.0.0-20191107140416-095263e288cd
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/dictyBase/apihelpers v0.0.0-20191111194131-fa122d776698
-	github.com/dictyBase/arangomanager v0.0.1
+	github.com/dictyBase/arangomanager v0.1.1
 	github.com/dictyBase/go-genproto v0.0.0-20190815233815-aec1f112d97c
 	github.com/dictyBase/go-obograph v1.0.1
 	github.com/go-playground/universal-translator v0.17.0 // indirect
