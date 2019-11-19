@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/go-playground/validator.v9"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 	"github.com/golang/protobuf/ptypes/empty"
 
-	"github.com/dictyBase/apihelpers/aphgrpc"
+	"github.com/dictyBase/aphgrpc"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/message"
 	"github.com/dictyBase/modware-annotation/internal/repository"
@@ -31,8 +31,8 @@ type AnnotationService struct {
 type ServiceParams struct {
 	Repository repository.TaggedAnnotationRepository `validate:"required"`
 	Publisher  message.Publisher                     `validate:"required"`
-	Group      string                                `validate:"required"`
 	Options    []aphgrpc.Option                      `validate:"required"`
+	Group      string                                `validate:"required"`
 }
 
 func defaultOptions() *aphgrpc.ServiceOptions {
