@@ -335,7 +335,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 		Ontology: nta2.Data.Attributes.Ontology,
 		EntryId:  "DDB_G0277853",
 	})
-	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Errorf(err, "expect %s error, received nothing", err)
 	assert.True(
 		repository.IsAnnotationNotFound(err),
 		"the entry should not exist",
@@ -369,7 +369,7 @@ func TestGetAnnotationById(t *testing.T) {
 	assert.Equal(m2.EnrtyId, em2.EnrtyId, "should match entry identifier")
 
 	ne, err := anrepo.GetAnnotationById("9999999")
-	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Errorf(err, "expected %s error, received nothing", err)
 	assert.True(
 		repository.IsAnnotationNotFound(err),
 		"entry should not exist",
@@ -381,11 +381,7 @@ func TestRemoveAnnotation(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -405,11 +401,7 @@ func TestEditAnnotation(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
 	m, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -436,11 +428,7 @@ func TestListAnnoFilter(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsListForFiltering(20)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
@@ -512,11 +500,7 @@ func TestListAnnotations(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(15)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
@@ -573,11 +557,7 @@ func TestAddAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(8)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -595,11 +575,7 @@ func TestGetAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(4)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -622,11 +598,7 @@ func TestAppendToAnntationGroup(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(7)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -651,11 +623,7 @@ func TestRemoveAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(7)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -681,11 +649,7 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(9)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -714,11 +678,7 @@ func TestListAnnGrFilter(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsListForFiltering(20)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
@@ -771,11 +731,7 @@ func TestListAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer func() {
-		if err := anrepo.ClearAnnotations(); err != nil {
-			assert.FailNow(err.Error(), "error in pruning annotations")
-		}
-	}()
+	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(60)
 	var ml []*model.AnnoDoc
 	for _, ann := range tal {
