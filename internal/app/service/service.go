@@ -375,7 +375,7 @@ func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.
 	if err := r.Validate(); err != nil {
 		return e, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	if err := s.repo.RemoveAnnotation(r.EntryId, r.Purge); err != nil {
+	if err := s.repo.RemoveAnnotation(r.Id, r.Purge); err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return e, aphgrpc.HandleNotFoundError(ctx, err)
 		}
