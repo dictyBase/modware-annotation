@@ -6,7 +6,7 @@ require (
 	github.com/dictyBase/apihelpers v0.0.0-20191111194131-fa122d776698
 	github.com/dictyBase/arangomanager v0.0.1
 	github.com/dictyBase/go-genproto v0.0.0-20190815233815-aec1f112d97c
-	github.com/dictyBase/go-obograph v1.0.1
+	github.com/dictyBase/go-obograph v1.0.3
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/golang/protobuf v1.3.2
