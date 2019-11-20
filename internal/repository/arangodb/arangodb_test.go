@@ -725,6 +725,9 @@ func TestListAnnGrFilter(t *testing.T) {
 	for _, g := range egl4 {
 		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
 	}
+	_, err = anrepo.ListAnnotationGroup(0, 4, "FILTER ann.entry_id == 'jumbo'")
+	assert.Error(err, "expect error")
+	assert.True(repository.IsAnnotationGroupListNotFound(err), "expect no annotation group to be found")
 }
 
 func TestListAnnotationGroup(t *testing.T) {
