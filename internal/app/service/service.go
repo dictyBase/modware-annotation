@@ -160,23 +160,9 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 	if r.Limit > 0 {
 		limit = r.Limit
 	}
-	var astmt string
-	if len(r.Filter) > 0 {
-		p, err := query.ParseFilterString(r.Filter)
-		if err != nil {
-			return gc, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in parsing filter string"),
-			)
-		}
-		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
-		if err != nil {
-			return gc, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in generating aql statement"),
-			)
-		}
-		astmt = q
+	astmt, err := filterStrToQuery(r.Filter)
+	if err != nil {
+		return gc, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	mgc, err := s.repo.ListAnnotationGroup(r.Cursor, limit, astmt)
 	if err != nil {
@@ -227,23 +213,9 @@ func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.L
 	if r.Limit > 0 {
 		limit = r.Limit
 	}
-	var astmt string
-	if len(r.Filter) > 0 {
-		p, err := query.ParseFilterString(r.Filter)
-		if err != nil {
-			return tac, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in parsing filter string"),
-			)
-		}
-		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
-		if err != nil {
-			return tac, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in generating aql statement"),
-			)
-		}
-		astmt = q
+	astmt, err := filterStrToQuery(r.Filter)
+	if err != nil {
+		return tac, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	mc, err := s.repo.ListAnnotations(r.Cursor, limit, astmt)
 	if err != nil {
@@ -394,4 +366,20 @@ func getAnnoAttributes(m *model.AnnoDoc) *annotation.TaggedAnnotationAttributes 
 		Tag:           m.Tag,
 		Ontology:      m.Ontology,
 	}
+}
+
+func filterStrToQuery(filter string) (string, error) {
+	var empty string
+	if len(filter) == 0 {
+		return empty, nil
+	}
+	p, err := query.ParseFilterString(filter)
+	if err != nil {
+		return empty, fmt.Errorf("error in parsing filter string")
+	}
+	q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
+	if err != nil {
+		return empty, fmt.Errorf("error in generating aql statement")
+	}
+	return q, nil
 }
