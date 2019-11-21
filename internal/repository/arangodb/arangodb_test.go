@@ -587,6 +587,7 @@ func TestGetAnnotationGroup(t *testing.T) {
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	eg, err := anrepo.GetAnnotationGroup(g.GroupId)
+	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.ElementsMatch(
 		testModelMaptoID(g.AnnoDocs, model2IdCallback),
 		testModelMaptoID(eg.AnnoDocs, model2IdCallback),
