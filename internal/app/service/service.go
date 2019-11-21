@@ -175,11 +175,7 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 	for _, mg := range mgc {
 		var gdata []*annotation.TaggedAnnotationGroup_Data
 		for _, m := range mg.AnnoDocs {
-			gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
-				Type:       s.GetResourceName(),
-				Id:         m.Key,
-				Attributes: getAnnoAttributes(m),
-			})
+			gdata = append(gdata, s.getAnnoGroupData(m))
 		}
 		gcdata = append(gcdata, &annotation.TaggedAnnotationGroupCollection_Data{
 			Type: s.GetGroupResourceName(),
@@ -274,22 +270,7 @@ func (s *AnnotationService) UpdateAnnotation(ctx context.Context, r *annotation.
 	if m.NotFound {
 		return ta, aphgrpc.HandleNotFoundError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           m.Tag,
-			Ontology:      m.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	err = s.publisher.Publish(s.Topics["annotationUpdate"], ta)
 	if err != nil {
 		return ta, aphgrpc.HandleUpdateError(ctx, err)
@@ -315,28 +296,21 @@ func (s *AnnotationService) getGroup(mg *model.AnnoGroup) *annotation.TaggedAnno
 	g := &annotation.TaggedAnnotationGroup{}
 	var gdata []*annotation.TaggedAnnotationGroup_Data
 	for _, m := range mg.AnnoDocs {
-		gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
-			Type: s.GetResourceName(),
-			Id:   m.Key,
-			Attributes: &annotation.TaggedAnnotationAttributes{
-				Value:         m.Value,
-				EditableValue: m.EditableValue,
-				CreatedBy:     m.CreatedBy,
-				CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-				Version:       m.Version,
-				EntryId:       m.EnrtyId,
-				Rank:          m.Rank,
-				IsObsolete:    m.IsObsolete,
-				Tag:           m.Tag,
-				Ontology:      m.Ontology,
-			},
-		})
+		gdata = append(gdata, s.getAnnoGroupData(m))
 	}
 	g.Data = gdata
 	g.GroupId = mg.GroupId
 	g.CreatedAt = aphgrpc.TimestampProto(mg.CreatedAt)
 	g.UpdatedAt = aphgrpc.TimestampProto(mg.UpdatedAt)
 	return g
+}
+
+func (s *AnnotationService) getAnnoGroupData(m *model.AnnoDoc) *annotation.TaggedAnnotationGroup_Data {
+	return &annotation.TaggedAnnotationGroup_Data{
+		Type:       s.GetGroupResourceName(),
+		Id:         m.Key,
+		Attributes: getAnnoAttributes(m),
+	}
 }
 
 func (s *AnnotationService) getAnnoData(m *model.AnnoDoc) *annotation.TaggedAnnotation_Data {
