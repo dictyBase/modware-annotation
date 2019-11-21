@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	apiflag "github.com/dictyBase/apihelpers/command/flag"
+	apiflag "github.com/dictyBase/aphgrpc"
 	arangoflag "github.com/dictyBase/arangomanager/command/flag"
 	oboaction "github.com/dictyBase/go-obograph/command/action"
 	oboflag "github.com/dictyBase/go-obograph/command/flag"

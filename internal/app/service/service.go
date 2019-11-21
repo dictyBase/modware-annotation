@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/go-playground/validator.v9"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 	"github.com/golang/protobuf/ptypes/empty"
 
-	"github.com/dictyBase/apihelpers/aphgrpc"
+	"github.com/dictyBase/aphgrpc"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/message"
 	"github.com/dictyBase/modware-annotation/internal/repository"
@@ -31,8 +31,8 @@ type AnnotationService struct {
 type ServiceParams struct {
 	Repository repository.TaggedAnnotationRepository `validate:"required"`
 	Publisher  message.Publisher                     `validate:"required"`
-	Group      string                                `validate:"required"`
 	Options    []aphgrpc.Option                      `validate:"required"`
+	Group      string                                `validate:"required"`
 }
 
 func defaultOptions() *aphgrpc.ServiceOptions {
@@ -77,22 +77,7 @@ func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.Ann
 	if m.NotFound {
 		return ta, aphgrpc.HandleNotFoundError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           m.Tag,
-			Ontology:      m.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	return ta, nil
 }
 
@@ -108,22 +93,7 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 		}
 		return ta, aphgrpc.HandleGetError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           m.Tag,
-			Ontology:      m.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	return ta, nil
 }
 
@@ -190,23 +160,9 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 	if r.Limit > 0 {
 		limit = r.Limit
 	}
-	var astmt string
-	if len(r.Filter) > 0 {
-		p, err := query.ParseFilterString(r.Filter)
-		if err != nil {
-			return gc, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in parsing filter string"),
-			)
-		}
-		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
-		if err != nil {
-			return gc, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in generating aql statement"),
-			)
-		}
-		astmt = q
+	astmt, err := filterStrToQuery(r.Filter)
+	if err != nil {
+		return gc, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	mgc, err := s.repo.ListAnnotationGroup(r.Cursor, limit, astmt)
 	if err != nil {
@@ -219,11 +175,7 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 	for _, mg := range mgc {
 		var gdata []*annotation.TaggedAnnotationGroup_Data
 		for _, m := range mg.AnnoDocs {
-			gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
-				Type:       s.GetResourceName(),
-				Id:         m.Key,
-				Attributes: getAnnoAttributes(m),
-			})
+			gdata = append(gdata, s.getAnnoGroupData(m))
 		}
 		gcdata = append(gcdata, &annotation.TaggedAnnotationGroupCollection_Data{
 			Type: s.GetGroupResourceName(),
@@ -257,23 +209,9 @@ func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.L
 	if r.Limit > 0 {
 		limit = r.Limit
 	}
-	var astmt string
-	if len(r.Filter) > 0 {
-		p, err := query.ParseFilterString(r.Filter)
-		if err != nil {
-			return tac, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in parsing filter string"),
-			)
-		}
-		q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
-		if err != nil {
-			return tac, aphgrpc.HandleInvalidParamError(
-				ctx,
-				fmt.Errorf("error in generating aql statement"),
-			)
-		}
-		astmt = q
+	astmt, err := filterStrToQuery(r.Filter)
+	if err != nil {
+		return tac, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	mc, err := s.repo.ListAnnotations(r.Cursor, limit, astmt)
 	if err != nil {
@@ -312,22 +250,7 @@ func (s *AnnotationService) CreateAnnotation(ctx context.Context, r *annotation.
 	if err != nil {
 		return ta, aphgrpc.HandleInsertError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           r.Data.Attributes.Tag,
-			Ontology:      r.Data.Attributes.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	err = s.publisher.Publish(s.Topics["annotationCreate"], ta)
 	if err != nil {
 		return ta, aphgrpc.HandleInsertError(ctx, err)
@@ -347,22 +270,7 @@ func (s *AnnotationService) UpdateAnnotation(ctx context.Context, r *annotation.
 	if m.NotFound {
 		return ta, aphgrpc.HandleNotFoundError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           m.Tag,
-			Ontology:      m.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	err = s.publisher.Publish(s.Topics["annotationUpdate"], ta)
 	if err != nil {
 		return ta, aphgrpc.HandleUpdateError(ctx, err)
@@ -375,7 +283,7 @@ func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.
 	if err := r.Validate(); err != nil {
 		return e, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	if err := s.repo.RemoveAnnotation(r.EntryId, r.Purge); err != nil {
+	if err := s.repo.RemoveAnnotation(r.Id, r.Purge); err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return e, aphgrpc.HandleNotFoundError(ctx, err)
 		}
@@ -388,28 +296,29 @@ func (s *AnnotationService) getGroup(mg *model.AnnoGroup) *annotation.TaggedAnno
 	g := &annotation.TaggedAnnotationGroup{}
 	var gdata []*annotation.TaggedAnnotationGroup_Data
 	for _, m := range mg.AnnoDocs {
-		gdata = append(gdata, &annotation.TaggedAnnotationGroup_Data{
-			Type: s.GetResourceName(),
-			Id:   m.Key,
-			Attributes: &annotation.TaggedAnnotationAttributes{
-				Value:         m.Value,
-				EditableValue: m.EditableValue,
-				CreatedBy:     m.CreatedBy,
-				CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-				Version:       m.Version,
-				EntryId:       m.EnrtyId,
-				Rank:          m.Rank,
-				IsObsolete:    m.IsObsolete,
-				Tag:           m.Tag,
-				Ontology:      m.Ontology,
-			},
-		})
+		gdata = append(gdata, s.getAnnoGroupData(m))
 	}
 	g.Data = gdata
 	g.GroupId = mg.GroupId
 	g.CreatedAt = aphgrpc.TimestampProto(mg.CreatedAt)
 	g.UpdatedAt = aphgrpc.TimestampProto(mg.UpdatedAt)
 	return g
+}
+
+func (s *AnnotationService) getAnnoGroupData(m *model.AnnoDoc) *annotation.TaggedAnnotationGroup_Data {
+	return &annotation.TaggedAnnotationGroup_Data{
+		Type:       s.GetGroupResourceName(),
+		Id:         m.Key,
+		Attributes: getAnnoAttributes(m),
+	}
+}
+
+func (s *AnnotationService) getAnnoData(m *model.AnnoDoc) *annotation.TaggedAnnotation_Data {
+	return &annotation.TaggedAnnotation_Data{
+		Type:       s.GetGroupResourceName(),
+		Id:         m.Key,
+		Attributes: getAnnoAttributes(m),
+	}
 }
 
 // genNextCursorVal converts to epoch(https://en.wikipedia.org/wiki/Unix_time)
@@ -431,4 +340,20 @@ func getAnnoAttributes(m *model.AnnoDoc) *annotation.TaggedAnnotationAttributes 
 		Tag:           m.Tag,
 		Ontology:      m.Ontology,
 	}
+}
+
+func filterStrToQuery(filter string) (string, error) {
+	var empty string
+	if len(filter) == 0 {
+		return empty, nil
+	}
+	p, err := query.ParseFilterString(filter)
+	if err != nil {
+		return empty, fmt.Errorf("error in parsing filter string")
+	}
+	q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
+	if err != nil {
+		return empty, fmt.Errorf("error in generating aql statement")
+	}
+	return q, nil
 }
