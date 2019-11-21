@@ -77,22 +77,7 @@ func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.Ann
 	if m.NotFound {
 		return ta, aphgrpc.HandleNotFoundError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           m.Tag,
-			Ontology:      m.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	return ta, nil
 }
 
@@ -108,22 +93,7 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 		}
 		return ta, aphgrpc.HandleGetError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           m.Tag,
-			Ontology:      m.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	return ta, nil
 }
 
@@ -312,22 +282,7 @@ func (s *AnnotationService) CreateAnnotation(ctx context.Context, r *annotation.
 	if err != nil {
 		return ta, aphgrpc.HandleInsertError(ctx, err)
 	}
-	ta.Data = &annotation.TaggedAnnotation_Data{
-		Type: s.GetResourceName(),
-		Id:   m.Key,
-		Attributes: &annotation.TaggedAnnotationAttributes{
-			Value:         m.Value,
-			EditableValue: m.EditableValue,
-			CreatedBy:     m.CreatedBy,
-			CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-			Version:       m.Version,
-			EntryId:       m.EnrtyId,
-			Rank:          m.Rank,
-			IsObsolete:    m.IsObsolete,
-			Tag:           r.Data.Attributes.Tag,
-			Ontology:      r.Data.Attributes.Ontology,
-		},
-	}
+	ta.Data = s.getAnnoData(m)
 	err = s.publisher.Publish(s.Topics["annotationCreate"], ta)
 	if err != nil {
 		return ta, aphgrpc.HandleInsertError(ctx, err)
@@ -410,6 +365,14 @@ func (s *AnnotationService) getGroup(mg *model.AnnoGroup) *annotation.TaggedAnno
 	g.CreatedAt = aphgrpc.TimestampProto(mg.CreatedAt)
 	g.UpdatedAt = aphgrpc.TimestampProto(mg.UpdatedAt)
 	return g
+}
+
+func (s *AnnotationService) getAnnoData(m *model.AnnoDoc) *annotation.TaggedAnnotation_Data {
+	return &annotation.TaggedAnnotation_Data{
+		Type:       s.GetGroupResourceName(),
+		Id:         m.Key,
+		Attributes: getAnnoAttributes(m),
+	}
 }
 
 // genNextCursorVal converts to epoch(https://en.wikipedia.org/wiki/Unix_time)
