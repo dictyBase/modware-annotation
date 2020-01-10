@@ -20,6 +20,8 @@ github.com/dictyBase/aphgrpc v1.1.2 h1:DveWZw/D+7WoHaXiwAz8ONDlTFuKsPYbsHf2kH/Z9
 github.com/dictyBase/aphgrpc v1.1.2/go.mod h1:3wkpgdAsKa+TpBWIU6Qs0PtZLtpsgEDxMlnw5VC4s08=
 github.com/dictyBase/arangomanager v0.1.1 h1:NGbC8ny94XsUutzaJmwQ4udvkdv7839iW+f3ALH4uPU=
 github.com/dictyBase/arangomanager v0.1.1/go.mod h1:nHdTk0NcnwBELSRQTzqGfA2kkH/3d85Sd1omtSWCLvs=
+github.com/dictyBase/arangomanager v0.1.2 h1:iOG6gv8rAPL1d/xRE4crLVPEY0TYjH3dykhjYmZIUng=
+github.com/dictyBase/arangomanager v0.1.2/go.mod h1:CIQ81tbFOKL9jWzI9ORYLoJrjYZ//0shuYkHjgyUoIA=
 github.com/dictyBase/go-genproto v0.0.0-20191014224155-356781391a08 h1:GLk9SZ0K8JhVUfQ8gbZq+NJL0maO8X7NRNw0lLxsPxQ=
 github.com/dictyBase/go-genproto v0.0.0-20191014224155-356781391a08/go.mod h1:KY6iUqXl1lLq81WTW9u5DfZE58xM61PsGLSLwwtePlk=
 github.com/dictyBase/go-obograph v1.0.3 h1:vUWuGzC4cQlUic9ChJezTaeyeHdpxZxcC6ecn8plrpA=
