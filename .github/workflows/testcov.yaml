@@ -30,3 +30,11 @@ jobs:
         with:
             file: ./profile.cov
             token: ${{ secrets.CODECOV_TOKEN }}
+      - name: upload coverage to codeclimate
+        uses: paambaati/codeclimate-action@v2.4.0
+        env:
+            CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_TOKEN }}
+        with:
+            coverageCommand: go test -coverprofile c.out ./...
+            debug: true
+
