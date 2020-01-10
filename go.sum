@@ -24,6 +24,8 @@ github.com/dictyBase/go-genproto v0.0.0-20191014224155-356781391a08 h1:GLk9SZ0K8
 github.com/dictyBase/go-genproto v0.0.0-20191014224155-356781391a08/go.mod h1:KY6iUqXl1lLq81WTW9u5DfZE58xM61PsGLSLwwtePlk=
 github.com/dictyBase/go-obograph v1.0.3 h1:vUWuGzC4cQlUic9ChJezTaeyeHdpxZxcC6ecn8plrpA=
 github.com/dictyBase/go-obograph v1.0.3/go.mod h1:0hJGr7m3vQ2z6S8fXg7vMeOwGPV9lhsHq8OsXrdBlNI=
+github.com/dictyBase/go-obograph v1.0.4 h1:lC6ahNB1r9v4iQ+5NqfUskhHhJgx81t/Z4rdphl9mdM=
+github.com/dictyBase/go-obograph v1.0.4/go.mod h1:NjNXJrO1Tq8wE+/0UO692tarnIKohu6it/mOHQJ0T9Y=
 github.com/emirpasic/gods v1.12.0 h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
