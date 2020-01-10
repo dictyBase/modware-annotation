@@ -19,7 +19,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.4.0
 	github.com/thoas/go-funk v0.5.0
-	github.com/urfave/cli v1.22.1
+	github.com/urfave/cli v1.22.2
 	golang.org/x/crypto v0.0.0-20191119213627-4f8c1d86b1ba // indirect
 	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3 // indirect
 	golang.org/x/sys v0.0.0-20191120130536-6bfc516c8699 // indirect
