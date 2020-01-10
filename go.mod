@@ -5,7 +5,7 @@ require (
 	github.com/dictyBase/aphgrpc v1.1.2
 	github.com/dictyBase/arangomanager v0.1.1
 	github.com/dictyBase/go-genproto v0.0.0-20191014224155-356781391a08
-	github.com/dictyBase/go-obograph v1.0.3
+	github.com/dictyBase/go-obograph v1.0.4
 	github.com/go-playground/validator/v10 v10.1.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.3.2
