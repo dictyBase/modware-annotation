@@ -6,7 +6,7 @@ require (
 	github.com/dictyBase/arangomanager v0.1.1
 	github.com/dictyBase/go-genproto v0.0.0-20191014224155-356781391a08
 	github.com/dictyBase/go-obograph v1.0.3
-	github.com/go-playground/validator/v10 v10.0.1
+	github.com/go-playground/validator/v10 v10.1.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
