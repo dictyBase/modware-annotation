@@ -33,6 +33,20 @@ jobs:
         with:
             file: ./profile.cov
             token: ${{ secrets.CODECOV_TOKEN }}
+      - name: upload coverage to codeclimate
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CODECLIMATE_TOKEN }}
+          ARANGO_USER: root
+          ARANGO_PASS: rootpass
+          ARANGO_HOST: localhost
+          ARANGO_PORT: ${{ job.services.arangodb.ports[8529] }}
+          GOPROXY: https://proxy.golang.org
+        run: |
+            curl -L -o test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-0.6.3-linux-amd64
+            chmod +x test-reporter
+            ./test-reporter before-build
+            go test -coverprofile c.out ./...
+            ./test-reporter after-build --exit-code 0 --debug -p $(go list -m) -t gocov
 
   build:
     needs: test
