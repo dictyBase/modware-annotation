@@ -271,34 +271,30 @@ func TestAddAnnotation(t *testing.T) {
 
 	// error in case of existing record
 	_, err = anrepo.AddAnnotation(nta)
-	if assert.Error(err) {
-		assert.Regexp(
-			regexp.MustCompile("already exists"),
-			err.Error(),
-			"error should have existence of annotation",
-		)
-	}
+	assert.Error(err, "expect error for existing annotation")
+	assert.Regexp(
+		regexp.MustCompile("already exists"),
+		err.Error(),
+		"error should have existence of annotation",
+	)
 
-	// error in case of non-existent ontology and tag
 	nta.Data.Attributes.Tag = "respiration"
 	_, err = anrepo.AddAnnotation(nta)
-	if assert.Error(err) {
-		assert.Regexp(
-			regexp.MustCompile("respiration"),
-			err.Error(),
-			"error should contain the non-existent tag name",
-		)
-	}
+	assert.Error(err, "expect error in case of non-existent ontology and tag")
+	assert.Regexp(
+		regexp.MustCompile("respiration"),
+		err.Error(),
+		"error should contain the non-existent tag name",
+	)
 	nta.Data.Attributes.Tag = "description"
 	nta.Data.Attributes.Ontology = "caboose"
 	_, err = anrepo.AddAnnotation(nta)
-	if assert.Error(err) {
-		assert.Regexp(
-			regexp.MustCompile("caboose"),
-			err.Error(),
-			"error should contain the non-existent ontology",
-		)
-	}
+	assert.Error(err, "expect error in case of non-existent ontology and tag")
+	assert.Regexp(
+		regexp.MustCompile("caboose"),
+		err.Error(),
+		"error should contain the non-existent ontology",
+	)
 }
 
 func TestGetAnnotationByEntry(t *testing.T) {
