@@ -261,50 +261,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	if err := ar.existAnno(attr, tag); err != nil {
 		return m, err
 	}
-	count, err := ar.database.Count(
-		fmt.Sprintf(
-			annExistQ,
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-			attr.EntryId,
-			attr.Rank,
-			tag,
-			attr.Ontology,
-		),
-	)
-	if err != nil {
-		return m, fmt.Errorf("error in count query %s", err)
-	}
-
-	if count > 0 {
-		return m, fmt.Errorf("error in creating, annotation already exists")
-	}
-	// create annotation document
-	bindVarsc := map[string]interface{}{
-		"@anno_collection":    ar.anno.annot.Name(),
-		"@anno_cv_collection": ar.anno.term.Name(),
-		"value":               attr.Value,
-		"editable_value":      attr.EditableValue,
-		"created_by":          attr.CreatedBy,
-		"entry_id":            attr.EntryId,
-		"rank":                attr.Rank,
-		"version":             1,
-		"to":                  cvtid,
-	}
-	rins, err := ar.database.DoRun(annInst, bindVarsc)
-	if err != nil {
-		return m, err
-	}
-	if rins.IsEmpty() {
-		return m, fmt.Errorf("error in returning newly created document")
-	}
-	if err := rins.Read(m); err != nil {
-		return m, err
-	}
-	m.Tag = tag
-	m.Ontology = attr.Ontology
-	return m, nil
+	return ar.createAnno(attr, cvtid, tag)
 }
 
 func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error) {
@@ -717,6 +674,34 @@ func (ar *arangorepository) ClearAnnotations() error {
 		return err
 	}
 	return nil
+}
+
+func (ar *arangorepository) createAnno(attr *annotation.NewTaggedAnnotationAttributes, id, tag string) (*model.AnnoDoc, error) {
+	m := &model.AnnoDoc{}
+	bindVarsc := map[string]interface{}{
+		"@anno_collection":    ar.anno.annot.Name(),
+		"@anno_cv_collection": ar.anno.term.Name(),
+		"value":               attr.Value,
+		"editable_value":      attr.EditableValue,
+		"created_by":          attr.CreatedBy,
+		"entry_id":            attr.EntryId,
+		"rank":                attr.Rank,
+		"version":             1,
+		"to":                  id,
+	}
+	rins, err := ar.database.DoRun(annInst, bindVarsc)
+	if err != nil {
+		return m, err
+	}
+	if rins.IsEmpty() {
+		return m, fmt.Errorf("error in returning newly created document")
+	}
+	if err := rins.Read(m); err != nil {
+		return m, err
+	}
+	m.Tag = tag
+	m.Ontology = attr.Ontology
+	return m, nil
 }
 
 func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttributes, tag string) error {
