@@ -43,5 +43,6 @@ jobs:
             chmod +x test-reporter
             ./test-reporter before-build
             go test -coverprofile c.out ./...
-            GIT_COMMIT_SHA=$(git rev-parse HEAD) GIT_BRANCH=${GITHUB_REF#refs/heads/} ./test-reporter after-build --exit-code 0 --debug -p $(go list -m) -t gocov
+            ref=$(git symbolic-ref --quiet HEAD)
+            GIT_COMMIT_SHA=$(git rev-parse HEAD) GIT_BRANCH=${ref#refs/heads/} ./test-reporter after-build --exit-code 0 --debug -p $(go list -m) -t gocov
 
