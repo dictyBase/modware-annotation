@@ -69,6 +69,12 @@ type arangorepository struct {
 	onto     *ontoc
 }
 
+type createParams struct {
+	attr *annotation.NewTaggedAnnotationAttributes
+	id   string
+	tag  string
+}
+
 func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
 	ac := &annoc{}
 	anno, err := db.FindOrCreateCollection(
@@ -261,7 +267,13 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	if err := ar.existAnno(attr, tag); err != nil {
 		return m, err
 	}
-	return ar.createAnno(attr, cvtid, tag)
+	return ar.createAnno(
+		&createParams{
+			attr: attr,
+			id:   cvtid,
+			tag:  tag,
+		},
+	)
 }
 
 func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error) {
@@ -676,8 +688,9 @@ func (ar *arangorepository) ClearAnnotations() error {
 	return nil
 }
 
-func (ar *arangorepository) createAnno(attr *annotation.NewTaggedAnnotationAttributes, id, tag string) (*model.AnnoDoc, error) {
+func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, error) {
 	m := &model.AnnoDoc{}
+	attr := params.attr
 	bindVarsc := map[string]interface{}{
 		"@anno_collection":    ar.anno.annot.Name(),
 		"@anno_cv_collection": ar.anno.term.Name(),
@@ -687,7 +700,7 @@ func (ar *arangorepository) createAnno(attr *annotation.NewTaggedAnnotationAttri
 		"entry_id":            attr.EntryId,
 		"rank":                attr.Rank,
 		"version":             1,
-		"to":                  id,
+		"to":                  params.id,
 	}
 	rins, err := ar.database.DoRun(annInst, bindVarsc)
 	if err != nil {
@@ -699,7 +712,7 @@ func (ar *arangorepository) createAnno(attr *annotation.NewTaggedAnnotationAttri
 	if err := rins.Read(m); err != nil {
 		return m, err
 	}
-	m.Tag = tag
+	m.Tag = params.tag
 	m.Ontology = attr.Ontology
 	return m, nil
 }
