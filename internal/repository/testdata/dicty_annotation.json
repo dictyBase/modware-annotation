@@ -1,31 +1,11 @@
 {
   "graphs" : [ {
     "nodes" : [ {
-      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000014",
-      "meta" : {
-        "definition" : {
-          "val" : "A note that will not be available for public consumption.",
-          "xrefs" : [ ]
-        },
-        "basicPropertyValues" : [ {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
-          "val" : "2018-11-16T15:40:51Z"
-        }, {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
-          "val" : "dicty_annotation"
-        }, {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
-          "val" : "cybersiddhu"
-        } ]
-      },
-      "type" : "CLASS",
-      "lbl" : "private note"
-    }, {
       "id" : "http://purl.obolibrary.org/obo/DDANNO_0000003",
       "meta" : {
         "definition" : {
           "val" : "An annotation that expands the name annotation.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
@@ -45,7 +25,7 @@
       "meta" : {
         "definition" : {
           "val" : "A short human readable text.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
@@ -65,7 +45,7 @@
       "meta" : {
         "definition" : {
           "val" : "It represents an annotation of a biological entity at dictybase.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "xrefs" : [ {
           "val" : "dictyBase:https://dictybase.org"
@@ -78,98 +58,67 @@
       "type" : "CLASS",
       "lbl" : "dictybase annotation"
     }, {
-      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000012",
-      "meta" : {
-        "definition" : {
-          "val" : "Note taken by a curator.",
-          "xrefs" : [ ]
-        },
-        "basicPropertyValues" : [ {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
-          "val" : "dicty_annotation"
-        }, {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
-          "val" : "cybersiddhu"
-        }, {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
-          "val" : "2018-11-16T15:37:30Z"
-        } ]
-      },
-      "type" : "CLASS",
-      "lbl" : "curator note"
-    }, {
       "id" : "http://purl.obolibrary.org/obo/DDANNO_0000002",
       "meta" : {
         "definition" : {
           "val" : "Free text description about any biological entity.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
+        "synonyms" : [ {
+          "pred" : "hasRelatedSynonym",
+          "val" : "summary",
+          "xrefs" : [ ]
+        } ],
         "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
           "val" : "cybersiddhu"
         }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
           "val" : "2018-11-16T12:59:35Z"
-        }, {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
-          "val" : "dicty_annotation"
         } ]
       },
       "type" : "CLASS",
       "lbl" : "description"
     }, {
-      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000013",
-      "meta" : {
-        "definition" : {
-          "val" : "A note that is publicly available.",
-          "xrefs" : [ ]
-        },
-        "basicPropertyValues" : [ {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
-          "val" : "cybersiddhu"
-        }, {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
-          "val" : "dicty_annotation"
-        }, {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
-          "val" : "2018-11-16T15:39:46Z"
-        } ]
-      },
-      "type" : "CLASS",
-      "lbl" : "public note"
-    }, {
       "id" : "http://purl.obolibrary.org/obo/DDANNO_0000007",
       "meta" : {
         "definition" : {
           "val" : "An annotation that describes the state of a biological entity.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
-          "val" : "cybersiddhu"
-        }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
           "val" : "2018-11-16T14:37:57Z"
         }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
           "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "cybersiddhu"
         } ]
       },
       "type" : "CLASS",
       "lbl" : "status"
     }, {
+      "id" : "http://www.geneontology.org/formats/oboInOwl#hasExactSynonym",
+      "type" : "PROPERTY",
+      "lbl" : "has_exact_synonym"
+    }, {
       "id" : "http://purl.obolibrary.org/obo/DDANNO_0000008",
       "meta" : {
         "definition" : {
-          "val" : "It is a process by which biocurator annotates information of biological entity.",
-          "xrefs" : [ ]
+          "val" : "A process by which a biocurator annotates information of biological entity.",
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
-          "val" : "dicty_annotation"
-        }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
           "val" : "2018-11-16T15:04:29Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
         }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
           "val" : "cybersiddhu"
@@ -182,7 +131,7 @@
       "meta" : {
         "definition" : {
           "val" : "An annotation that describes the product of an biological entity.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
@@ -202,17 +151,17 @@
       "meta" : {
         "definition" : {
           "val" : "An annotation that describes the expressed product of a gene.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
-          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
-          "val" : "2018-11-16T14:35:46Z"
-        }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
           "val" : "dicty_annotation"
         }, {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
           "val" : "cybersiddhu"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2018-11-16T14:35:46Z"
         } ]
       },
       "type" : "CLASS",
@@ -226,7 +175,7 @@
       "meta" : {
         "definition" : {
           "val" : "Curation status of a biological entity.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
@@ -254,11 +203,240 @@
       "type" : "PROPERTY",
       "lbl" : "definition"
     }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000021",
+      "meta" : {
+        "definition" : {
+          "val" : "A curator defined name describing the strain.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "Petra"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-06-12T16:24:07Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "strain descriptor"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000022",
+      "meta" : {
+        "definition" : {
+          "val" : "It represents type of genetic modification.",
+          "xrefs" : [ ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "cybersiddhu"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-08-02T19:52:09Z"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "mutant type"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000020",
+      "meta" : {
+        "definition" : {
+          "val" : "Systematic name for a strain is either annotated from publication, or automatically added as DBS id.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "Petra"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-06-12T16:12:35Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "systematic name"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000014",
+      "meta" : {
+        "definition" : {
+          "val" : "A note that will not be available for public consumption.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2018-11-16T15:40:51Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "cybersiddhu"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "private note"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000015",
+      "meta" : {
+        "definition" : {
+          "val" : "Literature imported to dictybase.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "Petra"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-06-07T09:29:41Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "literature"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000012",
+      "meta" : {
+        "definition" : {
+          "val" : "Note taken by a curator.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "cybersiddhu"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2018-11-16T15:37:30Z"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "curator note"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000013",
+      "meta" : {
+        "definition" : {
+          "val" : "A note that is publicly available.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2018-11-16T15:39:46Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "cybersiddhu"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "public note"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000018",
+      "meta" : {
+        "definition" : {
+          "val" : "The genetic constitution of an individual organism.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-06-07T07:08:26Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "cybersiddhu"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "genotype"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000019",
+      "meta" : {
+        "definition" : {
+          "val" : "Synonym contains alternative names.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "Petra"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-06-12T16:03:48Z"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "synonym"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000016",
+      "meta" : {
+        "definition" : {
+          "val" : "Identifier from PubMed citation.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "synonyms" : [ {
+          "pred" : "hasExactSynonym",
+          "val" : "PMID",
+          "xrefs" : [ ]
+        } ],
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-06-07T09:30:42Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "Petra"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "pubmed id"
+    }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000017",
+      "meta" : {
+        "definition" : {
+          "val" : "Citation  by digital object identifier.",
+          "xrefs" : [ "DDB:pf" ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "Petra"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2019-06-07T09:32:55Z"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "DOI"
+    }, {
+      "id" : "http://www.geneontology.org/formats/oboInOwl#hasRelatedSynonym",
+      "type" : "PROPERTY",
+      "lbl" : "has_related_synonym"
+    }, {
       "id" : "http://purl.obolibrary.org/obo/DDANNO_0000010",
       "meta" : {
         "definition" : {
           "val" : "A curator is a professional scientist who curates, collects, annotates, and validates information that is disseminated by biological and model Organism Databases.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
@@ -278,7 +456,7 @@
       "meta" : {
         "definition" : {
           "val" : "Free unstructured text or entry.",
-          "xrefs" : [ ]
+          "xrefs" : [ "DDB:pf" ]
         },
         "basicPropertyValues" : [ {
           "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
@@ -295,10 +473,6 @@
       "lbl" : "note"
     } ],
     "edges" : [ {
-      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000010",
-      "pred" : "is_a",
-      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
-    }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000013",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000011"
@@ -306,10 +480,6 @@
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000003",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000002"
-    }, {
-      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000009",
-      "pred" : "is_a",
-      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000007"
     }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000012",
       "pred" : "is_a",
@@ -319,11 +489,67 @@
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
     }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000020",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000004"
+    }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000014",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000011"
     }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000015",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000016",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000015"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000017",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000015"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000004",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000006",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000005"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000009",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000008"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000021",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000002"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000005",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000010",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000018",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000019",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000004"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000009",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000007"
+    }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000011",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000022",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
     }, {
@@ -335,31 +561,15 @@
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
     }, {
-      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000004",
-      "pred" : "is_a",
-      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
-    }, {
-      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000006",
-      "pred" : "is_a",
-      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000005"
-    }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000012",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000011"
     }, {
-      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000009",
-      "pred" : "is_a",
-      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000008"
-    }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000003",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000004"
-    }, {
-      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000005",
-      "pred" : "is_a",
-      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
     } ],
-    "id" : "http://purl.obolibrary.org/obo/TEMP",
+    "id" : "http://purl.obolibrary.org/obo/ddanno.owl",
     "meta" : {
       "subsets" : [ ],
       "xrefs" : [ ],
@@ -368,7 +578,7 @@
         "val" : "OBO-Edit 2.3-beta5"
       }, {
         "pred" : "http://www.geneontology.org/formats/oboInOwl#date",
-        "val" : "16:11:2018 16:15"
+        "val" : "02:08:2019 19:54"
       }, {
         "pred" : "http://www.geneontology.org/formats/oboInOwl#default-namespace",
         "val" : "dicty_annotation"
