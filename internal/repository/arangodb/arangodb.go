@@ -265,6 +265,24 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	if err := r.Read(&cvtid); err != nil {
 		return m, fmt.Errorf("error in retrieving obograph id %s", err)
 	}
+	// get the tag from database
+	cvtr, err := ar.database.GetRow(
+		cvtId2LblQ,
+		map[string]interface{}{
+			"@cvterm_collection": ar.onto.term.Name(),
+			"id":                 cvtid,
+		},
+	)
+	if err != nil {
+		return m, fmt.Errorf("error in running tag retrieving query %s", err)
+	}
+	if cvtr.IsEmpty() {
+		return m, fmt.Errorf("cvterm id %s and tag %s does not exist", cvtid, attr.Tag)
+	}
+	var tag string
+	if err := cvtr.Read(&tag); err != nil {
+		return m, fmt.Errorf("error in retrieving tag %s", err)
+	}
 	// check if the annotation exist
 	count, err := ar.database.Count(
 		fmt.Sprintf(
@@ -274,13 +292,14 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 			ar.onto.cv.Name(),
 			attr.EntryId,
 			attr.Rank,
-			attr.Tag,
+			tag,
 			attr.Ontology,
 		),
 	)
 	if err != nil {
 		return m, fmt.Errorf("error in count query %s", err)
 	}
+
 	if count > 0 {
 		return m, fmt.Errorf("error in creating, annotation already exists")
 	}
@@ -306,7 +325,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	if err := rins.Read(m); err != nil {
 		return m, err
 	}
-	m.Tag = attr.Tag
+	m.Tag = tag
 	m.Ontology = attr.Ontology
 	return m, nil
 }
