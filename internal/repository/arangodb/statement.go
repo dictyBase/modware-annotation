@@ -16,16 +16,16 @@ const (
 				RETURN cvt._id
 	`
 	annExistQ = `
-		FOR ann IN %s
-			FOR v IN 1..1 OUTBOUND ann GRAPH '%s'
-				FOR cv IN %s
-					FILTER ann.entry_id == '%s'
-					FILTER ann.rank == %d
+		FOR ann IN @@anno_collection
+			FOR v IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
+					FILTER ann.entry_id == @entry_id
+					FILTER ann.rank == @rank
 					FILTER ann.is_obsolete == false
-					FILTER v.label == '%s'
+					FILTER v.label == @tag
 					FILTER v.deprecated == false
 					FILTER v.graph_id == cv._id
-					FILTER cv.metadata.namespace == '%s'
+					FILTER cv.metadata.namespace == @ontology
 					RETURN ann
 	`
 	annInst = `
