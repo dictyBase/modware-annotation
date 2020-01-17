@@ -1,12 +1,18 @@
 package arangodb
 
 const (
+	cvtId2LblQ = `
+		FOR cvt IN @@cvterm_collection
+			FILTER cvt._id == @id
+			RETURN cvt.label
+	`
 	annExistTagQ = `
 		FOR cv IN @@cv_collection
 			FOR cvt IN @@cvterm_collection
 				FILTER cv.metadata.namespace == @ontology
-				FILTER cvt.label == @tag || cvt.synonyms[*].value == @tag
+				FILTER cvt.label == @tag || @tag IN cvt.metadata.synonyms[*].value
 				FILTER cvt.graph_id == cv._id
+				FILTER cvt.deprecated == false
 				RETURN cvt._id
 	`
 	annExistQ = `
@@ -17,6 +23,7 @@ const (
 					FILTER ann.rank == %d
 					FILTER ann.is_obsolete == false
 					FILTER v.label == '%s'
+					FILTER v.deprecated == false
 					FILTER v.graph_id == cv._id
 					FILTER cv.metadata.namespace == '%s'
 					RETURN ann
