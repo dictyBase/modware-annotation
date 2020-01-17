@@ -2,7 +2,6 @@
 [![License](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](LICENSE)   
 ![GitHub action](https://github.com/dictyBase/modware-annotation/workflows/Continuous%20integration/badge.svg)
 [![codecov](https://codecov.io/gh/dictyBase/modware-annotation/branch/develop/graph/badge.svg)](https://codecov.io/gh/dictyBase/modware-annotation)   
-[![Test Coverage](https://api.codeclimate.com/v1/badges/30e9b0421a28b8e0d941/test_coverage)](https://codeclimate.com/github/dictyBase/modware-annotation/test_coverage)
 [![Technical debt](https://badgen.net/codeclimate/tech-debt/dictyBase/modware-annotation)](https://codeclimate.com/github/dictyBase/modware-annotation/trends/technical_debt)
 [![Issues](https://badgen.net/codeclimate/issues/dictyBase/modware-annotation)](https://codeclimate.com/github/dictyBase/modware-annotation/issues)
 [![Maintainability](https://api.codeclimate.com/v1/badges/30e9b0421a28b8e0d941/maintainability)](https://codeclimate.com/github/dictyBase/modware-annotation/maintainability)
