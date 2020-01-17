@@ -41,6 +41,26 @@
       "type" : "CLASS",
       "lbl" : "name"
     }, {
+      "id" : "http://purl.obolibrary.org/obo/DDANNO_0000023",
+      "meta" : {
+        "definition" : {
+          "val" : "For testing with backend database.",
+          "xrefs" : [ ]
+        },
+        "basicPropertyValues" : [ {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#hasOBONamespace",
+          "val" : "dicty_annotation"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#creation_date",
+          "val" : "2018-11-16T12:59:35Z"
+        }, {
+          "pred" : "http://www.geneontology.org/formats/oboInOwl#created_by",
+          "val" : "cybersiddhu"
+        } ]
+      },
+      "type" : "CLASS",
+      "lbl" : "decreased 3',5'-cyclic-GMP phosphodiesterase activity"
+    }, {
       "id" : "http://purl.obolibrary.org/obo/DDANNO_0000001",
       "meta" : {
         "definition" : {
@@ -493,13 +513,13 @@
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000004"
     }, {
-      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000014",
-      "pred" : "is_a",
-      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000011"
-    }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000015",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000014",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000011"
     }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000016",
       "pred" : "is_a",
@@ -554,6 +574,10 @@
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
     }, {
       "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000007",
+      "pred" : "is_a",
+      "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
+    }, {
+      "sub" : "http://purl.obolibrary.org/obo/DDANNO_0000023",
       "pred" : "is_a",
       "obj" : "http://purl.obolibrary.org/obo/DDANNO_0000001"
     }, {
