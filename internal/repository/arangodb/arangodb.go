@@ -69,6 +69,12 @@ type arangorepository struct {
 	onto     *ontoc
 }
 
+type createParams struct {
+	attr *annotation.NewTaggedAnnotationAttributes
+	id   string
+	tag  string
+}
+
 func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
 	ac := &annoc{}
 	anno, err := db.FindOrCreateCollection(
@@ -248,67 +254,26 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	m := &model.AnnoDoc{}
 	attr := na.Data.Attributes
 	// check if the tag and ontology exist
-	bindVars := map[string]interface{}{
-		"@cv_collection":     ar.onto.cv.Name(),
-		"@cvterm_collection": ar.onto.term.Name(),
-		"ontology":           attr.Ontology,
-		"tag":                attr.Tag,
-	}
-	r, err := ar.database.GetRow(annExistTagQ, bindVars)
+	cvtid, err := ar.termID(attr.Ontology, attr.Tag)
 	if err != nil {
-		return m, fmt.Errorf("error in running obograph retrieving query %s", err)
+		return m, err
 	}
-	if r.IsEmpty() {
-		return m, fmt.Errorf("ontology %s and tag %s does not exist", attr.Ontology, attr.Tag)
-	}
-	var cvtid string
-	if err := r.Read(&cvtid); err != nil {
-		return m, fmt.Errorf("error in retrieving obograph id %s", err)
+	// get the tag from database
+	tag, err := ar.termName(cvtid)
+	if err != nil {
+		return m, err
 	}
 	// check if the annotation exist
-	count, err := ar.database.Count(
-		fmt.Sprintf(
-			annExistQ,
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-			attr.EntryId,
-			attr.Rank,
-			attr.Tag,
-			attr.Ontology,
-		),
+	if err := ar.existAnno(attr, tag); err != nil {
+		return m, err
+	}
+	return ar.createAnno(
+		&createParams{
+			attr: attr,
+			id:   cvtid,
+			tag:  tag,
+		},
 	)
-	if err != nil {
-		return m, fmt.Errorf("error in count query %s", err)
-	}
-	if count > 0 {
-		return m, fmt.Errorf("error in creating, annotation already exists")
-	}
-	// create annotation document
-	bindVarsc := map[string]interface{}{
-		"@anno_collection":    ar.anno.annot.Name(),
-		"@anno_cv_collection": ar.anno.term.Name(),
-		"value":               attr.Value,
-		"editable_value":      attr.EditableValue,
-		"created_by":          attr.CreatedBy,
-		"entry_id":            attr.EntryId,
-		"rank":                attr.Rank,
-		"version":             1,
-		"to":                  cvtid,
-	}
-	rins, err := ar.database.DoRun(annInst, bindVarsc)
-	if err != nil {
-		return m, err
-	}
-	if rins.IsEmpty() {
-		return m, fmt.Errorf("error in returning newly created document")
-	}
-	if err := rins.Read(m); err != nil {
-		return m, err
-	}
-	m.Tag = attr.Tag
-	m.Ontology = attr.Ontology
-	return m, nil
 }
 
 func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error) {
@@ -723,6 +688,78 @@ func (ar *arangorepository) ClearAnnotations() error {
 	return nil
 }
 
+func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, error) {
+	m := &model.AnnoDoc{}
+	attr := params.attr
+	bindVarsc := map[string]interface{}{
+		"@anno_collection":    ar.anno.annot.Name(),
+		"@anno_cv_collection": ar.anno.term.Name(),
+		"value":               attr.Value,
+		"editable_value":      attr.EditableValue,
+		"created_by":          attr.CreatedBy,
+		"entry_id":            attr.EntryId,
+		"rank":                attr.Rank,
+		"version":             1,
+		"to":                  params.id,
+	}
+	rins, err := ar.database.DoRun(annInst, bindVarsc)
+	if err != nil {
+		return m, err
+	}
+	if rins.IsEmpty() {
+		return m, fmt.Errorf("error in returning newly created document")
+	}
+	if err := rins.Read(m); err != nil {
+		return m, err
+	}
+	m.Tag = params.tag
+	m.Ontology = attr.Ontology
+	return m, nil
+}
+
+func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttributes, tag string) error {
+	count, err := ar.database.Count(
+		fmt.Sprintf(
+			annExistQ,
+			ar.anno.annot.Name(),
+			ar.anno.annotg.Name(),
+			ar.onto.cv.Name(),
+			attr.EntryId,
+			attr.Rank,
+			tag,
+			attr.Ontology,
+		),
+	)
+	if err != nil {
+		return fmt.Errorf("error in count query %s", err)
+	}
+	if count > 0 {
+		return fmt.Errorf("error in creating, annotation already exists")
+	}
+	return nil
+}
+
+func (ar *arangorepository) termID(onto, term string) (string, error) {
+	var id string
+	bindVars := map[string]interface{}{
+		"@cv_collection":     ar.onto.cv.Name(),
+		"@cvterm_collection": ar.onto.term.Name(),
+		"ontology":           onto,
+		"tag":                term,
+	}
+	r, err := ar.database.GetRow(annExistTagQ, bindVars)
+	if err != nil {
+		return id, fmt.Errorf("error in running obograph retrieving query %s", err)
+	}
+	if r.IsEmpty() {
+		return id, fmt.Errorf("ontology %s and tag %s does not exist", onto, term)
+	}
+	if err := r.Read(&id); err != nil {
+		return id, fmt.Errorf("error in retrieving obograph id %s", err)
+	}
+	return id, nil
+}
+
 func (ar *arangorepository) groupID2Annotations(groupId string) ([]*model.AnnoDoc, error) {
 	var ml []*model.AnnoDoc
 	// check if the group exists
@@ -772,6 +809,27 @@ func (ar *arangorepository) getAllAnnotations(ids ...string) ([]*model.AnnoDoc, 
 		ml = append(ml, m)
 	}
 	return ml, nil
+}
+
+func (ar *arangorepository) termName(id string) (string, error) {
+	var name string
+	cvtr, err := ar.database.GetRow(
+		cvtID2LblQ,
+		map[string]interface{}{
+			"@cvterm_collection": ar.onto.term.Name(),
+			"id":                 id,
+		},
+	)
+	if err != nil {
+		return name, fmt.Errorf("error in running tag retrieving query %s", err)
+	}
+	if cvtr.IsEmpty() {
+		return name, fmt.Errorf("cvterm id %s does not exist", id)
+	}
+	if err := cvtr.Read(&name); err != nil {
+		return name, fmt.Errorf("error in retrieving tag %s", err)
+	}
+	return name, nil
 }
 
 func uniqueAnno(a []*model.AnnoDoc) []*model.AnnoDoc {

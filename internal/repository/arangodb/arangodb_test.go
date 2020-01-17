@@ -131,6 +131,23 @@ func loadAnnotationObo() error {
 	return nil
 }
 
+func newTestAnnoWithTagAndOnto(onto, tag string) *annotation.NewTaggedAnnotation {
+	return &annotation.NewTaggedAnnotation{
+		Data: &annotation.NewTaggedAnnotation_Data{
+			Type: "annotations",
+			Attributes: &annotation.NewTaggedAnnotationAttributes{
+				Value:         "developmentally regulated gene",
+				EditableValue: "developmentally regulated gene",
+				CreatedBy:     "siddbasu@gmail.com",
+				Tag:           tag,
+				Ontology:      onto,
+				EntryId:       "DDB_G0267474",
+				Rank:          0,
+			},
+		},
+	}
+}
+
 func newTestTaggedAnnotationWithParams(tag, entryId string) *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
@@ -258,7 +275,7 @@ func TestAddAnnotation(t *testing.T) {
 	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
-	nta := newTestTaggedAnnotation()
+	nta := newTestAnnoWithTagAndOnto("dicty_annotation", "curator")
 	m, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.False(m.IsObsolete, "new tagged annotation should not be obsolete")
@@ -271,34 +288,41 @@ func TestAddAnnotation(t *testing.T) {
 
 	// error in case of existing record
 	_, err = anrepo.AddAnnotation(nta)
-	if assert.Error(err) {
-		assert.Regexp(
-			regexp.MustCompile("already exists"),
-			err.Error(),
-			"error should have existence of annotation",
-		)
-	}
+	assert.Error(err, "expect error for existing annotation")
+	assert.Regexp(
+		regexp.MustCompile("already exists"),
+		err.Error(),
+		"error should have existence of annotation",
+	)
 
-	// error in case of non-existent ontology and tag
 	nta.Data.Attributes.Tag = "respiration"
 	_, err = anrepo.AddAnnotation(nta)
-	if assert.Error(err) {
-		assert.Regexp(
-			regexp.MustCompile("respiration"),
-			err.Error(),
-			"error should contain the non-existent tag name",
-		)
-	}
-	nta.Data.Attributes.Tag = "description"
-	nta.Data.Attributes.Ontology = "caboose"
+	assert.Error(err, "expect error in case of non-existent ontology and tag")
+	assert.Regexp(
+		regexp.MustCompile("respiration"),
+		err.Error(),
+		"error should contain the non-existent tag name",
+	)
+	nta = newTestAnnoWithTagAndOnto("caboose", "description")
 	_, err = anrepo.AddAnnotation(nta)
-	if assert.Error(err) {
-		assert.Regexp(
-			regexp.MustCompile("caboose"),
-			err.Error(),
-			"error should contain the non-existent ontology",
-		)
-	}
+	assert.Error(err, "expect error in case of non-existent ontology and tag")
+	assert.Regexp(
+		regexp.MustCompile("caboose"),
+		err.Error(),
+		"error should contain the non-existent ontology",
+	)
+
+	// use synonym for tag name
+	nta = newTestAnnoWithTagAndOnto("dicty_annotation", "summary")
+	m2, err := anrepo.AddAnnotation(nta)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.False(m2.IsObsolete, "new tagged annotation should not be obsolete")
+	assert.Equal(m2.Value, nta.Data.Attributes.Value, "should match the value")
+	assert.Equal(m2.CreatedBy, nta.Data.Attributes.CreatedBy, "should match created_by")
+	assert.Equal(m2.EnrtyId, nta.Data.Attributes.EntryId, "should match entry identifier")
+	assert.Equal(m2.Rank, nta.Data.Attributes.Rank, "should match the rank")
+	assert.Equal(m2.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
+	assert.Equal(m2.Tag, "description", "should match the ontology tag")
 }
 
 func TestGetAnnotationByEntry(t *testing.T) {
