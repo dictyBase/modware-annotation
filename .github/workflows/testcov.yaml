@@ -39,9 +39,13 @@ jobs:
           ARANGO_PORT: ${{ job.services.arangodb.ports[8529] }}
           GOPROXY: https://proxy.golang.org
         run: |
+            export GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            export GIT_COMMIT=$(git rev-parse HEAD)
+            echo ${GIT_BRANCH}
+            echo ${GIT_COMMIT}
             curl -L -o test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-0.6.3-linux-amd64
             chmod +x test-reporter
             ./test-reporter before-build
             go test -coverprofile c.out ./...
-            GIT_COMMIT_SHA=$(git rev-parse HEAD) GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) ./test-reporter after-build --exit-code 0 --debug -p $(go list -m) -t gocov
+            ./test-reporter after-build --exit-code 0 --debug -p $(go list -m) -t gocov
 
