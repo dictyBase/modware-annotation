@@ -1,7 +1,7 @@
 package arangodb
 
 const (
-	cvtId2LblQ = `
+	cvtID2LblQ = `
 		FOR cvt IN @@cvterm_collection
 			FILTER cvt._id == @id
 			RETURN cvt.label

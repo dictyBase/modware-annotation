@@ -254,7 +254,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	m := &model.AnnoDoc{}
 	attr := na.Data.Attributes
 	// check if the tag and ontology exist
-	cvtid, err := ar.termId(attr.Ontology, attr.Tag)
+	cvtid, err := ar.termID(attr.Ontology, attr.Tag)
 	if err != nil {
 		return m, err
 	}
@@ -739,7 +739,7 @@ func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttrib
 	return nil
 }
 
-func (ar *arangorepository) termId(onto, term string) (string, error) {
+func (ar *arangorepository) termID(onto, term string) (string, error) {
 	var id string
 	bindVars := map[string]interface{}{
 		"@cv_collection":     ar.onto.cv.Name(),
@@ -814,7 +814,7 @@ func (ar *arangorepository) getAllAnnotations(ids ...string) ([]*model.AnnoDoc, 
 func (ar *arangorepository) termName(id string) (string, error) {
 	var name string
 	cvtr, err := ar.database.GetRow(
-		cvtId2LblQ,
+		cvtID2LblQ,
 		map[string]interface{}{
 			"@cvterm_collection": ar.onto.term.Name(),
 			"id":                 id,
