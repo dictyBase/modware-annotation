@@ -323,6 +323,12 @@ func TestAddAnnotation(t *testing.T) {
 	assert.Equal(m2.Rank, nta.Data.Attributes.Rank, "should match the rank")
 	assert.Equal(m2.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
 	assert.Equal(m2.Tag, "description", "should match the ontology tag")
+
+	nta = newTestAnnoWithTagAndOnto("dicty_annotation", "decreased 3',5'-cyclic-GMP phosphodiesterase activity")
+	m3, err := anrepo.AddAnnotation(nta)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Equal(m3.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
+	assert.Equal(m3.Tag, nta.Data.Attributes.Tag, "should match the tag")
 }
 
 func TestGetAnnotationByEntry(t *testing.T) {
