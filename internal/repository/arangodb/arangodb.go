@@ -718,18 +718,16 @@ func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, er
 }
 
 func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttributes, tag string) error {
-	count, err := ar.database.Count(
-		fmt.Sprintf(
-			annExistQ,
-			ar.anno.annot.Name(),
-			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
-			attr.EntryId,
-			attr.Rank,
-			tag,
-			attr.Ontology,
-		),
-	)
+	bindVars := map[string]interface{}{
+		"@anno_collection":  ar.anno.annot.Name(),
+		"@cv_collection":    ar.onto.cv.Name(),
+		"anno_cvterm_graph": ar.anno.annotg.Name(),
+		"entry_id":          attr.EntryId,
+		"rank":              attr.Rank,
+		"ontology":          attr.Ontology,
+		"tag":               tag,
+	}
+	count, err := ar.database.CountWithParams(annExistQ, bindVars)
 	if err != nil {
 		return fmt.Errorf("error in count query %s", err)
 	}
