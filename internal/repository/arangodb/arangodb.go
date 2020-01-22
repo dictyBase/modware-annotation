@@ -632,6 +632,30 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 	return gm, nil
 }
 
+// GetAnnotationTag retrieves tag information
+func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoTag, error) {
+	var m *model.AnnoTag
+	r, err := ar.database.GetRow(
+		tagGetQ,
+		map[string]interface{}{
+			"@cvterm_collection": ar.onto.term.Name(),
+			"@cv_collection":     ar.onto.cv.Name(),
+			"ontology":           ontology,
+			"tag":                tag,
+		},
+	)
+	if err != nil {
+		return m, fmt.Errorf("error in running tag query %s", err)
+	}
+	if r.IsEmpty() {
+		return m, &repository.AnnoTagNotFound{Tag: tag}
+	}
+	if err := r.Read(m); err != nil {
+		return m, fmt.Errorf("error in retrieving tag %s in ontology %s %s", tag, ontology, err)
+	}
+	return m, nil
+}
+
 // Clear clears all annotations and related ontologies from the repository
 // datasource
 func (ar *arangorepository) Clear() error {
