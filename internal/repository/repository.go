@@ -32,4 +32,6 @@ type TaggedAnnotationRepository interface {
 	// ListAnnotationGroup provides a paginated list of annotation groups along
 	// with optional filtering
 	ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroup, error)
+	// GetAnnotationTag retrieves tag information
+	GetAnnotationTag(name, ontology string) (*model.AnnoTag, error)
 }
