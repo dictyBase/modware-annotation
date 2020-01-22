@@ -480,7 +480,7 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 
 // GetAnnotationTag retrieves tag information
 func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoTag, error) {
-	var m *model.AnnoTag
+	m := new(model.AnnoTag)
 	r, err := ar.database.GetRow(
 		tagGetQ,
 		map[string]interface{}{
