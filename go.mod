@@ -2,7 +2,7 @@ module github.com/dictyBase/modware-annotation
 
 require (
 	github.com/arangodb/go-driver v0.0.0-20200107125107-2a2392e62f69
-	github.com/dictyBase/aphgrpc v1.1.2
+	github.com/dictyBase/aphgrpc v1.1.3
 	github.com/dictyBase/arangomanager v0.1.2
 	github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3
 	github.com/dictyBase/go-obograph v1.0.5
@@ -26,7 +26,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad // indirect
 	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3 // indirect
 	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa // indirect
-	golang.org/x/sys v0.0.0-20200121082415-34d275377bf9 // indirect
+	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 // indirect
 	golang.org/x/tools v0.0.0-20190524140312-2c0ae7006135 // indirect
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	google.golang.org/grpc v1.26.0
