@@ -6,6 +6,13 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+type AnnoTag struct {
+	Name       string `json:"name"`
+	Id         string `json:"id"`
+	IsObsolete bool   `json:"is_obsolete"`
+	Ontology   string `json:"ontology"`
+}
+
 type AnnoDoc struct {
 	driver.DocumentMeta
 	Value         string    `json:"value"`
