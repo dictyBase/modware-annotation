@@ -1,6 +1,20 @@
 package arangodb
 
 const (
+	tagGetQ = `
+		FOR cv IN @@cv_collection
+			FOR cvt IN @@cvterm_collection
+				FILTER cv.metadata.namespace == @ontology
+				FILTER cvt.label == @name
+				FILTER cvt.graph_id == cv._id
+				LIMIT 1
+				RETURN {
+					id: cvt.id,
+					name: cvt.label,
+					is_obsolete: cvt.deprecated,
+					ontology: cv.metadata.namespace
+				}
+	`
 	cvtID2LblQ = `
 		FOR cvt IN @@cvterm_collection
 			FILTER cvt._id == @id
