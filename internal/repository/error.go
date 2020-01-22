@@ -59,3 +59,16 @@ func IsAnnotationGroupListNotFound(err error) bool {
 	}
 	return false
 }
+
+type AnnoTagNotFound struct{ Name string }
+
+func (at *AnnoTagNotFound) Error() string {
+	return fmt.Sprintf("annotation tag %s not found", at.Name)
+}
+
+func IsAnnoTagNotFound(err error) bool {
+	if _, ok := err.(*AnnoTagNotFound); ok {
+		return true
+	}
+	return false
+}
