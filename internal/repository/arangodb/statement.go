@@ -5,7 +5,7 @@ const (
 		FOR cv IN @@cv_collection
 			FOR cvt IN @@cvterm_collection
 				FILTER cv.metadata.namespace == @ontology
-				FILTER cvt.label == @name
+				FILTER cvt.label == @tag
 				FILTER cvt.graph_id == cv._id
 				LIMIT 1
 				RETURN {
