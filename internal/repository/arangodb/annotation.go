@@ -21,7 +21,7 @@ type annoc struct {
 	annotg driver.Graph
 }
 
-func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
+func setDocumentCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
 	ac := &annoc{}
 	anno, err := db.FindOrCreateCollection(
 		collP.Annotation,
@@ -51,13 +51,26 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 	if err != nil {
 		return ac, err
 	}
+	return &annoc{
+		annot: anno,
+		annog: annogrp,
+		term:  annocvt,
+		ver:   annov,
+	}, err
+}
+
+func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
+	ac, err := setDocumentCollection(db, onto, collP)
+	if err != nil {
+		return ac, err
+	}
 	verg, err := db.FindOrCreateGraph(
 		collP.AnnoVerGraph,
 		[]driver.EdgeDefinition{
 			driver.EdgeDefinition{
-				Collection: annov.Name(),
-				From:       []string{anno.Name()},
-				To:         []string{anno.Name()},
+				Collection: ac.ver.Name(),
+				From:       []string{ac.annot.Name()},
+				To:         []string{ac.annot.Name()},
 			},
 		},
 	)
@@ -68,20 +81,15 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 		collP.AnnoTagGraph,
 		[]driver.EdgeDefinition{
 			driver.EdgeDefinition{
-				Collection: annocvt.Name(),
-				From:       []string{anno.Name()},
+				Collection: ac.term.Name(),
+				From:       []string{ac.annot.Name()},
 				To:         []string{onto.term.Name()},
 			},
 		},
 	)
-	return &annoc{
-		annot:  anno,
-		term:   annocvt,
-		ver:    annov,
-		verg:   verg,
-		annotg: annotg,
-		annog:  annogrp,
-	}, err
+	ac.verg = verg
+	ac.annotg = annotg
+	return ac, nil
 }
 
 func uniqueAnno(a []*model.AnnoDoc) []*model.AnnoDoc {
