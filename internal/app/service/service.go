@@ -292,6 +292,25 @@ func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.
 	return e, nil
 }
 
+func (s *AnnotationService) GetAnnotationTag(ctx context.Context, r *annotation.TagRequest) (*annotation.AnnotationTag, error) {
+	tag := &annotation.AnnotationTag{}
+	if err := r.Validate(); err != nil {
+		return tag, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	m, err := s.repo.GetAnnotationTag(r.Name, r.Ontology)
+	if err != nil {
+		if repository.IsAnnoTagNotFound(err) {
+			return tag, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return tag, aphgrpc.HandleGetError(ctx, err)
+	}
+	tag.Id = m.Id
+	tag.Name = m.Name
+	tag.Ontology = m.Ontology
+	tag.IsObsolete = m.IsObsolete
+	return tag, nil
+}
+
 func (s *AnnotationService) getGroup(mg *model.AnnoGroup) *annotation.TaggedAnnotationGroup {
 	g := &annotation.TaggedAnnotationGroup{}
 	var gdata []*annotation.TaggedAnnotationGroup_Data
