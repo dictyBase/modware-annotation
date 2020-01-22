@@ -48,9 +48,6 @@ func setDocumentCollection(db *manager.Database, onto *ontoc, collP *CollectionP
 		collP.AnnoVersion,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
-	if err != nil {
-		return ac, err
-	}
 	return &annoc{
 		annot: anno,
 		annog: annogrp,
@@ -89,7 +86,7 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 	)
 	ac.verg = verg
 	ac.annotg = annotg
-	return ac, nil
+	return ac, err
 }
 
 func uniqueAnno(a []*model.AnnoDoc) []*model.AnnoDoc {
