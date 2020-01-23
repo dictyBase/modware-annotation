@@ -8,7 +8,7 @@ import (
 
 type AnnoTag struct {
 	Name       string `json:"name"`
-	Id         string `json:"id"`
+	ID         string `json:"id"`
 	IsObsolete bool   `json:"is_obsolete"`
 	Ontology   string `json:"ontology"`
 }

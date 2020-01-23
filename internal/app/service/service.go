@@ -304,7 +304,7 @@ func (s *AnnotationService) GetAnnotationTag(ctx context.Context, r *annotation.
 		}
 		return tag, aphgrpc.HandleGetError(ctx, err)
 	}
-	tag.Id = m.Id
+	tag.Id = m.ID
 	tag.Name = m.Name
 	tag.Ontology = m.Ontology
 	tag.IsObsolete = m.IsObsolete
