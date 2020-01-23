@@ -818,6 +818,23 @@ func TestListAnnotationGroup(t *testing.T) {
 	)
 }
 
+func TestGetAnnotationTag(t *testing.T) {
+	assert := assert.New(t)
+	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	defer annoCleanUp(anrepo, t)
+	for _, tag := range tags[:6] {
+		m, err := anrepo.GetAnnotationTag(tag, "dicty_annotation")
+		assert.NoErrorf(err, "expect no error from fetching %s tag", tag)
+		assert.Equal(m.Name, tag, "should match tag name")
+		assert.Equal(m.Ontology, "dicty_annotation", "should match ontology")
+		assert.Falsef(m.IsObsolete, "tag %s should not be obsolete", tag)
+	}
+	_, err = anrepo.GetAnnotationTag("yadayada", "dicty_annotation")
+	assert.Error(err, "expect error from non-existent tag")
+	assert.True(repository.IsAnnoTagNotFound(err), "should be an error for non-existent tag")
+}
+
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	assert := assert.New(t)
 	it, err := NewModelAnnoDocPairWiseIterator(m)
