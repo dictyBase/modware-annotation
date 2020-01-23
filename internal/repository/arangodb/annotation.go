@@ -21,7 +21,7 @@ type annoc struct {
 	annotg driver.Graph
 }
 
-func setDocumentCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
+func setDocumentCollection(db *manager.Database, collP *CollectionParams) (*annoc, error) {
 	ac := &annoc{}
 	anno, err := db.FindOrCreateCollection(
 		collP.Annotation,
@@ -57,7 +57,7 @@ func setDocumentCollection(db *manager.Database, onto *ontoc, collP *CollectionP
 }
 
 func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
-	ac, err := setDocumentCollection(db, onto, collP)
+	ac, err := setDocumentCollection(db, collP)
 	if err != nil {
 		return ac, err
 	}
