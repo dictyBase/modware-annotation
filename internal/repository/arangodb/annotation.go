@@ -64,7 +64,7 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 	verg, err := db.FindOrCreateGraph(
 		collP.AnnoVerGraph,
 		[]driver.EdgeDefinition{
-			driver.EdgeDefinition{
+			{
 				Collection: ac.ver.Name(),
 				From:       []string{ac.annot.Name()},
 				To:         []string{ac.annot.Name()},
@@ -77,7 +77,7 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 	annotg, err := db.FindOrCreateGraph(
 		collP.AnnoTagGraph,
 		[]driver.EdgeDefinition{
-			driver.EdgeDefinition{
+			{
 				Collection: ac.term.Name(),
 				From:       []string{ac.annot.Name()},
 				To:         []string{onto.term.Name()},

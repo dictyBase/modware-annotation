@@ -35,7 +35,7 @@ func setOntologyCollection(db *manager.Database, collP *CollectionParams) (*onto
 	obog, err := db.FindOrCreateGraph(
 		collP.OboGraph,
 		[]driver.EdgeDefinition{
-			driver.EdgeDefinition{
+			{
 				Collection: relc.Name(),
 				From:       []string{termc.Name()},
 				To:         []string{termc.Name()},
