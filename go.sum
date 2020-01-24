@@ -22,6 +22,8 @@ github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9/go.mod h1:GgB8SF9nRG
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dictyBase/aphgrpc v1.1.3 h1:bGcAxqOu3eEJ9o4U2XwQS8YZ5Ar9LlJoeM+JhUvXq3s=
 github.com/dictyBase/aphgrpc v1.1.3/go.mod h1:bY+Xdok2QNBA3RxIpGlJZcDVlTGnsAMjaSJx7OV4SNY=
+github.com/dictyBase/aphgrpc v1.3.0 h1:Q6zAPINAA/PxIIaYlj13cHnlefVvMpF5C/Dh0wzZQ/4=
+github.com/dictyBase/aphgrpc v1.3.0/go.mod h1:bY+Xdok2QNBA3RxIpGlJZcDVlTGnsAMjaSJx7OV4SNY=
 github.com/dictyBase/arangomanager v0.1.2 h1:iOG6gv8rAPL1d/xRE4crLVPEY0TYjH3dykhjYmZIUng=
 github.com/dictyBase/arangomanager v0.1.2/go.mod h1:CIQ81tbFOKL9jWzI9ORYLoJrjYZ//0shuYkHjgyUoIA=
 github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3 h1:rjYF6D06DyG92sJg9gnac9sjXuL7HGnFqahK9ExIwOc=
