@@ -8,7 +8,7 @@ require (
 	github.com/dictyBase/go-obograph v1.0.5
 	github.com/go-playground/validator/v10 v10.1.0
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.3.4
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/jinzhu/now v1.1.1 // indirect
