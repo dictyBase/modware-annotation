@@ -21,7 +21,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.5.1
-	github.com/thoas/go-funk v0.5.0
+	github.com/thoas/go-funk v0.6.0
 	github.com/urfave/cli v1.22.4
 	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad // indirect
 	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa // indirect
