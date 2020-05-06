@@ -4,10 +4,14 @@ github.com/arangodb/go-driver v0.0.0-20191107140416-095263e288cd h1:BTvLbgQYdkbP
 github.com/arangodb/go-driver v0.0.0-20191107140416-095263e288cd/go.mod h1:5nMxlcbN6PHA05uGUw2EH6PIQHvdRVTrg/S/GM8jG4w=
 github.com/arangodb/go-driver v0.0.0-20200107125107-2a2392e62f69 h1:ktopUcFoST9deLqvSCt+Q2fXPcLrc89zagqEvbJun/0=
 github.com/arangodb/go-driver v0.0.0-20200107125107-2a2392e62f69/go.mod h1:zwIyITtzH8pltwhR5eDthDZlON7UJ4Nh16c7CcgOmj0=
+github.com/arangodb/go-driver v0.0.0-20200403100147-ca5dd87ffe93 h1:n90D4zR3kU1aOr1s/yoizAMW3pBWYsfLa8z3aA9dUA8=
+github.com/arangodb/go-driver v0.0.0-20200403100147-ca5dd87ffe93/go.mod h1:JG79qtPYRxUB6CdGWSH1XwpolSBjthuZX+Iaz/H38rA=
 github.com/arangodb/go-velocypack v0.0.0-20190129082528-7896a965b4ad h1:Ah+VRYUWLuqgbfnDyuC8IrIe8XFzpt9tBVVnPGFNTJ8=
 github.com/arangodb/go-velocypack v0.0.0-20190129082528-7896a965b4ad/go.mod h1:7QCjpWXdB49P6fql1CxmsBWd8z/T4L4pqFLTnc10xNM=
 github.com/arangodb/go-velocypack v0.0.0-20190507125159-f60205f092de h1:R2dEL/TMsUB5fxRhWcOPP3qDTveL4FZK+UXzBS4NJnM=
 github.com/arangodb/go-velocypack v0.0.0-20190507125159-f60205f092de/go.mod h1:IDtzKmgAb7oPLaVwzYeXWPEBm5RfIG02gHdFxoJMJqU=
+github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e h1:Xg+hGrY2LcQBbxd0ZFdbGSyRKTYMZCfBbw/pMJFOk1g=
+github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e/go.mod h1:mq7Shfa/CaixoDxiyAAc5jZ6CVBAyPaNQCGS7mkj4Ho=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
@@ -27,6 +31,8 @@ github.com/dictyBase/aphgrpc v1.3.0 h1:Q6zAPINAA/PxIIaYlj13cHnlefVvMpF5C/Dh0wzZQ
 github.com/dictyBase/aphgrpc v1.3.0/go.mod h1:bY+Xdok2QNBA3RxIpGlJZcDVlTGnsAMjaSJx7OV4SNY=
 github.com/dictyBase/arangomanager v0.1.2 h1:iOG6gv8rAPL1d/xRE4crLVPEY0TYjH3dykhjYmZIUng=
 github.com/dictyBase/arangomanager v0.1.2/go.mod h1:CIQ81tbFOKL9jWzI9ORYLoJrjYZ//0shuYkHjgyUoIA=
+github.com/dictyBase/arangomanager v0.2.0 h1:JLDFJdWFxL9iCWrkiJ3jA7P/3s1p4c3c++Y4cBcQueQ=
+github.com/dictyBase/arangomanager v0.2.0/go.mod h1:Q29qCCdZlr5A1YWKDIpuSVa+y9frptfmo7CzHUJ9EZM=
 github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3 h1:rjYF6D06DyG92sJg9gnac9sjXuL7HGnFqahK9ExIwOc=
 github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3/go.mod h1:KY6iUqXl1lLq81WTW9u5DfZE58xM61PsGLSLwwtePlk=
 github.com/dictyBase/go-obograph v1.0.5 h1:iHkeviTMukrUZPW7fNlfknZnvLnw3MdC49bDxoCB6r4=
@@ -48,6 +54,8 @@ github.com/go-playground/universal-translator v0.17.0 h1:icxd5fm+REJzpZx7ZfpaD87
 github.com/go-playground/universal-translator v0.17.0/go.mod h1:UkSxE5sNxxRwHyU+Scu5vgOQjsIJAF8j9muTVoKLVtA=
 github.com/go-playground/validator/v10 v10.1.0 h1:LNfPbVcg93V/91tkAQH8nbFbFn7u2X4hHnLMeRZHIMM=
 github.com/go-playground/validator/v10 v10.1.0/go.mod h1:uOYAAleCW8F/7oMFd6aG0GOhaH6EGOAJShg8Id5JGkI=
+github.com/go-playground/validator/v10 v10.2.0 h1:KgJ0snyC2R9VXYN2rneOtQcw5aHQB1Vv0sFl1UcHBOY=
+github.com/go-playground/validator/v10 v10.2.0/go.mod h1:uOYAAleCW8F/7oMFd6aG0GOhaH6EGOAJShg8Id5JGkI=
 github.com/gogo/protobuf v1.2.1/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
 github.com/gogo/protobuf v1.3.0 h1:G8O7TerXerS4F6sx9OV7/nRfJdnXgHZu/S/7F2SN+UE=
 github.com/gogo/protobuf v1.3.0/go.mod h1:SlYgWuQ5SjCEi6WLHjHCa1yvBfUnHcTbrrZtXPKa29o=
@@ -119,10 +127,12 @@ github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
+github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/thoas/go-funk v0.5.0 h1:XXFUVqX6xnIDqXxENFHBFS1X5AoT0EDs7HJq2krRfD8=
 github.com/thoas/go-funk v0.5.0/go.mod h1:+IWnUfUmFO1+WVYQWQtIJHeRRdaIyyYglZN7xzUPe4Q=
 github.com/urfave/cli v1.22.2 h1:gsqYFH8bb9ekPA12kRo0hfjngWQjkJPlN9R0N78BoUo=
 github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
+github.com/urfave/cli v1.22.4/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/multierr v1.1.0/go.mod h1:wR5kodmAFQ0UK8QlbwjlSNy0Z68gJhDJUG5sjR94q/0=
 go.uber.org/zap v1.10.0/go.mod h1:vwi/ZaCAaUcBkycHslxD9B2zi4UTXhF60s6SWpuDF0Q=
