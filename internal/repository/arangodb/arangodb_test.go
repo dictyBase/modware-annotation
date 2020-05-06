@@ -70,6 +70,7 @@ func getCollectionParams() *CollectionParams {
 		AnnoTagGraph: "annotation_tag",
 		AnnoVerGraph: "annotation_history",
 		AnnoGroup:    "annotation_group",
+		AnnoIndexes:  []string{"entry_id"},
 	}
 }
 
