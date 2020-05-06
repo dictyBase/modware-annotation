@@ -116,5 +116,10 @@ func commonFlags() []cli.Flag {
 			Usage: "arangodb named graph for managing relations betweens different versions of annotation",
 			Value: "annotation_history",
 		},
+		cli.StringSliceFlag{
+			Name:  "anno-collection-persistent-index-fields",
+			Usage: "fields to create persistent indexes for in annotation collection",
+			Value: &cli.StringSlice{"entry_id"},
+		},
 	}
 }

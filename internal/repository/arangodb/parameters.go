@@ -35,4 +35,7 @@ type CollectionParams struct {
 	// AnnoVerGraph is the named graph for connecting different
 	// version of annotations
 	AnnoVerGraph string `validate:"required"`
+	// AnnoIndexes is a slice of fields to use as persistent indexes for the
+	// Annotation collection
+	AnnoIndexes []string `validate:"required"`
 }
