@@ -836,6 +836,24 @@ func TestGetAnnotationTag(t *testing.T) {
 	assert.True(repository.IsAnnoTagNotFound(err), "should be an error for non-existent tag")
 }
 
+func TestCollectionIndexErrors(t *testing.T) {
+	assert := assert.New(t)
+	_, err := NewTaggedAnnotationRepo(getConnectParams(), &CollectionParams{
+		Term:         "cvterm",
+		Relationship: "cvterm_relationship",
+		GraphInfo:    "cv",
+		OboGraph:     "obograph",
+		Annotation:   "annotation",
+		AnnoTerm:     "annotation_cvterm",
+		AnnoVersion:  "annotation_version",
+		AnnoTagGraph: "annotation_tag",
+		AnnoVerGraph: "annotation_history",
+		AnnoGroup:    "annotation_group",
+		AnnoIndexes:  []string{},
+	})
+	assert.Error(err, "should receive error if creating repo with no indexes")
+}
+
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	assert := assert.New(t)
 	it, err := NewModelAnnoDocPairWiseIterator(m)
