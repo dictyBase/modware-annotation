@@ -13,17 +13,21 @@ image:
 ##  Arangodb database
 # connection endpoint http or https (ssl)
 endpoint: https
-##
-# credentials for connection
-# database:
-    # name:
-    # user:
-    # password:
+
+# values for database
+dictybaseConfiguration:
+  configMap:
+    name: dictybase-configuration
+    user: arangodb.user
+    database: arangodb.modware-annotation
+  secrets:
+    name: dictybase-configuration
+    password: arangodb.password
 
 service:
   name: annotation-api
   type: NodePort
-  port: 9599
+  port: 9523
 
 # Level of log
 logLevel: debug

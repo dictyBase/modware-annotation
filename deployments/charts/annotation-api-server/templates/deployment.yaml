@@ -25,25 +25,34 @@ spec:
             "--log-level",
             "{{ .Values.logLevel }}",
             "start-server",
-        {{- if .Values.database }}
-          {{- with .Values.database }}
             "--user",
-            "{{ .user }}",
+            $(ARANGODB_USER),
             "--pass",
-            "{{ .password }}",
+            $(ARANGODB_PASS),
             "--db",
-            "{{ .name }}",
-          {{- end }}
+            $(ARANGODB_DATABASE),
             "--port",
             "{{ .Values.service.port }}",
           {{- if eq .Values.endpoint "https" }}
-            "--is-secure",
-            "true"
+            "--is-secure"
           {{- end }}
-        {{- else }}    
-          {{required "A value for .Values.database is required" .Values.database }}
-        {{- end }}
           ]
+          env:
+          - name: ARANGODB_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: "{{ .Values.dictybaseConfiguration.configMap.name }}"
+                key: "{{ .Values.dictybaseConfiguration.configMap.database }}"
+          - name: ARANGODB_USER
+            valueFrom:
+              configMapKeyRef:
+                name: "{{ .Values.dictybaseConfiguration.configMap.name }}"
+                key: "{{ .Values.dictybaseConfiguration.configMap.user }}"
+          - name: ARANGODB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.dictybaseConfiguration.secrets.name }}"
+                key: "{{ .Values.dictybaseConfiguration.secrets.password }}"
           ports:
             - name: {{ .Values.service.name }}
               containerPort: {{ .Values.service.port }}
