@@ -6,7 +6,7 @@ require (
 	github.com/dictyBase/arangomanager v0.2.0
 	github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3
 	github.com/dictyBase/go-obograph v1.0.5
-	github.com/go-playground/validator/v10 v10.2.0
+	github.com/go-playground/validator/v10 v10.4.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.3.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
@@ -21,7 +21,6 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/thoas/go-funk v0.7.0
 	github.com/urfave/cli v1.22.4
-	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad // indirect
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84 // indirect
 	google.golang.org/grpc v1.32.0
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
