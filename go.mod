@@ -3,7 +3,7 @@ module github.com/dictyBase/modware-annotation
 require (
 	github.com/arangodb/go-driver v0.0.0-20200403100147-ca5dd87ffe93
 	github.com/dictyBase/aphgrpc v1.3.0
-	github.com/dictyBase/arangomanager v0.2.0
+	github.com/dictyBase/arangomanager v0.2.2
 	github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3
 	github.com/dictyBase/go-obograph v1.0.6
 	github.com/go-playground/validator/v10 v10.4.0
@@ -19,7 +19,7 @@ require (
 	github.com/nats-io/nkeys v0.1.3 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.7.0
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/thoas/go-funk v0.7.0
 	github.com/urfave/cli v1.22.4
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84 // indirect
