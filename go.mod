@@ -6,12 +6,11 @@ require (
 	github.com/dictyBase/arangomanager v0.2.2
 	github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3
 	github.com/dictyBase/go-obograph v1.0.6
-	github.com/go-playground/validator/v10 v10.4.0
+	github.com/go-playground/validator/v10 v10.4.1
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.3.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/jinzhu/now v1.1.1 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mwitkow/go-proto-validators v0.3.0 // indirect
 	github.com/nats-io/gnatsd v1.4.1 // indirect
@@ -24,7 +23,6 @@ require (
 	github.com/urfave/cli v1.22.4
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84 // indirect
 	google.golang.org/grpc v1.32.0
-	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
 
 go 1.13
