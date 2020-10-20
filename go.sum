@@ -27,14 +27,12 @@ github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9/go.mod h1:GgB8SF9nRG
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dictyBase/aphgrpc v1.3.0 h1:Q6zAPINAA/PxIIaYlj13cHnlefVvMpF5C/Dh0wzZQ/4=
 github.com/dictyBase/aphgrpc v1.3.0/go.mod h1:bY+Xdok2QNBA3RxIpGlJZcDVlTGnsAMjaSJx7OV4SNY=
-github.com/dictyBase/arangomanager v0.2.0 h1:JLDFJdWFxL9iCWrkiJ3jA7P/3s1p4c3c++Y4cBcQueQ=
-github.com/dictyBase/arangomanager v0.2.0/go.mod h1:Q29qCCdZlr5A1YWKDIpuSVa+y9frptfmo7CzHUJ9EZM=
 github.com/dictyBase/arangomanager v0.2.2 h1:T4xkBOIqUKCzIha9v3eCG6tyNWMxCkI9BfXyWIK8M1c=
 github.com/dictyBase/arangomanager v0.2.2/go.mod h1:/ZB4sU1P9NeUL/JyHhMX9OKSQrJSRdnbe4WJ/airzpw=
 github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3 h1:rjYF6D06DyG92sJg9gnac9sjXuL7HGnFqahK9ExIwOc=
 github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3/go.mod h1:KY6iUqXl1lLq81WTW9u5DfZE58xM61PsGLSLwwtePlk=
-github.com/dictyBase/go-obograph v1.0.6 h1:dmzwEK9Gy696uGmtEjNSyYXjONanouyRder0CdbbMyo=
-github.com/dictyBase/go-obograph v1.0.6/go.mod h1:0QFZsNeahqDqqv8+JXWgI/HzeKkXyr0YXBiVx36t24Y=
+github.com/dictyBase/go-obograph v1.0.7 h1:slca9l0+A9e1cKdtekJuslK0W/IZ3gIkvW4+3S/izog=
+github.com/dictyBase/go-obograph v1.0.7/go.mod h1:F113k1+iz3nTg10c/LfMQGWKVkFdcdP89ejsrueBqZg=
 github.com/emirpasic/gods v1.12.0 h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
@@ -53,8 +51,6 @@ github.com/go-playground/locales v0.13.0 h1:HyWk6mgj5qFqCT5fjGBuRArbVDfE4hi8+e8c
 github.com/go-playground/locales v0.13.0/go.mod h1:taPMhCMXrRLJO55olJkUXHZBHCxTMfnGwq/HNwmWNS8=
 github.com/go-playground/universal-translator v0.17.0 h1:icxd5fm+REJzpZx7ZfpaD876Lmtgy7VtROAbHHXk8no=
 github.com/go-playground/universal-translator v0.17.0/go.mod h1:UkSxE5sNxxRwHyU+Scu5vgOQjsIJAF8j9muTVoKLVtA=
-github.com/go-playground/validator/v10 v10.2.0 h1:KgJ0snyC2R9VXYN2rneOtQcw5aHQB1Vv0sFl1UcHBOY=
-github.com/go-playground/validator/v10 v10.2.0/go.mod h1:uOYAAleCW8F/7oMFd6aG0GOhaH6EGOAJShg8Id5JGkI=
 github.com/go-playground/validator/v10 v10.4.0 h1:72qIR/m8ybvL8L5TIyfgrigqkrw7kVYAvjEvpT85l70=
 github.com/go-playground/validator/v10 v10.4.0/go.mod h1:nlOn6nFhuKACm19sB/8EGNn9GlaMV7XkbRSipzJ0Ii4=
 github.com/go-playground/validator/v10 v10.4.1 h1:pH2c5ADXtd66mxoE0Zm9SUhxE20r7aM3F26W0hOn+GE=
