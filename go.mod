@@ -21,8 +21,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/thoas/go-funk v0.7.0
 	github.com/urfave/cli v1.22.5
-	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84 // indirect
-	google.golang.org/grpc v1.32.0
+	google.golang.org/grpc v1.33.2
 )
 
 go 1.13
