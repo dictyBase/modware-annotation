@@ -53,6 +53,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           image-tag: staging-${{ steps.type.outputs.id }}
           ref: ${{ github.ref }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name  }}
           artifact: ${{ github.event.repository.name }}
           environment: staging
   deploy:
