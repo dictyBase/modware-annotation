@@ -5,7 +5,7 @@ on:
       - staging
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: set up golang
         uses: actions/setup-go@v2
@@ -40,3 +40,64 @@ jobs:
           tags: dictybase/modware-annotation:staging-${{ steps.type.outputs.id }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
+      - name: prepare for deploy
+        if: ${{ success() }}
+        id: prepare_deploy
+        uses: dictybase-docker/prepare-deploy@v2
+        with:
+          cluster-name: staging
+          cluster-zone: "us-central1-a"
+          namespace: dictybase
+          chart-name: annotation-api-server
+          chart-path: deployments/charts/annotation-api-server
+          token: ${{ secrets.GITHUB_TOKEN }}
+          image-tag: staging-${{ steps.type.outputs.id }}
+          ref: ${{ github.ref }}
+          artifact: ${{ github.event.repository.name }}
+          environment: staging
+  deploy:
+    runs-on: ubuntu-20.04
+    needs: build
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: download deployment artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}
+      - name: download and setup path for github action binary
+        run: |
+          mkdir -p github-actions/bin
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v2.1.4/action_2.1.4_Linux_x86_64
+          chmod +x github-actions/bin/actions
+          echo "$GITHUB_WORKSPACE/github-actions/bin" >> $GITHUB_PATH
+      - name: extract information from deployment payload
+        id: deploy_info
+        run: actions --log-level debug sdp -f deployment.json
+      - name: set in_progress deployment status
+        if: ${{ success() }}
+        run: actions --log-level debug -t ${{ secrets.REPO_ACCESS_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+      - name: setup google cloud sdk
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          version: "313.0.1"
+          project_id: ${{ secrets.DEVENV_PROJECT_ID }}
+          service_account_key: ${{ secrets.DEVENV_SA_KEY }}
+          export_default_credentials: true
+      - name: set up helm
+        uses: azure/setup-helm@v1
+        with:
+          version: "v2.16.12"
+      - name: add dictybase helm repo
+        run: helm init --client-only && helm repo add dictybase https://dictybase-docker.github.io/kubernetes-charts
+      - name: get gcloud credentials for k8s cluster
+        run: gcloud container clusters get-credentials --project ${{ secrets.DEVENV_PROJECT_ID }} --zone ${{ steps.deploy_info.outputs.zone }} ${{ steps.deploy_info.outputs.cluster }}
+      - name: deploy chart
+        if: ${{ success() }}
+        run: actions --log-level debug dc --name ${{ steps.deploy_info.outputs.chart }} --namespace ${{ steps.deploy_info.outputs.namespace }} --image-tag ${{ steps.deploy_info.outputs.image_tag }} --path ${{ steps.deploy_info.outputs.path }}
+      - name: set successful deploy status
+        if: ${{ success() }}
+        run: actions --log-level debug -t ${{ secrets.REPO_ACCESS_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state success  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+      - name: set unsuccessful deploy status
+        if: ${{ failure() }}
+        run: actions --log-level debug -t ${{ secrets.REPO_ACCESS_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state error  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
