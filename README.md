@@ -31,8 +31,3 @@ The protocol buffer definitions and service apis are documented
 ![GitHub repo size](https://img.shields.io/github/repo-size/dictyBase/modware-annotation?style=plastic)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/dictyBase/modware-annotation?style=plastic)
 [![Lines of Code](https://badgen.net/codeclimate/loc/dictyBase/modware-annotation)](https://codeclimate.com/github/dictyBase/modware-annotation/code)  
-
-# Active Developers
-
-<a href="https://sourcerer.io/cybersiddhu"><img src="https://sourcerer.io/assets/avatar/cybersiddhu" height="80px" alt="Sourcerer"></a>
-<a href="https://sourcerer.io/wildlifehexagon"><img src="https://sourcerer.io/assets/avatar/wildlifehexagon" height="80px" alt="Sourcerer"></a>
