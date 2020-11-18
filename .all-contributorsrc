@@ -11,11 +11,25 @@
       "avatar_url": "https://avatars3.githubusercontent.com/u/13489381?v=4",
       "profile": "http://www.erichartline.net/",
       "contributions": [
-        "bug",
         "code",
+        "bug",
         "content",
+        "maintenance",
+      ]
+    },
+    {
+      "login": "cybersiddhu",
+      "name": "Siddhartha Basu",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/48740?v=4",
+      "profile": "http://github.com/cybesiddhu",
+      "contributions": [
         "doc",
-        "maintenance"
+        "content"
+        "code",
+        "bug",
+        "maintenance",
+        "mentoring",
+        "ideas",
       ]
     }
   ],
