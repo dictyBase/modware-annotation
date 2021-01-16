@@ -21,7 +21,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/thoas/go-funk v0.7.0
 	github.com/urfave/cli v1.22.5
-	google.golang.org/grpc v1.34.0
+	google.golang.org/grpc v1.35.0
 )
 
 go 1.13
