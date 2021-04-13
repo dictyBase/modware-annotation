@@ -71,6 +71,7 @@ func getCollectionParams() *CollectionParams {
 		AnnoVerGraph: "annotation_history",
 		AnnoGroup:    "annotation_group",
 		AnnoIndexes:  []string{"entry_id"},
+		TermIndexes:  []string{"label"},
 	}
 }
 

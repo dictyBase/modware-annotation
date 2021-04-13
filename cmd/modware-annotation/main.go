@@ -121,5 +121,10 @@ func commonFlags() []cli.Flag {
 			Usage: "fields to have persistent indexes in annotation collection",
 			Value: &cli.StringSlice{"entry_id"},
 		},
+		cli.StringSliceFlag{
+			Name:  "term-index-fields",
+			Usage: "fields to have persistent indexes in ontology term collection",
+			Value: &cli.StringSlice{"label"},
+		},
 	}
 }

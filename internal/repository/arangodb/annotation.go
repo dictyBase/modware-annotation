@@ -86,10 +86,13 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 	)
 	ac.verg = verg
 	ac.annotg = annotg
-	_, _, err = db.EnsurePersistentIndex(ac.annot.Name(), collP.AnnoIndexes, &driver.EnsurePersistentIndexOptions{})
-	if err != nil {
-		return ac, err
-	}
+	_, _, err = db.EnsurePersistentIndex(
+		ac.annot.Name(),
+		collP.AnnoIndexes,
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+		},
+	)
 	return ac, err
 }
 

@@ -42,10 +42,19 @@ func setOntologyCollection(db *manager.Database, collP *CollectionParams) (*onto
 			},
 		},
 	)
-	return &ontoc{
-		term: termc,
-		rel:  relc,
-		cv:   graphc,
-		obog: obog,
-	}, err
+	if err != nil {
+		return oc, err
+	}
+	oc.term = termc
+	oc.rel = relc
+	oc.cv = graphc
+	oc.obog = obog
+	_, _, err = db.EnsurePersistentIndex(
+		termc.Name(),
+		collP.TermIndexes,
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+		},
+	)
+	return oc, err
 }
