@@ -12,7 +12,7 @@ type ontoc struct {
 	obog driver.Graph
 }
 
-func setOntologyCollection(db *manager.Database, collP *CollectionParams) (*ontoc, error) {
+func createOntoCollection(db *manager.Database, collP *CollectionParams) (*ontoc, error) {
 	oc := &ontoc{}
 	termc, err := db.FindOrCreateCollection(collP.Term, &driver.CreateCollectionOptions{})
 	if err != nil {
@@ -32,25 +32,33 @@ func setOntologyCollection(db *manager.Database, collP *CollectionParams) (*onto
 	if err != nil {
 		return oc, err
 	}
+	oc.term = termc
+	oc.rel = relc
+	oc.cv = graphc
+	return oc, nil
+}
+
+func setOntologyCollection(db *manager.Database, collP *CollectionParams) (*ontoc, error) {
+	oc, err := createOntoCollection(db, collP)
+	if err != nil {
+		return oc, err
+	}
 	obog, err := db.FindOrCreateGraph(
 		collP.OboGraph,
 		[]driver.EdgeDefinition{
 			{
-				Collection: relc.Name(),
-				From:       []string{termc.Name()},
-				To:         []string{termc.Name()},
+				Collection: oc.rel.Name(),
+				From:       []string{oc.term.Name()},
+				To:         []string{oc.term.Name()},
 			},
 		},
 	)
 	if err != nil {
 		return oc, err
 	}
-	oc.term = termc
-	oc.rel = relc
-	oc.cv = graphc
 	oc.obog = obog
 	_, _, err = db.EnsurePersistentIndex(
-		termc.Name(),
+		oc.term.Name(),
 		collP.TermIndexes,
 		&driver.EnsurePersistentIndexOptions{
 			InBackground: true,
