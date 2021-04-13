@@ -59,8 +59,8 @@ const (
 		RETURN n[0]
 	`
 	annListQ = `
-		FOR ann IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+		FOR cvt IN @@cvt_collection
+			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
 				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
@@ -73,8 +73,8 @@ const (
 							})
 	`
 	annListFilterQ = `
-		FOR ann IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+		FOR cvt IN @@cvt_collection
+			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
 				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
@@ -88,8 +88,8 @@ const (
 							})
 	`
 	annListWithCursorQ = `
-		FOR ann IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+		FOR cvt IN @@cvt_collection
+			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
 				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id
@@ -102,8 +102,8 @@ const (
 						)
 	`
 	annListFilterWithCursorQ = `
-		FOR ann IN @@anno_collection
-			FOR cvt IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
+		FOR cvt IN @@cvt_collection
+			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
 				FOR cv IN @@cv_collection
 					FILTER ann.is_obsolete == false
 					FILTER cvt.graph_id == cv._id

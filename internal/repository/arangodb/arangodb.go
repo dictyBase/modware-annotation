@@ -218,7 +218,7 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 	var am []*model.AnnoDoc
 	var stmt string
 	bindVars := map[string]interface{}{
-		"@anno_collection":  ar.anno.annot.Name(),
+		"@cvt_collection":   ar.onto.term.Name(),
 		"@cv_collection":    ar.onto.cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"limit":             limit + 1,
