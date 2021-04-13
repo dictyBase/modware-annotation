@@ -84,6 +84,9 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 			},
 		},
 	)
+	if err != nil {
+		return ac, err
+	}
 	ac.verg = verg
 	ac.annotg = annotg
 	_, _, err = db.EnsurePersistentIndex(
