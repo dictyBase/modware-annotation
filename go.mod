@@ -1,11 +1,11 @@
 module github.com/dictyBase/modware-annotation
 
 require (
-	github.com/arangodb/go-driver v0.0.0-20201106193344-56ae8fd24510
+	github.com/arangodb/go-driver v0.0.0-20210304082257-d7e0ea043b7f
 	github.com/dictyBase/aphgrpc v1.3.0
-	github.com/dictyBase/arangomanager v0.2.4
+	github.com/dictyBase/arangomanager v0.3.0
 	github.com/dictyBase/go-genproto v0.0.0-20200122001226-b1ccbdee4aa3
-	github.com/dictyBase/go-obograph v1.0.7
+	github.com/dictyBase/go-obograph v1.0.9
 	github.com/go-playground/validator/v10 v10.5.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.5.2
