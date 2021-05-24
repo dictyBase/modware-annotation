@@ -117,9 +117,14 @@ func commonFlags() []cli.Flag {
 			Value: "annotation_history",
 		},
 		cli.StringSliceFlag{
-			Name:  "anno-collection-persistent-index-fields",
-			Usage: "fields to create persistent indexes for in annotation collection",
+			Name:  "annotation-index-fields",
+			Usage: "fields to have persistent indexes in annotation collection",
 			Value: &cli.StringSlice{"entry_id"},
+		},
+		cli.StringSliceFlag{
+			Name:  "term-index-fields",
+			Usage: "fields to have persistent indexes in ontology term collection",
+			Value: &cli.StringSlice{"label"},
 		},
 	}
 }

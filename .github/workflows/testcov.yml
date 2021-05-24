@@ -2,19 +2,19 @@ name: Test coverage
 on: [pull_request]
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     services:
       arangodb:
-        image: arangodb:3.3.23
+        image: arangodb:3.6.3
         env:
           ARANGO_ROOT_PASSWORD: rootpass
         ports:
           - 8529/tcp
     steps:
       - name: set up golang
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
-          go-version: 1.13.15
+          go-version: 1.16.3
       - name: check out code
         uses: actions/checkout@v2
       - name: unit test

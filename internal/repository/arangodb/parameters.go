@@ -38,4 +38,7 @@ type CollectionParams struct {
 	// AnnoIndexes is a slice of fields to use as persistent indexes for the
 	// Annotation collection
 	AnnoIndexes []string `validate:"required"`
+	// TermIndexes is a slice of fields to use as persistent indexes for the
+	// Term collection
+	TermIndexes []string `validate:"required"`
 }

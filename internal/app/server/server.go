@@ -130,7 +130,8 @@ func getCollParams(c *cli.Context) *arangodb.CollectionParams {
 		AnnoTagGraph: c.String("annoterm-graph"),
 		AnnoVerGraph: c.String("annover-graph"),
 		AnnoGroup:    c.String("annogroup-collection"),
-		AnnoIndexes:  c.StringSlice("anno-collection-persistent-index-fields"),
+		AnnoIndexes:  c.StringSlice("annotation-index-fields"),
+		TermIndexes:  c.StringSlice("term-index-fields"),
 	}
 }
 
