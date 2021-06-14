@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/go-playground/validator/v10"
 
@@ -238,6 +239,7 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 			bindVars["cursor"] = cursor
 		}
 	}
+	log.Printf("stmt is %s", stmt)
 	rs, err := ar.database.SearchRows(stmt, bindVars)
 	if err != nil {
 		return am, err
