@@ -17,7 +17,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/thoas/go-funk v0.9.0
+	github.com/thoas/go-funk v0.9.1
 	github.com/urfave/cli v1.22.5
 	google.golang.org/grpc v1.40.0
 )
