@@ -7,6 +7,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
+	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
@@ -55,7 +56,7 @@ func setDocumentCollection(db *manager.Database, collP *CollectionParams) (*anno
 	}, err
 }
 
-func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *CollectionParams) (*annoc, error) {
+func setAnnotationCollection(db *manager.Database, onto *ontoarango.OntoCollection, collP *CollectionParams) (*annoc, error) {
 	ac, err := setDocumentCollection(db, collP)
 	if err != nil {
 		return ac, err
@@ -79,7 +80,7 @@ func setAnnotationCollection(db *manager.Database, onto *ontoc, collP *Collectio
 			{
 				Collection: ac.term.Name(),
 				From:       []string{ac.annot.Name()},
-				To:         []string{onto.term.Name()},
+				To:         []string{onto.Term.Name()},
 			},
 		},
 	)
