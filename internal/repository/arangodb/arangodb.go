@@ -10,6 +10,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
+	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
@@ -20,10 +21,10 @@ type arangorepository struct {
 	sess     *manager.Session
 	database *manager.Database
 	anno     *annoc
-	onto     *ontoc
+	onto     *ontoarango.OntoCollection
 }
 
-func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams) (repo.TaggedAnnotationRepository, error) {
+func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams, ontoP *ontoarango.CollectionParams) (repo.TaggedAnnotationRepository, error) {
 	ar := &arangorepository{}
 	if err := validator.New().Struct(collP); err != nil {
 		return ar, err
@@ -32,7 +33,7 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 	if err != nil {
 		return ar, err
 	}
-	ontoc, err := setOntologyCollection(db, collP)
+	ontoc, err := ontoarango.CreateCollection(db, ontoP)
 	if err != nil {
 		return ar, err
 	}
@@ -52,7 +53,7 @@ func (ar *arangorepository) GetAnnotationById(id string) (*model.AnnoDoc, error)
 			annGetQ,
 			ar.anno.annot.Name(),
 			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
+			ar.onto.Cv.Name(),
 			id,
 		),
 	)
@@ -76,7 +77,7 @@ func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotation
 			annGetByEntryQ,
 			ar.anno.annot.Name(),
 			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
+			ar.onto.Cv.Name(),
 			req.EntryId,
 			req.Rank,
 			req.IsObsolete,
@@ -131,7 +132,7 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 			annGetQ,
 			ar.anno.annot.Name(),
 			ar.anno.annotg.Name(),
-			ar.onto.cv.Name(),
+			ar.onto.Cv.Name(),
 			ua.Data.Id,
 		),
 	)
@@ -219,8 +220,8 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 	var am []*model.AnnoDoc
 	var stmt string
 	bindVars := map[string]interface{}{
-		"@cvt_collection":   ar.onto.term.Name(),
-		"@cv_collection":    ar.onto.cv.Name(),
+		"@cvt_collection":   ar.onto.Term.Name(),
+		"@cv_collection":    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"limit":             limit + 1,
 	}
@@ -377,11 +378,14 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 	}
 	// check if the group exists
 	ok, err := ar.anno.annog.DocumentExists(
-		context.Background(),
-		groupId,
+		context.Background(), groupId,
 	)
 	if err != nil {
-		return g, fmt.Errorf("error in checking for existence of group identifier %s %s", groupId, err)
+		return g,
+			fmt.Errorf(
+				"error in checking for existence of group identifier %s %s",
+				groupId, err,
+			)
 	}
 	if !ok {
 		return g, &repository.GroupNotFound{Id: groupId}
@@ -390,8 +394,7 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 	dbg := &model.DbGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
-		groupId,
-		dbg,
+		groupId, dbg,
 	)
 	if err != nil {
 		return g, fmt.Errorf("error in retrieving the group %s", err)
@@ -409,10 +412,13 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 			"@anno_group_collection": ar.anno.annog.Name(),
 			"key":                    groupId,
 			"group":                  nids,
-		},
-	)
+		})
 	if err != nil {
-		return g, fmt.Errorf("error in removing group members with id %s %s", groupId, err)
+		return g,
+			fmt.Errorf(
+				"error in removing group members with id %s %s",
+				groupId, err,
+			)
 	}
 	ndbg := &model.DbGroup{}
 	if err := r.Read(ndbg); err != nil {
@@ -433,17 +439,17 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 	if len(filter) > 0 { // filter
 		// no cursor
 		stmt = fmt.Sprintf(annGroupListFilterQ,
-			ar.anno.annot.Name(), ar.anno.annotg.Name(), ar.onto.cv.Name(),
+			ar.anno.annot.Name(), ar.anno.annotg.Name(), ar.onto.Cv.Name(),
 			filter, ar.anno.annog.Name(), ar.anno.annot.Name(),
-			ar.anno.annotg.Name(), ar.onto.cv.Name(),
+			ar.anno.annotg.Name(), ar.onto.Cv.Name(),
 			limit,
 		)
 		if cursor != 0 { // with cursor
 			stmt = fmt.Sprintf(annGroupListFilterWithCursorQ,
 				ar.anno.annot.Name(), ar.anno.annotg.Name(),
-				ar.onto.cv.Name(), filter,
+				ar.onto.Cv.Name(), filter,
 				ar.anno.annog.Name(), ar.anno.annot.Name(),
-				ar.anno.annotg.Name(), ar.onto.cv.Name(),
+				ar.anno.annotg.Name(), ar.onto.Cv.Name(),
 				cursor, limit,
 			)
 		}
@@ -451,13 +457,13 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 		// no cursor
 		stmt = fmt.Sprintf(annGroupListQ,
 			ar.anno.annog.Name(), ar.anno.annot.Name(),
-			ar.anno.annotg.Name(), ar.onto.cv.Name(),
+			ar.anno.annotg.Name(), ar.onto.Cv.Name(),
 			limit,
 		)
 		if cursor != 0 { // with cursor
 			stmt = fmt.Sprintf(annGroupListWithCursorQ,
 				ar.anno.annog.Name(), ar.anno.annot.Name(),
-				ar.anno.annotg.Name(), ar.onto.cv.Name(),
+				ar.anno.annotg.Name(), ar.onto.Cv.Name(),
 				cursor, limit,
 			)
 		}
@@ -485,12 +491,11 @@ func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoT
 	r, err := ar.database.GetRow(
 		tagGetQ,
 		map[string]interface{}{
-			"@cvterm_collection": ar.onto.term.Name(),
-			"@cv_collection":     ar.onto.cv.Name(),
+			"@cvterm_collection": ar.onto.Term.Name(),
+			"@cv_collection":     ar.onto.Cv.Name(),
 			"ontology":           ontology,
 			"tag":                tag,
-		},
-	)
+		})
 	if err != nil {
 		return m, fmt.Errorf("error in running tag query %s", err)
 	}
@@ -498,7 +503,11 @@ func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoT
 		return m, &repository.AnnoTagNotFound{Tag: tag}
 	}
 	if err := r.Read(m); err != nil {
-		return m, fmt.Errorf("error in retrieving tag %s in ontology %s %s", tag, ontology, err)
+		return m,
+			fmt.Errorf(
+				"error in retrieving tag %s in ontology %s %s",
+				tag, ontology, err,
+			)
 	}
 	return m, nil
 }
@@ -521,16 +530,16 @@ func (ar *arangorepository) Clear() error {
 	if err := ar.anno.annotg.Remove(context.Background()); err != nil {
 		return err
 	}
-	if err := ar.onto.term.Truncate(context.Background()); err != nil {
+	if err := ar.onto.Term.Truncate(context.Background()); err != nil {
 		return err
 	}
-	if err := ar.onto.cv.Truncate(context.Background()); err != nil {
+	if err := ar.onto.Cv.Truncate(context.Background()); err != nil {
 		return err
 	}
-	if err := ar.onto.rel.Truncate(context.Background()); err != nil {
+	if err := ar.onto.Rel.Truncate(context.Background()); err != nil {
 		return err
 	}
-	if err := ar.onto.obog.Remove(context.Background()); err != nil {
+	if err := ar.onto.Obog.Remove(context.Background()); err != nil {
 		return err
 	}
 	return nil

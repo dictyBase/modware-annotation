@@ -11,14 +11,6 @@ type createParams struct {
 // CollectionParams are the arangodb collections required for storing
 // annotations
 type CollectionParams struct {
-	// Term is the collection for storing ontology term
-	Term string `validate:"required"`
-	// Relationship is the edge collection for storing term relationship
-	Relationship string `validate:"required"`
-	// GraphInfo is the collection for storing ontology metadata
-	GraphInfo string `validate:"required"`
-	// OboGraph is the named graph for connecting term and relationship collections
-	OboGraph string `validate:"required"`
 	// Annotation is the collection for storing annotation
 	Annotation string `validate:"required"`
 	// AnnoGroup is the collection for grouping annotations
@@ -38,7 +30,4 @@ type CollectionParams struct {
 	// AnnoIndexes is a slice of fields to use as persistent indexes for the
 	// Annotation collection
 	AnnoIndexes []string `validate:"required"`
-	// TermIndexes is a slice of fields to use as persistent indexes for the
-	// Term collection
-	TermIndexes []string `validate:"required"`
 }

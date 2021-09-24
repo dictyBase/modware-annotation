@@ -15,13 +15,13 @@ func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, er
 	bindVarsc := map[string]interface{}{
 		"@anno_collection":    ar.anno.annot.Name(),
 		"@anno_cv_collection": ar.anno.term.Name(),
-		"value":               attr.Value,
 		"editable_value":      attr.EditableValue,
 		"created_by":          attr.CreatedBy,
 		"entry_id":            attr.EntryId,
 		"rank":                attr.Rank,
-		"version":             1,
+		"value":               attr.Value,
 		"to":                  params.id,
+		"version":             1,
 	}
 	rins, err := ar.database.DoRun(annInst, bindVarsc)
 	if err != nil {
@@ -41,7 +41,7 @@ func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, er
 func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttributes, tag string) error {
 	bindVars := map[string]interface{}{
 		"@anno_collection":  ar.anno.annot.Name(),
-		"@cv_collection":    ar.onto.cv.Name(),
+		"@cv_collection":    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"entry_id":          attr.EntryId,
 		"rank":              attr.Rank,
@@ -61,8 +61,8 @@ func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttrib
 func (ar *arangorepository) termID(onto, term string) (string, error) {
 	var id string
 	bindVars := map[string]interface{}{
-		"@cv_collection":     ar.onto.cv.Name(),
-		"@cvterm_collection": ar.onto.term.Name(),
+		"@cv_collection":     ar.onto.Cv.Name(),
+		"@cvterm_collection": ar.onto.Term.Name(),
 		"ontology":           onto,
 		"tag":                term,
 	}
@@ -83,11 +83,13 @@ func (ar *arangorepository) groupID2Annotations(groupId string) ([]*model.AnnoDo
 	var ml []*model.AnnoDoc
 	// check if the group exists
 	ok, err := ar.anno.annog.DocumentExists(
-		context.Background(),
-		groupId,
+		context.Background(), groupId,
 	)
 	if err != nil {
-		return ml, fmt.Errorf("error in checking for existence of group identifier %s %s", groupId, err)
+		return ml,
+			fmt.Errorf("error in checking for existence of group identifier %s %s",
+				groupId, err,
+			)
 	}
 	if !ok {
 		return ml, &repository.GroupNotFound{Id: groupId}
@@ -96,8 +98,7 @@ func (ar *arangorepository) groupID2Annotations(groupId string) ([]*model.AnnoDo
 	dbg := &model.DbGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
-		groupId,
-		dbg,
+		groupId, dbg,
 	)
 	if err != nil {
 		return ml, fmt.Errorf("error in retrieving the group %s", err)
@@ -111,11 +112,8 @@ func (ar *arangorepository) getAllAnnotations(ids ...string) ([]*model.AnnoDoc, 
 	for _, k := range ids {
 		r, err := ar.database.Get(
 			fmt.Sprintf(
-				annGetQ,
-				ar.anno.annot.Name(),
-				ar.anno.annotg.Name(),
-				ar.onto.cv.Name(),
-				k,
+				annGetQ, ar.anno.annot.Name(),
+				ar.anno.annotg.Name(), ar.onto.Cv.Name(), k,
 			),
 		)
 		if err != nil {
@@ -135,12 +133,12 @@ func (ar *arangorepository) termName(id string) (string, error) {
 	cvtr, err := ar.database.GetRow(
 		cvtID2LblQ,
 		map[string]interface{}{
-			"@cvterm_collection": ar.onto.term.Name(),
+			"@cvterm_collection": ar.onto.Term.Name(),
 			"id":                 id,
-		},
-	)
+		})
 	if err != nil {
-		return name, fmt.Errorf("error in running tag retrieving query %s", err)
+		return name,
+			fmt.Errorf("error in running tag retrieving query %s", err)
 	}
 	if cvtr.IsEmpty() {
 		return name, fmt.Errorf("cvterm id %s does not exist", id)

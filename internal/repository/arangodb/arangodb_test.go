@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -12,6 +13,8 @@ import (
 	"time"
 
 	"github.com/dictyBase/arangomanager/testarango"
+	ontostorage "github.com/dictyBase/go-obograph/storage"
+	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/assert"
 
@@ -46,6 +49,15 @@ func toTimestamp(t time.Time) int64 {
 	return t.UnixNano() / 1000000
 }
 
+func getOntoParams() *ontoarango.CollectionParams {
+	return &ontoarango.CollectionParams{
+		GraphInfo:    "cv",
+		OboGraph:     "obograph",
+		Relationship: "cvterm_relationship",
+		Term:         "cvterm",
+	}
+}
+
 func getConnectParams() *manager.ConnectParams {
 	arPort, _ := strconv.Atoi(aport)
 	return &manager.ConnectParams{
@@ -60,10 +72,6 @@ func getConnectParams() *manager.ConnectParams {
 
 func getCollectionParams() *CollectionParams {
 	return &CollectionParams{
-		Term:         "cvterm",
-		Relationship: "cvterm_relationship",
-		GraphInfo:    "cv",
-		OboGraph:     "obograph",
 		Annotation:   "annotation",
 		AnnoTerm:     "annotation_cvterm",
 		AnnoVersion:  "annotation_version",
@@ -71,7 +79,6 @@ func getCollectionParams() *CollectionParams {
 		AnnoVerGraph: "annotation_history",
 		AnnoGroup:    "annotation_group",
 		AnnoIndexes:  []string{"entry_id"},
-		TermIndexes:  []string{"label"},
 	}
 }
 
@@ -94,41 +101,34 @@ func loadAnnotationObo() error {
 		return fmt.Errorf("error in building graph %s", err)
 	}
 	connP := getConnectParams()
-	collP := getCollectionParams()
-	cp := &araobo.ConnectParams{
-		User:     connP.User,
-		Pass:     connP.Pass,
-		Host:     connP.Host,
-		Database: connP.Database,
-		Port:     connP.Port,
-		Istls:    connP.Istls,
-	}
-	clp := &araobo.CollectionParams{
-		Term:         collP.Term,
-		Relationship: collP.Relationship,
-		GraphInfo:    collP.GraphInfo,
-		OboGraph:     collP.OboGraph,
-	}
-	ds, err := araobo.NewDataSource(cp, clp)
+	ds, err := araobo.NewDataSource(
+		&araobo.ConnectParams{
+			User:     connP.User,
+			Pass:     connP.Pass,
+			Host:     connP.Host,
+			Database: connP.Database,
+			Port:     connP.Port,
+			Istls:    connP.Istls,
+		}, getOntoParams(),
+	)
 	if err != nil {
 		return err
 	}
-	if !ds.ExistsOboGraph(g) {
-		log.Println("dicty_annotation obograph does not exist, have to be loaded")
-		err := ds.SaveOboGraphInfo(g)
-		if err != nil {
-			return fmt.Errorf("error in saving graph %s", err)
-		}
-		nt, err := ds.SaveTerms(g)
-		if err != nil {
-			return fmt.Errorf("error in saving terms %s", err)
-		}
-		log.Printf("saved %d terms", nt)
-		nr, err := ds.SaveRelationships(g)
-		if err != nil {
-			return fmt.Errorf("error in saving relationships %s", err)
-		}
-		log.Printf("saved %d relationships", nr)
+	if ds.ExistsOboGraph(g) {
+		return errors.New("dicty_annotation already exist, needs a cleanp!!!!")
+	}
+	return saveExistentTestGraph(ds, g)
+}
+
+func saveExistentTestGraph(ds ontostorage.DataSource, g graph.OboGraph) error {
+	if err := ds.SaveOboGraphInfo(g); err != nil {
+		return fmt.Errorf("error in saving graph %s", err)
+	}
+	if _, err := ds.SaveTerms(g); err != nil {
+		return fmt.Errorf("error in saving terms %s", err)
+	}
+	if _, err := ds.SaveRelationships(g); err != nil {
+		return fmt.Errorf("error in saving relationships %s", err)
 	}
 	return nil
 }
@@ -274,7 +274,11 @@ func TestMain(m *testing.M) {
 
 func TestAddAnnotation(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	nta := newTestAnnoWithTagAndOnto("dicty_annotation", "curator")
@@ -335,7 +339,11 @@ func TestAddAnnotation(t *testing.T) {
 
 func TestGetAnnotationByEntry(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
@@ -377,7 +385,11 @@ func TestGetAnnotationByEntry(t *testing.T) {
 
 func TestGetAnnotationById(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
@@ -411,7 +423,11 @@ func TestGetAnnotationById(t *testing.T) {
 
 func TestRemoveAnnotation(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
@@ -431,7 +447,11 @@ func TestRemoveAnnotation(t *testing.T) {
 
 func TestEditAnnotation(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	nta := newTestTaggedAnnotation()
@@ -458,7 +478,11 @@ func TestEditAnnotation(t *testing.T) {
 
 func TestListAnnoFilter(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsListForFiltering(20)
@@ -530,7 +554,11 @@ func TestListAnnoFilter(t *testing.T) {
 
 func TestListAnnotations(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(15)
@@ -587,7 +615,11 @@ func TestListAnnotations(t *testing.T) {
 
 func TestAddAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(8)
@@ -605,7 +637,11 @@ func TestAddAnnotationGroup(t *testing.T) {
 
 func TestGetAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(4)
@@ -629,7 +665,11 @@ func TestGetAnnotationGroup(t *testing.T) {
 
 func TestAppendToAnntationGroup(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(7)
@@ -654,7 +694,11 @@ func TestAppendToAnntationGroup(t *testing.T) {
 
 func TestRemoveAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(7)
@@ -680,7 +724,11 @@ func TestRemoveAnnotationGroup(t *testing.T) {
 
 func TestRemoveFromAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(9)
@@ -709,7 +757,11 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 
 func TestListAnnGrFilter(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsListForFiltering(20)
@@ -765,7 +817,11 @@ func TestListAnnGrFilter(t *testing.T) {
 
 func TestListAnnotationGroup(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	tal := newTestTaggedAnnotationsList(60)
@@ -822,7 +878,11 @@ func TestListAnnotationGroup(t *testing.T) {
 
 func TestGetAnnotationTag(t *testing.T) {
 	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(getConnectParams(), getCollectionParams())
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer annoCleanUp(anrepo, t)
 	for _, tag := range tags[:6] {
@@ -839,19 +899,19 @@ func TestGetAnnotationTag(t *testing.T) {
 
 func TestCollectionIndexErrors(t *testing.T) {
 	assert := assert.New(t)
-	_, err := NewTaggedAnnotationRepo(getConnectParams(), &CollectionParams{
-		Term:         "cvterm",
-		Relationship: "cvterm_relationship",
-		GraphInfo:    "cv",
-		OboGraph:     "obograph",
-		Annotation:   "annotation",
-		AnnoTerm:     "annotation_cvterm",
-		AnnoVersion:  "annotation_version",
-		AnnoTagGraph: "annotation_tag",
-		AnnoVerGraph: "annotation_history",
-		AnnoGroup:    "annotation_group",
-		AnnoIndexes:  []string{},
-	})
+	_, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		&CollectionParams{
+			Annotation:   "annotation",
+			AnnoTerm:     "annotation_cvterm",
+			AnnoVersion:  "annotation_version",
+			AnnoTagGraph: "annotation_tag",
+			AnnoVerGraph: "annotation_history",
+			AnnoGroup:    "annotation_group",
+			AnnoIndexes:  []string{},
+		},
+		getOntoParams(),
+	)
 	assert.Error(err, "should receive error if creating repo with no indexes")
 }
 
