@@ -10,6 +10,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
@@ -395,7 +396,7 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 	if err != nil {
 		return g, fmt.Errorf("error in retrieving the group %s", err)
 	}
-	nids := removeStringItems(dbg.Group, idslice...)
+	nids := collection.RemoveStringItems(dbg.Group, idslice...)
 	// retrieve the annotation objects
 	ml, err := ar.getAllAnnotations(nids...)
 	if err != nil {

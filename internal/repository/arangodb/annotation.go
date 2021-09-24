@@ -9,7 +9,6 @@ import (
 	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
-	"github.com/thoas/go-funk"
 )
 
 type annoc struct {
@@ -153,16 +152,4 @@ func convToModel(i interface{}) (*model.AnnoDoc, error) {
 	m.DocumentMeta.Key = c["_key"].(string)
 	m.DocumentMeta.Rev = c["_rev"].(string)
 	return m, nil
-}
-
-// removeStringItems removes elements from a that are present in
-// items
-func removeStringItems(a []string, items ...string) []string {
-	var s []string
-	for _, v := range a {
-		if !funk.ContainsString(items, v) {
-			s = append(s, v)
-		}
-	}
-	return s
 }
