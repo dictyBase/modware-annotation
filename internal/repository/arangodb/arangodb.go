@@ -2,13 +2,25 @@ package arangodb
 
 import (
 	"context"
+	"fmt"
 
+	driver "github.com/arangodb/go-driver"
 	"github.com/go-playground/validator/v10"
 
 	manager "github.com/dictyBase/arangomanager"
 	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
+	"github.com/dictyBase/modware-annotation/internal/repository"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
 )
+
+type annoc struct {
+	annot  driver.Collection
+	term   driver.Collection
+	ver    driver.Collection
+	annog  driver.Collection
+	verg   driver.Graph
+	annotg driver.Graph
+}
 
 type arangorepository struct {
 	sess     *manager.Session
@@ -36,6 +48,84 @@ func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionPara
 		database: db,
 		onto:     ontoc,
 		anno:     annoc,
+	}, err
+}
+
+func setAnnotationCollection(db *manager.Database, onto *ontoarango.OntoCollection, collP *CollectionParams) (*annoc, error) {
+	ac, err := setDocumentCollection(db, collP)
+	if err != nil {
+		return ac, err
+	}
+	verg, err := db.FindOrCreateGraph(
+		collP.AnnoVerGraph,
+		[]driver.EdgeDefinition{
+			{
+				Collection: ac.ver.Name(),
+				From:       []string{ac.annot.Name()},
+				To:         []string{ac.annot.Name()},
+			},
+		},
+	)
+	if err != nil {
+		return ac, err
+	}
+	annotg, err := db.FindOrCreateGraph(
+		collP.AnnoTagGraph,
+		[]driver.EdgeDefinition{
+			{
+				Collection: ac.term.Name(),
+				From:       []string{ac.annot.Name()},
+				To:         []string{onto.Term.Name()},
+			},
+		},
+	)
+	if err != nil {
+		return ac, err
+	}
+	ac.verg = verg
+	ac.annotg = annotg
+	_, _, err = db.EnsurePersistentIndex(
+		ac.annot.Name(),
+		collP.AnnoIndexes,
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+		},
+	)
+	return ac, err
+}
+
+func setDocumentCollection(db *manager.Database, collP *CollectionParams) (*annoc, error) {
+	ac := &annoc{}
+	anno, err := db.FindOrCreateCollection(
+		collP.Annotation,
+		&driver.CreateCollectionOptions{},
+	)
+	if err != nil {
+		return ac, err
+	}
+	annogrp, err := db.FindOrCreateCollection(
+		collP.AnnoGroup,
+		&driver.CreateCollectionOptions{},
+	)
+	if err != nil {
+		return ac, err
+	}
+	annocvt, err := db.FindOrCreateCollection(
+		collP.AnnoTerm,
+		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
+	)
+	if err != nil {
+		return ac, err
+	}
+	annov, err := db.FindOrCreateCollection(
+		collP.AnnoVersion,
+		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
+	)
+	return &annoc{
+		annot: anno,
+		annog: annogrp,
+		term:  annocvt,
+		ver:   annov,
 	}, err
 }
 
@@ -91,6 +181,19 @@ func (ar *arangorepository) ClearAnnotations() error {
 	}
 	if err := ar.anno.annog.Remove(context.Background()); err != nil {
 		return err
+	}
+	return nil
+}
+
+func DocumentsExists(c driver.Collection, ids ...string) error {
+	for _, k := range ids {
+		ok, err := c.DocumentExists(context.Background(), k)
+		if err != nil {
+			return fmt.Errorf("error in checking for existence of identifier %s %s", k, err)
+		}
+		if !ok {
+			return &repository.AnnoNotFound{Id: k}
+		}
 	}
 	return nil
 }

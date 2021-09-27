@@ -89,7 +89,7 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 	if err != nil {
 		return m, err
 	}
-	um, err := convToModel(i)
+	um, err := model.ConvToModel(i)
 	if err != nil {
 		return um, err
 	}
@@ -105,7 +105,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 		return g, errors.New("need at least more than one entry to form a group")
 	}
 	// check if the annotations exists
-	if err := documentsExists(ar.anno.annot, idslice...); err != nil {
+	if err := DocumentsExists(ar.anno.annot, idslice...); err != nil {
 		return g, err
 	}
 	// retrieve all annotations objects
@@ -163,14 +163,14 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...s
 		return g, err
 	}
 	// remove duplicates
-	aml := uniqueAnno(append(gml, ml...))
+	aml := model.UniqueModel(append(gml, ml...))
 	// update the new group
 	r, err := ar.database.DoRun(
 		annGroupUpd,
 		map[string]interface{}{
 			"@anno_group_collection": ar.anno.annog.Name(),
 			"key":                    groupId,
-			"group":                  docToIds(aml),
+			"group":                  model.DocToIds(aml),
 		},
 	)
 	if err != nil {
@@ -191,7 +191,7 @@ func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, er
 	m := &model.AnnoDoc{}
 	attr := params.attr
 	rins, err := ar.database.DoRun(
-		annInstc, map[string]interface{}{
+		annInst, map[string]interface{}{
 			"@anno_collection":    ar.anno.annot.Name(),
 			"@anno_cv_collection": ar.anno.term.Name(),
 			"editable_value":      attr.EditableValue,
