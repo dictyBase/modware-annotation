@@ -3,20 +3,43 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
-	"github.com/golang/protobuf/ptypes/empty"
 
 	"github.com/dictyBase/aphgrpc"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
+	"github.com/dictyBase/go-genproto/dictybaseapis/api/upload"
 	"github.com/dictyBase/modware-annotation/internal/message"
 	"github.com/dictyBase/modware-annotation/internal/repository"
+	empty "google.golang.org/protobuf/types/known/emptypb"
 )
+
+type oboStreamHandler struct {
+	writer *io.PipeWriter
+	stream annotation.TaggedAnnotationService_OboJsonFileUploadServer
+}
+
+func (oh *oboStreamHandler) Write() error {
+	defer oh.writer.Close()
+	for {
+		req, err := oh.stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		oh.writer.Write(req.Content)
+	}
+	return nil
+}
 
 // AnnotationService is the container for managing annotation service
 // definition
@@ -338,6 +361,32 @@ func (s *AnnotationService) getAnnoData(m *model.AnnoDoc) *annotation.TaggedAnno
 		Id:         m.Key,
 		Attributes: getAnnoAttributes(m),
 	}
+}
+
+func (s *AnnotationService) OboJsonFileUpload(stream annotation.TaggedAnnotationService_OboJsonFileUploadServer) error {
+	in, out := io.Pipe()
+	grp := new(errgroup.Group)
+	defer in.Close()
+	oh := &oboStreamHandler{writer: out, stream: stream}
+	grp.Go(oh.Write)
+	m, err := s.repo.LoadOboJson(in)
+	if err != nil {
+		return aphgrpc.HandleGenericError(context.Background(), err)
+	}
+	if err := grp.Wait(); err != nil {
+		return aphgrpc.HandleGenericError(context.Background(), err)
+	}
+	return stream.SendAndClose(&upload.FileUploadResponse{
+		Status: uploadResponse(m),
+		Msg:    "obojson file is uploaded",
+	})
+}
+
+func uploadResponse(m model.UploadStatus) upload.FileUploadResponse_Status {
+	if m == model.Created {
+		return upload.FileUploadResponse_CREATED
+	}
+	return upload.FileUploadResponse_UPDATED
 }
 
 // genNextCursorVal converts to epoch(https://en.wikipedia.org/wiki/Unix_time)
