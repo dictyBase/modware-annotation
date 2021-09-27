@@ -6,6 +6,14 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+type UploadStatus int
+
+const (
+	Created UploadStatus = iota
+	Updated
+	Failed
+)
+
 type AnnoTag struct {
 	Name       string `json:"name"`
 	ID         string `json:"id"`
