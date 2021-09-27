@@ -13,10 +13,10 @@ import (
 func (ar *arangorepository) LoadOboJson(r io.Reader) (model.UploadStatus, error) {
 	ds, err := ontoarango.NewDataSourceFromDb(ar.database,
 		&ontoarango.CollectionParams{
-			OboGraph:     ar.ontoc.Obog.Name(),
-			GraphInfo:    ar.ontoc.Cv.Name(),
-			Relationship: ar.ontoc.Rel.Name(),
-			Term:         ar.ontoc.Term.Name(),
+			OboGraph:     ar.onto.Obog.Name(),
+			GraphInfo:    ar.onto.Cv.Name(),
+			Relationship: ar.onto.Rel.Name(),
+			Term:         ar.onto.Term.Name(),
 		})
 	if err != nil {
 		return model.Failed, err
