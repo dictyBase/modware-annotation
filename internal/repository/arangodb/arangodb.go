@@ -132,55 +132,35 @@ func setDocumentCollection(db *manager.Database, collP *CollectionParams) (*anno
 // Clear clears all annotations and related ontologies from the repository
 // datasource
 func (ar *arangorepository) Clear() error {
-	if err := ar.anno.annot.Truncate(context.Background()); err != nil {
+	if err := ar.ClearAnnotations(); err != nil {
 		return err
 	}
-	if err := ar.anno.ver.Truncate(context.Background()); err != nil {
-		return err
+	for _, c := range []driver.Collection{
+		ar.onto.Term, ar.onto.Cv, ar.onto.Rel,
+	} {
+		if err := c.Truncate(context.Background()); err != nil {
+			return err
+		}
 	}
-	if err := ar.anno.term.Truncate(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.anno.verg.Remove(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.anno.annotg.Remove(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.onto.Term.Truncate(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.onto.Cv.Truncate(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.onto.Rel.Truncate(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.onto.Obog.Remove(context.Background()); err != nil {
-		return err
-	}
-	return nil
+	return ar.onto.Obog.Remove(context.Background())
 }
 
 // ClearAnnotations clears all annotations from the repository datasource
 func (ar *arangorepository) ClearAnnotations() error {
-	if err := ar.anno.annot.Truncate(context.Background()); err != nil {
-		return err
+	for _, c := range []driver.Collection{
+		ar.anno.annot, ar.anno.ver, ar.anno.term, ar.anno.annog,
+	} {
+		if err := c.Truncate(context.Background()); err != nil {
+			return err
+		}
 	}
-	if err := ar.anno.ver.Truncate(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.anno.term.Truncate(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.anno.verg.Remove(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.anno.annotg.Remove(context.Background()); err != nil {
-		return err
-	}
-	if err := ar.anno.annog.Remove(context.Background()); err != nil {
-		return err
+	for _, g := range []driver.Graph{
+		ar.anno.verg,
+		ar.anno.annotg,
+	} {
+		if err := g.Remove(context.Background()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
