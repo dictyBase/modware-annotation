@@ -47,6 +47,7 @@ type AnnotationService struct {
 	repo      repository.TaggedAnnotationRepository
 	publisher message.Publisher
 	group     string
+	annotation.UnimplementedTaggedAnnotationServiceServer
 }
 
 // ServiceParams are the attributes that are required for creating new AnnotationService
