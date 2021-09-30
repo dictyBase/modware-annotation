@@ -135,25 +135,25 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 }
 
 // Delete an annotation group
-func (ar *arangorepository) RemoveAnnotationGroup(groupId string) error {
+func (ar *arangorepository) RemoveAnnotationGroup(groupID string) error {
 	_, err := ar.anno.annog.RemoveDocument(
 		context.Background(),
-		groupId,
+		groupID,
 	)
 	if err != nil {
-		return fmt.Errorf("error in removing group with id %s %s", groupId, err)
+		return fmt.Errorf("error in removing group with id %s %s", groupID, err)
 	}
 	return nil
 }
 
 // Add a new annotations to an existing group
-func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...string) (*model.AnnoGroup, error) {
+func (ar *arangorepository) AppendToAnnotationGroup(groupID string, idslice ...string) (*model.AnnoGroup, error) {
 	g := &model.AnnoGroup{}
 	if len(idslice) <= 1 {
 		return g, errors.New("need at least more than one entry to form a group")
 	}
 	// retrieve annotation objects for existing group
-	gml, err := ar.groupID2Annotations(groupId)
+	gml, err := ar.groupID2Annotations(groupID)
 	if err != nil {
 		return g, err
 	}
@@ -169,12 +169,12 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupId string, idslice ...s
 		annGroupUpd,
 		map[string]interface{}{
 			"@anno_group_collection": ar.anno.annog.Name(),
-			"key":                    groupId,
+			"key":                    groupID,
 			"group":                  model.DocToIds(aml),
 		},
 	)
 	if err != nil {
-		return g, fmt.Errorf("error in updating group with id %s %s", groupId, err)
+		return g, fmt.Errorf("error in updating group with id %s %s", groupID, err)
 	}
 	dbg := &model.DbGroup{}
 	if err := r.Read(dbg); err != nil {

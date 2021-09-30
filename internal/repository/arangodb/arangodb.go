@@ -29,7 +29,9 @@ type arangorepository struct {
 	onto     *ontoarango.OntoCollection
 }
 
-func NewTaggedAnnotationRepo(connP *manager.ConnectParams, collP *CollectionParams, ontoP *ontoarango.CollectionParams) (repo.TaggedAnnotationRepository, error) {
+func NewTaggedAnnotationRepo(
+	connP *manager.ConnectParams, collP *CollectionParams, ontoP *ontoarango.CollectionParams,
+) (repo.TaggedAnnotationRepository, error) {
 	ar := &arangorepository{}
 	if err := validator.New().Struct(collP); err != nil {
 		return ar, err
