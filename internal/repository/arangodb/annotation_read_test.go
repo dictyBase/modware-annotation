@@ -99,22 +99,18 @@ func TestListAnnoFilter(t *testing.T) {
 	}
 	ml2, err := anrepo.ListAnnotations(
 		toTimestamp(ml[len(ml)-1].CreatedAt),
-		4,
-		filterOne,
+		4, filterOne,
 	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml2, 5, "should have five annotations")
 	assert.Exactly(ml[len(ml)-1], ml2[0], "should have identical model objects")
-
 	ml3, err := anrepo.ListAnnotations(
 		toTimestamp(ml2[len(ml2)-1].CreatedAt),
-		4,
-		filterOne,
+		4, filterOne,
 	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml3, 2, "should have two annotations")
 	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
-
 	filterTwo := `FILTER ann.entry_id == 'DDB_G0294491'
 				  AND cvt.label == 'name description'
 				  AND cv.metadata.namespace == 'dicty_annotation'
@@ -129,19 +125,16 @@ func TestListAnnoFilter(t *testing.T) {
 	}
 	ml5, err := anrepo.ListAnnotations(
 		toTimestamp(ml4[len(ml4)-1].CreatedAt),
-		4,
-		filterTwo,
+		4, filterTwo,
 	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml5, 4, "should have four annotations")
 	assert.Exactly(ml4[len(ml4)-1], ml5[0], "should have identical model objects")
-
 	testModelListSort(ml, t)
 	testModelListSort(ml2, t)
 	testModelListSort(ml3, t)
 	testModelListSort(ml4, t)
 	testModelListSort(ml5, t)
-
 	_, err = anrepo.ListAnnotations(0, 4, "FILTER ann.entry_id == 'jumbo'")
 	assert.Error(err, "expect error")
 	assert.True(repository.IsAnnotationListNotFound(err), "expect no annotation list found")
@@ -250,34 +243,26 @@ func TestAddAnnotation(t *testing.T) {
 	assert.Equal(m.Rank, nta.Data.Attributes.Rank, "should match the rank")
 	assert.Equal(m.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
 	assert.Equal(m.Tag, nta.Data.Attributes.Tag, "should match the ontology tag")
-
-	// error in case of existing record
 	_, err = anrepo.AddAnnotation(nta)
 	assert.Error(err, "expect error for existing annotation")
 	assert.Regexp(
 		regexp.MustCompile("already exists"),
-		err.Error(),
-		"error should have existence of annotation",
+		err.Error(), "error should have existence of annotation",
 	)
-
 	nta.Data.Attributes.Tag = "respiration"
 	_, err = anrepo.AddAnnotation(nta)
 	assert.Error(err, "expect error in case of non-existent ontology and tag")
 	assert.Regexp(
 		regexp.MustCompile("respiration"),
-		err.Error(),
-		"error should contain the non-existent tag name",
+		err.Error(), "error should contain the non-existent tag name",
 	)
 	nta = newTestAnnoWithTagAndOnto("caboose", "description")
 	_, err = anrepo.AddAnnotation(nta)
 	assert.Error(err, "expect error in case of non-existent ontology and tag")
 	assert.Regexp(
 		regexp.MustCompile("caboose"),
-		err.Error(),
-		"error should contain the non-existent ontology",
+		err.Error(), "error should contain the non-existent ontology",
 	)
-
-	// use synonym for tag name
 	nta = newTestAnnoWithTagAndOnto("dicty_annotation", "summary")
 	m2, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -288,7 +273,6 @@ func TestAddAnnotation(t *testing.T) {
 	assert.Equal(m2.Rank, nta.Data.Attributes.Rank, "should match the rank")
 	assert.Equal(m2.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
 	assert.Equal(m2.Tag, "description", "should match the ontology tag")
-
 	nta = newTestAnnoWithTagAndOnto("dicty_annotation", "decreased 3',5'-cyclic-GMP phosphodiesterase activity")
 	m3, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
