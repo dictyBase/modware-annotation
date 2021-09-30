@@ -28,7 +28,9 @@ func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.Ann
 	return ta, nil
 }
 
-func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotation.EntryAnnotationRequest) (*annotation.TaggedAnnotation, error) {
+func (s *AnnotationService) GetEntryAnnotation(
+	ctx context.Context, r *annotation.EntryAnnotationRequest,
+) (*annotation.TaggedAnnotation, error) {
 	ta := &annotation.TaggedAnnotation{}
 	if err := r.Validate(); err != nil {
 		return ta, aphgrpc.HandleInvalidParamError(ctx, err)
@@ -44,7 +46,9 @@ func (s *AnnotationService) GetEntryAnnotation(ctx context.Context, r *annotatio
 	return ta, nil
 }
 
-func (s *AnnotationService) GetAnnotationGroup(ctx context.Context, r *annotation.GroupEntryId) (*annotation.TaggedAnnotationGroup, error) {
+func (s *AnnotationService) GetAnnotationGroup(
+	ctx context.Context, r *annotation.GroupEntryId,
+) (*annotation.TaggedAnnotationGroup, error) {
 	g := &annotation.TaggedAnnotationGroup{}
 	if err := r.Validate(); err != nil {
 		return g, aphgrpc.HandleInvalidParamError(ctx, err)
@@ -59,7 +63,9 @@ func (s *AnnotationService) GetAnnotationGroup(ctx context.Context, r *annotatio
 	return s.getGroup(mg), nil
 }
 
-func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotation.ListGroupParameters) (*annotation.TaggedAnnotationGroupCollection, error) {
+func (s *AnnotationService) ListAnnotationGroups(
+	ctx context.Context, r *annotation.ListGroupParameters,
+) (*annotation.TaggedAnnotationGroupCollection, error) {
 	gc := &annotation.TaggedAnnotationGroupCollection{}
 	// default value of limit
 	limit := int64(10)
@@ -108,7 +114,9 @@ func (s *AnnotationService) ListAnnotationGroups(ctx context.Context, r *annotat
 	}, nil
 }
 
-func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.ListParameters) (*annotation.TaggedAnnotationCollection, error) {
+func (s *AnnotationService) ListAnnotations(
+	ctx context.Context, r *annotation.ListParameters,
+) (*annotation.TaggedAnnotationCollection, error) {
 	tac := &annotation.TaggedAnnotationCollection{}
 	// default value of limit
 	limit := int64(10)
@@ -147,7 +155,9 @@ func (s *AnnotationService) ListAnnotations(ctx context.Context, r *annotation.L
 	return tac, nil
 }
 
-func (s *AnnotationService) GetAnnotationTag(ctx context.Context, r *annotation.TagRequest) (*annotation.AnnotationTag, error) {
+func (s *AnnotationService) GetAnnotationTag(
+	ctx context.Context, r *annotation.TagRequest,
+) (*annotation.AnnotationTag, error) {
 	tag := &annotation.AnnotationTag{}
 	if err := r.Validate(); err != nil {
 		return tag, aphgrpc.HandleInvalidParamError(ctx, err)
