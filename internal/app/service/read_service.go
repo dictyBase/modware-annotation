@@ -99,7 +99,7 @@ func (s *AnnotationService) ListAnnotationGroups(
 			},
 		})
 	}
-	if len(gcdata) < int(limit)-2 { //fewer result than limit
+	if len(gcdata) < int(limit)-2 {
 		return &annotation.TaggedAnnotationGroupCollection{
 			Data: gcdata,
 			Meta: &annotation.Meta{Limit: r.Limit},
