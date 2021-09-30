@@ -10,6 +10,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	filterOne = `FILTER ann.entry_id == 'DDB_G0286429'
+				  AND cvt.label == 'private note'
+				  AND cv.metadata.namespace == 'dicty_annotation'
+	`
+	filterTwo = `FILTER ann.entry_id == 'DDB_G0294491'
+				  AND cvt.label == 'name description'
+				  AND cv.metadata.namespace == 'dicty_annotation'
+	`
+	filterThree = `FILTER ann.entry_id == 'jumbo'`
+)
+
 func TestListAnnotations(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(
@@ -85,10 +97,6 @@ func TestListAnnoFilter(t *testing.T) {
 		_, err := anrepo.AddAnnotation(anno)
 		assert.NoErrorf(err, "expect no error, received %s", err)
 	}
-	filterOne := `FILTER ann.entry_id == 'DDB_G0286429'
-				  AND cvt.label == 'private note'
-				  AND cv.metadata.namespace == 'dicty_annotation'
-	`
 	ml, err := anrepo.ListAnnotations(0, 4, filterOne)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml, 5, "should have 5 annotations")
@@ -111,10 +119,6 @@ func TestListAnnoFilter(t *testing.T) {
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml3, 2, "should have two annotations")
 	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
-	filterTwo := `FILTER ann.entry_id == 'DDB_G0294491'
-				  AND cvt.label == 'name description'
-				  AND cv.metadata.namespace == 'dicty_annotation'
-	`
 	ml4, err := anrepo.ListAnnotations(0, 6, filterTwo)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml4, 7, "should have 7 annotations")
@@ -130,12 +134,10 @@ func TestListAnnoFilter(t *testing.T) {
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml5, 4, "should have four annotations")
 	assert.Exactly(ml4[len(ml4)-1], ml5[0], "should have identical model objects")
-	testModelListSort(ml, t)
-	testModelListSort(ml2, t)
-	testModelListSort(ml3, t)
-	testModelListSort(ml4, t)
-	testModelListSort(ml5, t)
-	_, err = anrepo.ListAnnotations(0, 4, "FILTER ann.entry_id == 'jumbo'")
+	for _, sml := range [][]*model.AnnoDoc{ml, ml2, ml3, ml4, ml5} {
+		testModelListSort(sml, t)
+	}
+	_, err = anrepo.ListAnnotations(0, 4, filterThree)
 	assert.Error(err, "expect error")
 	assert.True(repository.IsAnnotationListNotFound(err), "expect no annotation list found")
 }
