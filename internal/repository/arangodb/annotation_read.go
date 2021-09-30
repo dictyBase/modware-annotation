@@ -104,9 +104,9 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 }
 
 // Retrieves an annotation group
-func (ar *arangorepository) GetAnnotationGroup(groupId string) (*model.AnnoGroup, error) {
+func (ar *arangorepository) GetAnnotationGroup(groupID string) (*model.AnnoGroup, error) {
 	g := &model.AnnoGroup{}
-	ml, err := ar.groupID2Annotations(groupId)
+	ml, err := ar.groupID2Annotations(groupID)
 	if err != nil {
 		return g, err
 	}
@@ -114,7 +114,7 @@ func (ar *arangorepository) GetAnnotationGroup(groupId string) (*model.AnnoGroup
 	dbg := &model.DbGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
-		groupId,
+		groupID,
 		dbg,
 	)
 	if err != nil {
