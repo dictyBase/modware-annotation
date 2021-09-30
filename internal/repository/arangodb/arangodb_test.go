@@ -149,7 +149,7 @@ func newTestAnnoWithTagAndOnto(onto, tag string) *annotation.NewTaggedAnnotation
 	}
 }
 
-func newTestTaggedAnnotationWithParams(tag, entryId string) *annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotationWithParams(tag, entryID string) *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
@@ -159,7 +159,7 @@ func newTestTaggedAnnotationWithParams(tag, entryId string) *annotation.NewTagge
 				CreatedBy:     "siddbasu@gmail.com",
 				Tag:           tag,
 				Ontology:      "dicty_annotation",
-				EntryId:       entryId,
+				EntryId:       entryID,
 				Rank:          0,
 			},
 		},
