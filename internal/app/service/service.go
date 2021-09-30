@@ -35,7 +35,9 @@ func (oh *oboStreamHandler) Write() error {
 			}
 			return err
 		}
-		oh.writer.Write(req.Content)
+		if _, err := oh.writer.Write(req.Content); err != nil {
+			return err
+		}
 	}
 	return nil
 }
