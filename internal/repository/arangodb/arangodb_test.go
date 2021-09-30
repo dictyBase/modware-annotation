@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"log"
@@ -287,6 +288,35 @@ func TestCollectionIndexErrors(t *testing.T) {
 		getOntoParams(),
 	)
 	assert.Error(err, "should receive error if creating repo with no indexes")
+}
+
+func TestLoadOboJson(t *testing.T) {
+	assert := assert.New(t)
+	anrepo, err := NewTaggedAnnotationRepo(
+		getConnectParams(),
+		getCollectionParams(),
+		getOntoParams(),
+	)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	defer annoCleanUp(anrepo, t)
+	fh, err := oboReader()
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	defer fh.Close()
+	m, err := anrepo.LoadOboJson(bufio.NewReader(fh))
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Equal(m, model.Created, "should match created upload status")
+}
+
+func oboReader() (*os.File, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return &os.File{}, fmt.Errorf("unable to get current dir %s", err)
+	}
+	return os.Open(
+		filepath.Join(
+			filepath.Dir(dir), "testdata", "dicty_phenotypes.json",
+		),
+	)
 }
 
 func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
