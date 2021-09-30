@@ -91,7 +91,7 @@ func (s *AnnotationService) OboJsonFileUpload(stream annotation.TaggedAnnotation
 	defer in.Close()
 	oh := &oboStreamHandler{writer: out, stream: stream}
 	grp.Go(oh.Write)
-	m, err := s.repo.LoadOboJson(in)
+	m, err := s.repo.LoadOboJSON(in)
 	if err != nil {
 		return aphgrpc.HandleGenericError(context.Background(), err)
 	}

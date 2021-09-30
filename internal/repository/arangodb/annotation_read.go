@@ -10,7 +10,7 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
-func (ar *arangorepository) GetAnnotationById(id string) (*model.AnnoDoc, error) {
+func (ar *arangorepository) GetAnnotationByID(id string) (*model.AnnoDoc, error) {
 	m := &model.AnnoDoc{}
 	r, err := ar.database.Get(
 		fmt.Sprintf(
@@ -227,24 +227,24 @@ func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttrib
 	return nil
 }
 
-func (ar *arangorepository) groupID2Annotations(groupId string) ([]*model.AnnoDoc, error) {
+func (ar *arangorepository) groupID2Annotations(groupID string) ([]*model.AnnoDoc, error) {
 	var ml []*model.AnnoDoc
 	// check if the group exists
-	ok, err := ar.anno.annog.DocumentExists(context.Background(), groupId)
+	ok, err := ar.anno.annog.DocumentExists(context.Background(), groupID)
 	if err != nil {
 		return ml,
 			fmt.Errorf("error in checking for existence of group identifier %s %s",
-				groupId, err,
+				groupID, err,
 			)
 	}
 	if !ok {
-		return ml, &repository.GroupNotFound{Id: groupId}
+		return ml, &repository.GroupNotFound{Id: groupID}
 	}
 	// retrieve group object
 	dbg := &model.DbGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
-		groupId, dbg,
+		groupID, dbg,
 	)
 	if err != nil {
 		return ml, fmt.Errorf("error in retrieving the group %s", err)
