@@ -147,7 +147,7 @@ func TestListAnnoFilter(t *testing.T) {
 	assert.True(repository.IsAnnotationListNotFound(err), "expect no annotation list found")
 }
 
-func TestGetAnnotationById(t *testing.T) {
+func TestGetAnnotationByID(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(
 		getConnectParams(),
@@ -162,7 +162,7 @@ func TestGetAnnotationById(t *testing.T) {
 	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	m2, err := anrepo.AddAnnotation(nta2)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	em, err := anrepo.GetAnnotationById(m.Key)
+	em, err := anrepo.GetAnnotationByID(m.Key)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Equal(m.EnrtyId, em.EnrtyId, "should match entry identifier")
 	assert.Equal(m.Ontology, em.Ontology, "should match ontology")
@@ -172,11 +172,11 @@ func TestGetAnnotationById(t *testing.T) {
 	assert.True(m.CreatedAt.Equal(em.CreatedAt), "should match created time of annotation")
 	assert.Equal(m.Rank, em.Rank, "should match rank")
 
-	em2, err := anrepo.GetAnnotationById(m2.Key)
+	em2, err := anrepo.GetAnnotationByID(m2.Key)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Equal(m2.EnrtyId, em2.EnrtyId, "should match entry identifier")
 
-	ne, err := anrepo.GetAnnotationById("9999999")
+	ne, err := anrepo.GetAnnotationByID("9999999")
 	assert.Errorf(err, "expected %s error, received nothing", err)
 	assert.True(
 		repository.IsAnnotationNotFound(err),

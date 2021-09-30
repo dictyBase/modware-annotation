@@ -14,7 +14,7 @@ func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.Ann
 	if err := r.Validate(); err != nil {
 		return ta, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	m, err := s.repo.GetAnnotationById(r.Id)
+	m, err := s.repo.GetAnnotationByID(r.Id)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return ta, aphgrpc.HandleNotFoundError(ctx, err)

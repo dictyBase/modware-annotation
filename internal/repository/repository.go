@@ -11,7 +11,7 @@ import (
 // data from its data sources
 type TaggedAnnotationRepository interface {
 	// GetAnnotationById retrieves an annotation
-	GetAnnotationById(id string) (*model.AnnoDoc, error)
+	GetAnnotationByID(id string) (*model.AnnoDoc, error)
 	GetAnnotationByEntry(req *annotation.EntryAnnotationRequest) (*model.AnnoDoc, error)
 	AddAnnotation(na *annotation.NewTaggedAnnotation) (*model.AnnoDoc, error)
 	EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error)
@@ -36,5 +36,5 @@ type TaggedAnnotationRepository interface {
 	ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroup, error)
 	// GetAnnotationTag retrieves tag information
 	GetAnnotationTag(name, ontology string) (*model.AnnoTag, error)
-	LoadOboJson(r io.Reader) (model.UploadStatus, error)
+	LoadOboJSON(r io.Reader) (model.UploadStatus, error)
 }

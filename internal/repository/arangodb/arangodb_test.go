@@ -14,7 +14,6 @@ import (
 
 	"github.com/dictyBase/arangomanager/testarango"
 	ontostorage "github.com/dictyBase/go-obograph/storage"
-	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/assert"
 
@@ -49,8 +48,8 @@ func toTimestamp(t time.Time) int64 {
 	return t.UnixNano() / 1000000
 }
 
-func getOntoParams() *ontoarango.CollectionParams {
-	return &ontoarango.CollectionParams{
+func getOntoParams() *araobo.CollectionParams {
+	return &araobo.CollectionParams{
 		GraphInfo:    "cv",
 		OboGraph:     "obograph",
 		Relationship: "cvterm_relationship",
@@ -290,7 +289,7 @@ func TestCollectionIndexErrors(t *testing.T) {
 	assert.Error(err, "should receive error if creating repo with no indexes")
 }
 
-func TestLoadOboJson(t *testing.T) {
+func TestLoadOboJSON(t *testing.T) {
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(
 		getConnectParams(),
@@ -302,7 +301,7 @@ func TestLoadOboJson(t *testing.T) {
 	fh, err := oboReader()
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer fh.Close()
-	m, err := anrepo.LoadOboJson(bufio.NewReader(fh))
+	m, err := anrepo.LoadOboJSON(bufio.NewReader(fh))
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Equal(m, model.Created, "should match created upload status")
 }

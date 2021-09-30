@@ -10,7 +10,7 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/model"
 )
 
-func (ar *arangorepository) LoadOboJson(r io.Reader) (model.UploadStatus, error) {
+func (ar *arangorepository) LoadOboJSON(r io.Reader) (model.UploadStatus, error) {
 	ds, err := ontoarango.NewDataSourceFromDb(ar.database,
 		&ontoarango.CollectionParams{
 			OboGraph:     ar.onto.Obog.Name(),

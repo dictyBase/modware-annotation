@@ -41,30 +41,30 @@ func (ar *arangorepository) RemoveAnnotation(id string, purge bool) error {
 }
 
 // RemoveFromAnnotationGroup remove annotations from an existing group
-func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ...string) (*model.AnnoGroup, error) {
+func (ar *arangorepository) RemoveFromAnnotationGroup(groupID string, idslice ...string) (*model.AnnoGroup, error) {
 	g := &model.AnnoGroup{}
 	if len(idslice) <= 1 {
 		return g, errors.New("need at least more than one entry to form a group")
 	}
 	// check if the group exists
 	ok, err := ar.anno.annog.DocumentExists(
-		context.Background(), groupId,
+		context.Background(), groupID,
 	)
 	if err != nil {
 		return g,
 			fmt.Errorf(
 				"error in checking for existence of group identifier %s %s",
-				groupId, err,
+				groupID, err,
 			)
 	}
 	if !ok {
-		return g, &repository.GroupNotFound{Id: groupId}
+		return g, &repository.GroupNotFound{Id: groupID}
 	}
 	// retrieve all annotations ids for the group
 	dbg := &model.DbGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
-		groupId, dbg,
+		groupID, dbg,
 	)
 	if err != nil {
 		return g, fmt.Errorf("error in retrieving the group %s", err)
@@ -80,14 +80,14 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupId string, idslice ..
 		annGroupUpd,
 		map[string]interface{}{
 			"@anno_group_collection": ar.anno.annog.Name(),
-			"key":                    groupId,
+			"key":                    groupID,
 			"group":                  nids,
 		})
 	if err != nil {
 		return g,
 			fmt.Errorf(
 				"error in removing group members with id %s %s",
-				groupId, err,
+				groupID, err,
 			)
 	}
 	ndbg := &model.DbGroup{}
