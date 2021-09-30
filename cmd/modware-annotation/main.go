@@ -53,19 +53,21 @@ func main() {
 }
 
 func getServerFlags() []cli.Flag {
-	var f []cli.Flag
-	f = append(f, commonFlags()...)
-	f = append(f, arangoflag.ArangodbFlags()...)
-	return append(f, apiflag.NatsFlag()...)
-}
-
-func commonFlags() []cli.Flag {
-	return []cli.Flag{
+	f := []cli.Flag{
 		cli.StringFlag{
 			Name:  "port",
 			Usage: "tcp port at which the server will be available",
 			Value: "9560",
 		},
+	}
+	f = append(f, annoCollFlags()...)
+	f = append(f, ontoCollFlags()...)
+	f = append(f, arangoflag.ArangodbFlags()...)
+	return append(f, apiflag.NatsFlag()...)
+}
+
+func ontoCollFlags() []cli.Flag {
+	return []cli.Flag{
 		cli.StringFlag{
 			Name:  "term-collection",
 			Usage: "arangodb collection for storing ontoloy terms",
@@ -86,6 +88,16 @@ func commonFlags() []cli.Flag {
 			Usage: "arangodb named graph for managing ontology graph",
 			Value: "obograph",
 		},
+		cli.StringSliceFlag{
+			Name:  "term-index-fields",
+			Usage: "fields to have persistent indexes in ontology term collection",
+			Value: &cli.StringSlice{"label"},
+		},
+	}
+}
+
+func annoCollFlags() []cli.Flag {
+	return []cli.Flag{
 		cli.StringFlag{
 			Name:  "anno-collection",
 			Usage: "arangodb collection for storing annotations",
@@ -120,11 +132,6 @@ func commonFlags() []cli.Flag {
 			Name:  "annotation-index-fields",
 			Usage: "fields to have persistent indexes in annotation collection",
 			Value: &cli.StringSlice{"entry_id"},
-		},
-		cli.StringSliceFlag{
-			Name:  "term-index-fields",
-			Usage: "fields to have persistent indexes in ontology term collection",
-			Value: &cli.StringSlice{"label"},
 		},
 	}
 }

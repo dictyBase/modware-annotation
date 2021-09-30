@@ -9,7 +9,6 @@ import (
 
 	manager "github.com/dictyBase/arangomanager"
 	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
-	"github.com/dictyBase/modware-annotation/internal/repository"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
 )
 
@@ -174,7 +173,7 @@ func DocumentsExists(c driver.Collection, ids ...string) error {
 			return fmt.Errorf("error in checking for existence of identifier %s %s", k, err)
 		}
 		if !ok {
-			return &repository.AnnoNotFound{Id: k}
+			return &repo.AnnoNotFound{Id: k}
 		}
 	}
 	return nil
