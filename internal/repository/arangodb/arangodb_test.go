@@ -301,9 +301,9 @@ func TestLoadOboJSON(t *testing.T) {
 	fh, err := oboReader()
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer fh.Close()
-	m, err := anrepo.LoadOboJSON(bufio.NewReader(fh))
+	info, err := anrepo.LoadOboJSON(bufio.NewReader(fh))
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(m, model.Created, "should match created upload status")
+	assert.True(info.IsCreated, "should match created status")
 }
 
 func oboReader() (*os.File, error) {
