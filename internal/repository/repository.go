@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
+	"github.com/dictyBase/go-obograph/storage"
 	"github.com/dictyBase/modware-annotation/internal/model"
 )
 
@@ -36,5 +37,5 @@ type TaggedAnnotationRepository interface {
 	ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroup, error)
 	// GetAnnotationTag retrieves tag information
 	GetAnnotationTag(name, ontology string) (*model.AnnoTag, error)
-	LoadOboJSON(r io.Reader) (model.UploadStatus, error)
+	LoadOboJSON(r io.Reader) (*storage.UploadInformation, error)
 }

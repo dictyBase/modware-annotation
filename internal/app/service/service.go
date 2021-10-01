@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/dictyBase/arangomanager/query"
+	"github.com/dictyBase/go-obograph/storage"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 
@@ -93,7 +94,7 @@ func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotation
 	defer in.Close()
 	oh := &oboStreamHandler{writer: out, stream: stream}
 	grp.Go(oh.Write)
-	m, err := s.repo.LoadOboJSON(in)
+	info, err := s.repo.LoadOboJSON(in)
 	if err != nil {
 		return aphgrpc.HandleGenericError(context.Background(), err)
 	}
@@ -101,13 +102,13 @@ func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotation
 		return aphgrpc.HandleGenericError(context.Background(), err)
 	}
 	return stream.SendAndClose(&upload.FileUploadResponse{
-		Status: uploadResponse(m),
+		Status: uploadResponse(info),
 		Msg:    "obojson file is uploaded",
 	})
 }
 
-func uploadResponse(m model.UploadStatus) upload.FileUploadResponse_Status {
-	if m == model.Created {
+func uploadResponse(info *storage.UploadInformation) upload.FileUploadResponse_Status {
+	if info.IsCreated {
 		return upload.FileUploadResponse_CREATED
 	}
 	return upload.FileUploadResponse_UPDATED
