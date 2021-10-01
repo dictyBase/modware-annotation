@@ -22,7 +22,7 @@ import (
 
 type oboStreamHandler struct {
 	writer *io.PipeWriter
-	stream annotation.TaggedAnnotationService_OboJsonFileUploadServer
+	stream annotation.TaggedAnnotationService_OboJSONFileUploadServer
 }
 
 func (oh *oboStreamHandler) Write() error {
@@ -87,7 +87,7 @@ func (s *AnnotationService) GetGroupResourceName() string {
 	return s.group
 }
 
-func (s *AnnotationService) OboJsonFileUpload(stream annotation.TaggedAnnotationService_OboJsonFileUploadServer) error {
+func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotationService_OboJSONFileUploadServer) error {
 	in, out := io.Pipe()
 	grp := new(errgroup.Group)
 	defer in.Close()

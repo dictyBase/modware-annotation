@@ -32,10 +32,10 @@ github.com/dictyBase/aphgrpc v1.4.2 h1:jkNyIpUBATNVNTM99TfAHln8UEpzyvNNNuM2+UY6t
 github.com/dictyBase/aphgrpc v1.4.2/go.mod h1:rzi2U95QntAuS6XpqespgZmQ8Ujo2Sq2R5FyhW5adA8=
 github.com/dictyBase/arangomanager v0.3.1 h1:wkEUMHIVU012sHZ3niqDDlYiiz2jVhdwwobMPmv4fnk=
 github.com/dictyBase/arangomanager v0.3.1/go.mod h1:sSR7JRZpUWZaw8WzVZRiG2zA3gSgY7gIq84S4u2AQ0I=
-github.com/dictyBase/go-genproto v0.0.0-20210924172505-6cb89b50a147 h1:txS4wKAqWv65bbiX8Xsfs4kR+yoWmGhk6EVzK93DSrk=
-github.com/dictyBase/go-genproto v0.0.0-20210924172505-6cb89b50a147/go.mod h1:KY6iUqXl1lLq81WTW9u5DfZE58xM61PsGLSLwwtePlk=
-github.com/dictyBase/go-obograph v1.3.0 h1:RXHs0v5b6w2QIlCU1hsDzplabAMNQnq/nDRyHSGeSj4=
-github.com/dictyBase/go-obograph v1.3.0/go.mod h1:RSriY6heWOLCBBNBZqOsHCYutyUcN1qJ64G6WPd87U0=
+github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622 h1:UqICH4tshsyfhtwFv/0i48bddx9cJXcPsYEbZFVyULE=
+github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622/go.mod h1:KY6iUqXl1lLq81WTW9u5DfZE58xM61PsGLSLwwtePlk=
+github.com/dictyBase/go-obograph v1.4.0 h1:qh7eK+c0ptAOph1DD5mzgS8ZpyTHOL8D8kcZplybJLs=
+github.com/dictyBase/go-obograph v1.4.0/go.mod h1:RjW9RgQX7uG7TzWeV9ypz9sD3Yv/JIstKbTBmnKGCX8=
 github.com/emirpasic/gods v1.12.0 h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
