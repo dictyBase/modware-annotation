@@ -16,7 +16,7 @@ require (
 	github.com/nats-io/nkeys v0.1.3 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli v1.22.5
 	golang.org/x/net v0.0.0-20210927181540-4e4d966f7476 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
