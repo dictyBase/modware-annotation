@@ -17,7 +17,7 @@ jobs:
       - name: set up golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.16.3
+          go-version: 1.18
       - name: check out code
         uses: actions/checkout@v3
       - name: unit test
@@ -29,10 +29,9 @@ jobs:
           ARANGO_PORT: ${{ job.services.arangodb.ports[8529] }}
           GOPROXY: https://proxy.golang.org
       - name: upload coverage to codecov
-        uses: codecov/codecov-action@v1.5.2
+        uses: codecov/codecov-action@v2
         with:
           file: ./profile.cov
-          token: ${{ secrets.CODECOV_TOKEN }}
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -40,7 +39,7 @@ jobs:
       - name: set up golang
         uses: actions/setup-go@v3
         with:
-          go-version: 1.16.3
+          go-version: 1.18
       - name: check out code
         uses: actions/checkout@v3
       - name: set up docker buildx
