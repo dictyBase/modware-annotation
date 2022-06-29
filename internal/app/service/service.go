@@ -21,6 +21,8 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
+const dividerVal = 1000000
+
 type oboStreamHandler struct {
 	writer *io.PipeWriter
 	stream annotation.TaggedAnnotationService_OboJSONFileUploadServer
@@ -37,14 +39,14 @@ func (oh *oboStreamHandler) Write() error {
 			return err
 		}
 		if _, err := oh.writer.Write(req.Content); err != nil {
-			return err
+			return fmt.Errorf("error in writing the content from request %s", err)
 		}
 	}
 	return nil
 }
 
 // AnnotationService is the container for managing annotation service
-// definition
+// definition.
 type AnnotationService struct {
 	*aphgrpc.Service
 	repo      repository.TaggedAnnotationRepository
@@ -53,8 +55,8 @@ type AnnotationService struct {
 	annotation.UnimplementedTaggedAnnotationServiceServer
 }
 
-// ServiceParams are the attributes that are required for creating new AnnotationService
-type ServiceParams struct {
+// ServiceParams are the attributes that are required for creating new AnnotationService.
+type Params struct {
 	Repository repository.TaggedAnnotationRepository `validate:"required"`
 	Publisher  message.Publisher                     `validate:"required"`
 	Options    []aphgrpc.Option                      `validate:"required"`
@@ -65,10 +67,10 @@ func defaultOptions() *aphgrpc.ServiceOptions {
 	return &aphgrpc.ServiceOptions{Resource: "annotations"}
 }
 
-// NewAnnotationService is the constructor for creating a new instance of AnnotationService
-func NewAnnotationService(srvP *ServiceParams) (*AnnotationService, error) {
+// NewAnnotationService is the constructor for creating a new instance of AnnotationService.
+func NewAnnotationService(srvP *Params) (*AnnotationService, error) {
 	if err := validator.New().Struct(srvP); err != nil {
-		return &AnnotationService{}, err
+		return &AnnotationService{}, fmt.Errorf("error in validating struct %s", err)
 	}
 	so := defaultOptions()
 	for _, optfn := range srvP.Options {
@@ -96,10 +98,10 @@ func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotation
 	grp.Go(oh.Write)
 	info, err := s.repo.LoadOboJSON(in)
 	if err != nil {
-		return aphgrpc.HandleGenericError(context.Background(), err)
+		return aphgrpc.HandleGenericError(context.Background(), fmt.Errorf("error with loading obo %s", err))
 	}
 	if err := grp.Wait(); err != nil {
-		return aphgrpc.HandleGenericError(context.Background(), err)
+		return aphgrpc.HandleGenericError(context.Background(), fmt.Errorf("error in waiting for the write to finish %s", err))
 	}
 	return stream.SendAndClose(&upload.FileUploadResponse{
 		Status: uploadResponse(info),
@@ -115,23 +117,23 @@ func uploadResponse(info *storage.UploadInformation) upload.FileUploadResponse_S
 }
 
 // genNextCursorVal converts to epoch(https://en.wikipedia.org/wiki/Unix_time)
-// in milliseconds
+// in milliseconds.
 func genNextCursorVal(t time.Time) int64 {
-	return t.UnixNano() / 1000000
+	return t.UnixNano() / dividerVal
 }
 
-func getAnnoAttributes(m *model.AnnoDoc) *annotation.TaggedAnnotationAttributes {
+func getAnnoAttributes(annom *model.AnnoDoc) *annotation.TaggedAnnotationAttributes {
 	return &annotation.TaggedAnnotationAttributes{
-		Value:         m.Value,
-		EditableValue: m.EditableValue,
-		CreatedBy:     m.CreatedBy,
-		CreatedAt:     aphgrpc.TimestampProto(m.CreatedAt),
-		Version:       m.Version,
-		EntryId:       m.EnrtyId,
-		Rank:          m.Rank,
-		IsObsolete:    m.IsObsolete,
-		Tag:           m.Tag,
-		Ontology:      m.Ontology,
+		Value:         annom.Value,
+		EditableValue: annom.EditableValue,
+		CreatedBy:     annom.CreatedBy,
+		CreatedAt:     aphgrpc.TimestampProto(annom.CreatedAt),
+		Version:       annom.Version,
+		EntryId:       annom.EnrtyId,
+		Rank:          annom.Rank,
+		IsObsolete:    annom.IsObsolete,
+		Tag:           annom.Tag,
+		Ontology:      annom.Ontology,
 	}
 }
 

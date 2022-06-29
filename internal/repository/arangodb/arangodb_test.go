@@ -92,10 +92,10 @@ func loadAnnotationObo() error {
 		),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in open file %s", err)
 	}
 	defer r.Close()
-	g, err := graph.BuildGraph(r)
+	gra, err := graph.BuildGraph(r)
 	if err != nil {
 		return fmt.Errorf("error in building graph %s", err)
 	}
@@ -113,20 +113,20 @@ func loadAnnotationObo() error {
 	if err != nil {
 		return err
 	}
-	if ds.ExistsOboGraph(g) {
+	if ds.ExistsOboGraph(gra) {
 		return errors.New("dicty_annotation already exist, needs a cleanp!!!!")
 	}
-	return saveExistentTestGraph(ds, g)
+	return saveExistentTestGraph(ds, gra)
 }
 
-func saveExistentTestGraph(ds ontostorage.DataSource, g graph.OboGraph) error {
-	if err := ds.SaveOboGraphInfo(g); err != nil {
+func saveExistentTestGraph(ds ontostorage.DataSource, gra graph.OboGraph) error {
+	if err := ds.SaveOboGraphInfo(gra); err != nil {
 		return fmt.Errorf("error in saving graph %s", err)
 	}
-	if _, err := ds.SaveTerms(g); err != nil {
+	if _, err := ds.SaveTerms(gra); err != nil {
 		return fmt.Errorf("error in saving terms %s", err)
 	}
-	if _, err := ds.SaveRelationships(g); err != nil {
+	if _, err := ds.SaveRelationships(gra); err != nil {
 		return fmt.Errorf("error in saving relationships %s", err)
 	}
 	return nil
@@ -186,7 +186,7 @@ func newTestTaggedAnnotation() *annotation.NewTaggedAnnotation {
 func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAnnotation {
 	var nal []*annotation.NewTaggedAnnotation
 	value := fmt.Sprintf("cool gene %s", tags[0])
-	for z := 0; z < num/2; z++ {
+	for zcount := 0; zcount < num/2; zcount++ {
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
 				Type: "annotations",
@@ -197,13 +197,13 @@ func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAn
 					Tag:           tags[0],
 					Ontology:      "dicty_annotation",
 					EntryId:       ddbg[0],
-					Rank:          int64(z),
+					Rank:          int64(zcount),
 				},
 			},
 		})
 	}
 	value = fmt.Sprintf("cool gene %s", tags[1])
-	for y := num / 2; y < num; y++ {
+	for ycount := num / 2; ycount < num; ycount++ {
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
 				Type: "annotations",
@@ -214,7 +214,7 @@ func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAn
 					Tag:           tags[1],
 					Ontology:      "dicty_annotation",
 					EntryId:       ddbg[1],
-					Rank:          int64(y),
+					Rank:          int64(ycount),
 				},
 			},
 		})
@@ -248,19 +248,19 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 }
 
 func TestMain(m *testing.M) {
-	ta, err := testarango.NewTestArangoFromEnv(true)
+	tarango, err := testarango.NewTestArangoFromEnv(true)
 	if err != nil {
 		log.Fatalf("unable to construct new TestArango instance %s", err)
 	}
-	dbh, err := ta.DB(ta.Database)
+	dbh, err := tarango.DB(tarango.Database)
 	if err != nil {
 		log.Fatalf("unable to get database %s", err)
 	}
-	auser = ta.User
-	apass = ta.Pass
-	ahost = ta.Host
-	aport = strconv.Itoa(ta.Port)
-	adb = ta.Database
+	auser = tarango.User
+	apass = tarango.Pass
+	ahost = tarango.Host
+	aport = strconv.Itoa(tarango.Port)
+	adb = tarango.Database
 	if err := loadAnnotationObo(); err != nil {
 		log.Fatalf("error in loading test annotation obograph %s", err)
 	}
@@ -272,6 +272,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCollectionIndexErrors(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	_, err := NewTaggedAnnotationRepo(
 		getConnectParams(),
@@ -290,6 +291,7 @@ func TestCollectionIndexErrors(t *testing.T) {
 }
 
 func TestLoadOboJSON(t *testing.T) {
+	t.Parallel()
 	assert := assert.New(t)
 	anrepo, err := NewTaggedAnnotationRepo(
 		getConnectParams(),
@@ -318,7 +320,7 @@ func oboReader() (*os.File, error) {
 	)
 }
 
-func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
+func testModelListSort(t *testing.T, m []*model.AnnoDoc) {
 	assert := assert.New(t)
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	assert.NoErrorf(err, "expect no error, received %s", err)

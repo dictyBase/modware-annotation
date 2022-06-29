@@ -1,6 +1,8 @@
 package model
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
@@ -52,44 +54,50 @@ type DbGroup struct {
 }
 
 func UniqueModel(a []*AnnoDoc) []*AnnoDoc {
-	var ml []*AnnoDoc
-	h := make(map[string]int)
+	mdoc := make([]*AnnoDoc, 0)
+	hmap := make(map[string]int)
 	for _, m := range a {
-		if _, ok := h[m.Key]; ok {
+		if _, ok := hmap[m.Key]; ok {
 			continue
 		}
-		ml = append(ml, m)
-		h[m.Key] = 1
+		mdoc = append(mdoc, m)
+		hmap[m.Key] = 1
 	}
-	return ml
+
+	return mdoc
 }
 
 func DocToIds(ml []*AnnoDoc) []string {
-	var s []string
+	str := make([]string, 0)
 	for _, m := range ml {
-		s = append(s, m.Key)
+		str = append(str, m.Key)
 	}
-	return s
+
+	return str
 }
 
 func ConvToModel(i interface{}) (*AnnoDoc, error) {
-	c := i.(map[string]interface{})
-	m := &AnnoDoc{
-		Value:         c["value"].(string),
-		EditableValue: c["editable_value"].(string),
-		CreatedBy:     c["created_by"].(string),
-		EnrtyId:       c["entry_id"].(string),
-		Rank:          int64(c["rank"].(float64)),
-		IsObsolete:    c["is_obsolete"].(bool),
-		Version:       int64(c["version"].(float64)),
+	cmap, isok := i.(map[string]interface{})
+	if !isok {
+		return &AnnoDoc{}, errors.New("error in typecasting")
 	}
-	dstr := c["created_at"].(string)
+	m := &AnnoDoc{
+		Value:         cmap["value"].(string),
+		EditableValue: cmap["editable_value"].(string),
+		CreatedBy:     cmap["created_by"].(string),
+		EnrtyId:       cmap["entry_id"].(string),
+		Rank:          int64(cmap["rank"].(float64)),
+		IsObsolete:    cmap["is_obsolete"].(bool),
+		Version:       int64(cmap["version"].(float64)),
+	}
+	dstr := cmap["created_at"].(string)
 	t, err := time.Parse(time.RFC3339, dstr)
 	if err != nil {
-		return m, err
+		return m, fmt.Errorf("error in parsing time %s", err)
 	}
 	m.CreatedAt = t
-	m.DocumentMeta.Key = c["_key"].(string)
-	m.DocumentMeta.Rev = c["_rev"].(string)
+	m.DocumentMeta.Key = cmap["_key"].(string)
+	m.DocumentMeta.Rev = cmap["_rev"].(string)
+
 	return m, nil
 }
