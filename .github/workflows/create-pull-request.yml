@@ -14,6 +14,6 @@ jobs:
       - name: pull-request
         uses: repo-sync/pull-request@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.REPO_ACCESS_TOKEN }}
           destination_branch: develop
           pr_title: Pulling ${{ steps.vars.outputs.branch }} into develop
