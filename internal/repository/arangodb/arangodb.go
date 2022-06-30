@@ -159,6 +159,14 @@ func (ar *arangorepository) ClearAnnotations() error {
 		ar.anno.verg,
 		ar.anno.annotg,
 	} {
+		arangoDb := ar.database.Handler()
+		isok, err := arangoDb.GraphExists(context.Background(), g.Name())
+		if err != nil {
+			return fmt.Errorf("error in checking existence of graph %s", err)
+		}
+		if !isok {
+			continue
+		}
 		if err := g.Remove(context.Background()); err != nil {
 			return err
 		}
