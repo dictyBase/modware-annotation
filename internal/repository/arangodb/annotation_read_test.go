@@ -78,10 +78,10 @@ func TestListAnnotations(t *testing.T) {
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml4, 3, "should have three annotations")
 	assert.Exactly(ml3[len(ml3)-1], ml4[0], "should have identical model objects")
-	testModelListSort(t, mla)
-	testModelListSort(t, ml2)
-	testModelListSort(t, ml3)
-	testModelListSort(t, ml4)
+	testModelListSort(mla, t)
+	testModelListSort(ml2, t)
+	testModelListSort(ml3, t)
+	testModelListSort(ml4, t)
 }
 
 func TestListAnnoFilter(t *testing.T) {
@@ -137,7 +137,7 @@ func TestListAnnoFilter(t *testing.T) {
 	assert.Len(ml5, 4, "should have four annotations")
 	assert.Exactly(ml4[len(ml4)-1], ml5[0], "should have identical model objects")
 	for _, sml := range [][]*model.AnnoDoc{mla, ml2, ml3, ml4, ml5} {
-		testModelListSort(t, sml)
+		testModelListSort(sml, t)
 	}
 	_, err = anrepo.ListAnnotations(0, 4, filterThree)
 	assert.Error(err, "expect error")

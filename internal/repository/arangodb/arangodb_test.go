@@ -86,7 +86,7 @@ func loadAnnotationObo() error {
 	if err != nil {
 		return fmt.Errorf("unable to get current dir %s", err)
 	}
-	r, err := os.Open(
+	res, err := os.Open(
 		filepath.Join(
 			filepath.Dir(dir), "testdata", "dicty_annotation.json",
 		),
@@ -94,13 +94,13 @@ func loadAnnotationObo() error {
 	if err != nil {
 		return fmt.Errorf("error in open file %s", err)
 	}
-	defer r.Close()
-	gra, err := graph.BuildGraph(r)
+	defer res.Close()
+	gra, err := graph.BuildGraph(res)
 	if err != nil {
 		return fmt.Errorf("error in building graph %s", err)
 	}
 	connP := getConnectParams()
-	ds, err := araobo.NewDataSource(
+	dsr, err := araobo.NewDataSource(
 		&araobo.ConnectParams{
 			User:     connP.User,
 			Pass:     connP.Pass,
@@ -111,22 +111,22 @@ func loadAnnotationObo() error {
 		}, getOntoParams(),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in creating datasource %s", err)
 	}
-	if ds.ExistsOboGraph(gra) {
-		return errors.New("dicty_annotation already exist, needs a cleanp!!!!")
+	if dsr.ExistsOboGraph(gra) {
+		return errors.New("dicty_annotation already exist, needs a cleanp")
 	}
-	return saveExistentTestGraph(ds, gra)
+	return saveExistentTestGraph(dsr, gra)
 }
 
-func saveExistentTestGraph(ds ontostorage.DataSource, gra graph.OboGraph) error {
-	if err := ds.SaveOboGraphInfo(gra); err != nil {
+func saveExistentTestGraph(dsr ontostorage.DataSource, gra graph.OboGraph) error {
+	if err := dsr.SaveOboGraphInfo(gra); err != nil {
 		return fmt.Errorf("error in saving graph %s", err)
 	}
-	if _, err := ds.SaveTerms(gra); err != nil {
+	if _, err := dsr.SaveTerms(gra); err != nil {
 		return fmt.Errorf("error in saving terms %s", err)
 	}
-	if _, err := ds.SaveRelationships(gra); err != nil {
+	if _, err := dsr.SaveRelationships(gra); err != nil {
 		return fmt.Errorf("error in saving relationships %s", err)
 	}
 	return nil
@@ -320,7 +320,7 @@ func oboReader() (*os.File, error) {
 	)
 }
 
-func testModelListSort(t *testing.T, m []*model.AnnoDoc) {
+func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	assert := assert.New(t)
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	assert.NoErrorf(err, "expect no error, received %s", err)
