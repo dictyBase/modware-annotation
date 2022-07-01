@@ -81,7 +81,7 @@ func ConvToModel(i interface{}) (*AnnoDoc, error) {
 	if !isok {
 		return &AnnoDoc{}, errors.New("error in typecasting")
 	}
-	m := &AnnoDoc{
+	adoc := &AnnoDoc{
 		Value:         cmap["value"].(string),
 		EditableValue: cmap["editable_value"].(string),
 		CreatedBy:     cmap["created_by"].(string),
@@ -90,14 +90,17 @@ func ConvToModel(i interface{}) (*AnnoDoc, error) {
 		IsObsolete:    cmap["is_obsolete"].(bool),
 		Version:       int64(cmap["version"].(float64)),
 	}
-	dstr := cmap["created_at"].(string)
+	dstr, isok := cmap["created_at"].(string)
+	if !isok {
+		return &AnnoDoc{}, errors.New("error in typecasting")
+	}
 	t, err := time.Parse(time.RFC3339, dstr)
 	if err != nil {
-		return m, fmt.Errorf("error in parsing time %s", err)
+		return adoc, fmt.Errorf("error in parsing time %s", err)
 	}
-	m.CreatedAt = t
-	m.DocumentMeta.Key = cmap["_key"].(string)
-	m.DocumentMeta.Rev = cmap["_rev"].(string)
+	adoc.CreatedAt = t
+	adoc.DocumentMeta.Key = cmap["_key"].(string)
+	adoc.DocumentMeta.Rev = cmap["_rev"].(string)
 
-	return m, nil
+	return adoc, nil
 }
