@@ -6,19 +6,17 @@ import (
 	"io"
 	"time"
 
-	"github.com/go-playground/validator/v10"
-	"golang.org/x/sync/errgroup"
-
-	"github.com/dictyBase/arangomanager/query"
-	"github.com/dictyBase/go-obograph/storage"
-	"github.com/dictyBase/modware-annotation/internal/model"
-	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
-
 	"github.com/dictyBase/aphgrpc"
+	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/go-genproto/dictybaseapis/api/upload"
+	"github.com/dictyBase/go-obograph/storage"
 	"github.com/dictyBase/modware-annotation/internal/message"
+	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
+	"github.com/go-playground/validator/v10"
+	"golang.org/x/sync/errgroup"
 )
 
 const dividerVal = 1000000
@@ -36,12 +34,14 @@ func (oh *oboStreamHandler) Write() error {
 			if err == io.EOF {
 				break
 			}
-			return err
+
+			return fmt.Errorf("error in handling stream %s", err)
 		}
 		if _, err := oh.writer.Write(req.Content); err != nil {
 			return fmt.Errorf("error in writing the content from request %s", err)
 		}
 	}
+
 	return nil
 }
 
@@ -78,6 +78,7 @@ func NewAnnotationService(srvP *Params) (*AnnotationService, error) {
 	}
 	srv := &aphgrpc.Service{}
 	aphgrpc.AssignFieldsToStructs(so, srv)
+
 	return &AnnotationService{
 		Service:   srv,
 		repo:      srvP.Repository,
@@ -103,16 +104,23 @@ func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotation
 	if err := grp.Wait(); err != nil {
 		return aphgrpc.HandleGenericError(context.Background(), fmt.Errorf("error in waiting for the write to finish %s", err))
 	}
-	return stream.SendAndClose(&upload.FileUploadResponse{
+
+	err = stream.SendAndClose(&upload.FileUploadResponse{
 		Status: uploadResponse(info),
 		Msg:    "obojson file is uploaded",
 	})
+	if err != nil {
+		return fmt.Errorf("error in closing the stream %s", err)
+	}
+
+	return nil
 }
 
 func uploadResponse(info *storage.UploadInformation) upload.FileUploadResponse_Status {
 	if info.IsCreated {
 		return upload.FileUploadResponse_CREATED
 	}
+
 	return upload.FileUploadResponse_UPDATED
 }
 
@@ -150,5 +158,6 @@ func filterStrToQuery(filter string) (string, error) {
 	if err != nil {
 		return empty, fmt.Errorf("error in generating aql statement")
 	}
+
 	return q, nil
 }

@@ -12,6 +12,7 @@ linters-settings:
       ignorePackageGlobs:
         - github.com/dictyBase/aphgrpc
         - github.com/dictyBase/arangomanager
+        - github.com/arangodb/go-driver
 linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true

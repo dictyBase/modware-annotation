@@ -5,11 +5,10 @@ import (
 	"fmt"
 
 	driver "github.com/arangodb/go-driver"
-	"github.com/go-playground/validator/v10"
-
 	manager "github.com/dictyBase/arangomanager"
 	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/go-playground/validator/v10"
 )
 
 type annoc struct {
@@ -147,7 +146,12 @@ func (ar *arangorepository) Clear() error {
 		}
 	}
 
-	return ar.onto.Obog.Remove(context.Background())
+	err := ar.onto.Obog.Remove(context.Background())
+	if err != nil {
+		return fmt.Errorf("error in removing graph %s", err)
+	}
+
+	return nil
 }
 
 // ClearAnnotations clears all annotations from the repository datasource.
