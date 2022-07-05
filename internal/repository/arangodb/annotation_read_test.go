@@ -174,14 +174,14 @@ func TestGetAnnotationByEntry(t *testing.T) {
 	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	_, err = anrepo.AddAnnotation(nta2)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	m, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
+	mae, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
 		Tag:      nta.Data.Attributes.Tag,
 		EntryId:  nta.Data.Attributes.EntryId,
 		Ontology: nta.Data.Attributes.Ontology,
 	})
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(m.Rank, int64(0), "should match rank 0")
-	assert.Equal(m.EnrtyId, nta.Data.Attributes.EntryId, "should match the entry id")
+	assert.Equal(mae.Rank, int64(0), "should match rank 0")
+	assert.Equal(mae.EnrtyId, nta.Data.Attributes.EntryId, "should match the entry id")
 
 	ml2, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
 		Tag:      nta2.Data.Attributes.Tag,

@@ -27,7 +27,11 @@ func NewPublisher(host, port string, options ...gnats.Option) (message.Publisher
 }
 
 func (n *natsPublisher) Publish(subj string, ann *annotation.TaggedAnnotation) error {
-	return n.econn.Publish(subj, ann)
+	if err := n.econn.Publish(subj, ann); err != nil {
+		return fmt.Errorf("error in publishing through nats %s", err)
+	}
+
+	return nil
 }
 
 func (n *natsPublisher) Close() error {

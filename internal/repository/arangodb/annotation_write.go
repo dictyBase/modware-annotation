@@ -30,6 +30,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	if err := ar.existAnno(attr, tag); err != nil {
 		return mann, err
 	}
+
 	return ar.createAnno(
 		&createParams{
 			attr: attr,
@@ -56,6 +57,7 @@ func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdat
 	}
 	if rgt.IsEmpty() {
 		mann.NotFound = true
+
 		return mann, &repository.AnnoNotFoundError{Id: uat.Data.Id}
 	}
 	if err := rgt.Read(mann); err != nil {
@@ -97,6 +99,7 @@ func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdat
 	}
 	umd.Ontology = mann.Ontology
 	umd.Tag = mann.Tag
+
 	return umd, nil
 }
 
@@ -133,6 +136,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 	grp.UpdatedAt = dbg.UpdatedAt
 	grp.GroupId = dbg.GroupId
 	grp.AnnoDocs = mla
+
 	return grp, nil
 }
 
@@ -145,6 +149,7 @@ func (ar *arangorepository) RemoveAnnotationGroup(groupID string) error {
 	if err != nil {
 		return fmt.Errorf("error in removing group with id %s %s", groupID, err)
 	}
+
 	return nil
 }
 
@@ -186,6 +191,7 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupID string, idslice ...s
 	grp.UpdatedAt = dbg.UpdatedAt
 	grp.GroupId = dbg.GroupId
 	grp.AnnoDocs = aml
+
 	return grp, nil
 }
 
@@ -215,5 +221,6 @@ func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, er
 	}
 	mann.Tag = params.tag
 	mann.Ontology = attr.Ontology
+
 	return mann, nil
 }

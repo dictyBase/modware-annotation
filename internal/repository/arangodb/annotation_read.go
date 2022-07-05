@@ -26,16 +26,18 @@ func (ar *arangorepository) GetAnnotationByID(annoid string) (*model.AnnoDoc, er
 	}
 	if res.IsEmpty() {
 		model.NotFound = true
+
 		return model, &repository.AnnoNotFoundError{Id: annoid}
 	}
 	if err := res.Read(model); err != nil {
 		return model, fmt.Errorf("error in reading data to structure %s", err)
 	}
+
 	return model, nil
 }
 
 func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotationRequest) (*model.AnnoDoc, error) {
-	m := &model.AnnoDoc{}
+	mann := &model.AnnoDoc{}
 	res, err := ar.database.Get(
 		fmt.Sprintf(
 			annGetByEntryQ,
@@ -50,16 +52,18 @@ func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotation
 		),
 	)
 	if err != nil {
-		return m, fmt.Errorf("error in fetching id %s", err)
+		return mann, fmt.Errorf("error in fetching id %s", err)
 	}
 	if res.IsEmpty() {
-		m.NotFound = true
-		return m, &repository.AnnoNotFoundError{Id: req.EntryId}
+		mann.NotFound = true
+
+		return mann, &repository.AnnoNotFoundError{Id: req.EntryId}
 	}
-	if err := res.Read(m); err != nil {
-		return m, fmt.Errorf("error in reading data to structure %s", err)
+	if err := res.Read(mann); err != nil {
+		return mann, fmt.Errorf("error in reading data to structure %s", err)
 	}
-	return m, nil
+
+	return mann, nil
 }
 
 func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter string) ([]*model.AnnoDoc, error) {
@@ -88,6 +92,7 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 		}
 		annoModel = append(annoModel, m)
 	}
+
 	return annoModel, nil
 }
 
@@ -112,6 +117,7 @@ func (ar *arangorepository) GetAnnotationGroup(groupID string) (*model.AnnoGroup
 	grp.UpdatedAt = dbg.UpdatedAt
 	grp.GroupId = dbg.GroupId
 	grp.AnnoDocs = ann
+
 	return grp, nil
 }
 
@@ -166,6 +172,7 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 		}
 		agrp = append(agrp, m)
 	}
+
 	return agrp, nil
 }
 
@@ -193,6 +200,7 @@ func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoT
 				tag, ontology, err,
 			)
 	}
+
 	return annoModel, nil
 }
 
@@ -212,6 +220,7 @@ func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttrib
 	if count > 0 {
 		return errors.New("error in creating, annotation already exists")
 	}
+
 	return nil
 }
 
@@ -259,6 +268,7 @@ func (ar *arangorepository) getAllAnnotations(ids ...string) ([]*model.AnnoDoc, 
 		}
 		annoModel = append(annoModel, m)
 	}
+
 	return annoModel, nil
 }
 

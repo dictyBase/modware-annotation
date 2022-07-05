@@ -44,6 +44,7 @@ func NewTaggedAnnotationRepo(
 		return arp, fmt.Errorf("error in creating ontology collection %s", err)
 	}
 	annoc, err := setAnnotationCollection(dbh, ontoc, collP)
+
 	return &arangorepository{
 		sess:     sess,
 		database: dbh,
@@ -92,6 +93,7 @@ func setAnnotationCollection(dbh *manager.Database, onto *ontoarango.OntoCollect
 			InBackground: true,
 		},
 	)
+
 	return annoc, err
 }
 
@@ -122,6 +124,7 @@ func setDocumentCollection(dbh *manager.Database, collP *CollectionParams) (*ann
 		collP.AnnoVersion,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
+
 	return &annoc{
 		annot: anno,
 		annog: annogrp,
@@ -143,6 +146,7 @@ func (ar *arangorepository) Clear() error {
 			return fmt.Errorf("error in truncating %s", err)
 		}
 	}
+
 	return ar.onto.Obog.Remove(context.Background())
 }
 
@@ -171,6 +175,7 @@ func (ar *arangorepository) ClearAnnotations() error {
 			return fmt.Errorf("error in removing graph %s", err)
 		}
 	}
+
 	return nil
 }
 
@@ -184,6 +189,7 @@ func DocumentsExists(c driver.Collection, ids ...string) error {
 			return &repo.AnnoNotFoundError{Id: kdi}
 		}
 	}
+
 	return nil
 }
 
