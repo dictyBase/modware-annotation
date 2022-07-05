@@ -5,6 +5,9 @@ linters-settings:
       rules:
         - name: var-naming
           arguments: [["ID"]]
+   gosec:
+      excludes:
+        - G404
 linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
