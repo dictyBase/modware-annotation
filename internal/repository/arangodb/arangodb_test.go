@@ -4,11 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
@@ -16,6 +14,7 @@ import (
 	ontostorage "github.com/dictyBase/go-obograph/storage"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/go-obograph/graph"
@@ -25,7 +24,6 @@ import (
 	manager "github.com/dictyBase/arangomanager"
 )
 
-var ahost, aport, auser, apass, adb string
 var tags = []string{
 	"private note",
 	"name description",
@@ -57,14 +55,13 @@ func getOntoParams() *araobo.CollectionParams {
 	}
 }
 
-func getConnectParams() *manager.ConnectParams {
-	arPort, _ := strconv.Atoi(aport)
+func getConnectParamsFromDb(tra *testarango.TestArango) *manager.ConnectParams {
 	return &manager.ConnectParams{
-		User:     auser,
-		Pass:     apass,
-		Database: adb,
-		Host:     ahost,
-		Port:     arPort,
+		User:     tra.User,
+		Pass:     tra.Pass,
+		Database: tra.Database,
+		Host:     tra.Host,
+		Port:     tra.Port,
 		Istls:    false,
 	}
 }
@@ -81,7 +78,7 @@ func getCollectionParams() *CollectionParams {
 	}
 }
 
-func loadAnnotationObo() error {
+func loadData(tra *testarango.TestArango) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("unable to get current dir %s", err)
@@ -99,15 +96,14 @@ func loadAnnotationObo() error {
 	if err != nil {
 		return fmt.Errorf("error in building graph %s", err)
 	}
-	connP := getConnectParams()
 	dsr, err := araobo.NewDataSource(
 		&araobo.ConnectParams{
-			User:     connP.User,
-			Pass:     connP.Pass,
-			Host:     connP.Host,
-			Database: connP.Database,
-			Port:     connP.Port,
-			Istls:    connP.Istls,
+			User:     tra.User,
+			Pass:     tra.Pass,
+			Host:     tra.Host,
+			Database: tra.Database,
+			Port:     tra.Port,
+			Istls:    tra.Istls,
 		}, getOntoParams(),
 	)
 	if err != nil {
@@ -223,12 +219,12 @@ func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAn
 }
 
 func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
-	var nal []*annotation.NewTaggedAnnotation
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	nal := make([]*annotation.NewTaggedAnnotation, 0)
+	rsrc := rand.New(rand.NewSource(time.Now().UnixNano()))
 	max := 800000
 	min := 300000
 	for i := 0; i < num; i++ {
-		value := fmt.Sprintf("cool gene %s", tags[r.Intn(len(tags)-1)])
+		value := fmt.Sprintf("cool gene %s", tags[rsrc.Intn(len(tags)-1)])
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
 				Type: "annotations",
@@ -236,9 +232,9 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 					Value:         value,
 					EditableValue: value,
 					CreatedBy:     "siddbasu@gmail.com",
-					Tag:           tags[r.Intn(len(tags)-1)],
+					Tag:           tags[rsrc.Intn(len(tags)-1)],
 					Ontology:      "dicty_annotation",
-					EntryId:       fmt.Sprintf("DDB_G0%d", r.Intn(max-min)+min),
+					EntryId:       fmt.Sprintf("DDB_G0%d", rsrc.Intn(max-min)+min),
 					Rank:          0,
 				},
 			},
@@ -247,59 +243,32 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 	return nal
 }
 
-func TestMain(m *testing.M) {
-	tarango, err := testarango.NewTestArangoFromEnv(true)
+func setUp(t *testing.T) (*require.Assertions, repository.TaggedAnnotationRepository) {
+	t.Helper()
+	tra, err := testarango.NewTestArangoFromEnv(true)
 	if err != nil {
-		log.Fatalf("unable to construct new TestArango instance %s", err)
+		t.Fatalf("unable to construct new TestArango instance %s", err)
 	}
-	dbh, err := tarango.DB(tarango.Database)
-	if err != nil {
-		log.Fatalf("unable to get database %s", err)
-	}
-	auser = tarango.User
-	apass = tarango.Pass
-	ahost = tarango.Host
-	aport = strconv.Itoa(tarango.Port)
-	adb = tarango.Database
-	if err := loadAnnotationObo(); err != nil {
-		log.Fatalf("error in loading test annotation obograph %s", err)
-	}
-	code := m.Run()
-	if err := dbh.Drop(); err != nil {
-		log.Printf("error in dropping database %s", err)
-	}
-	os.Exit(code)
-}
-
-func TestCollectionIndexErrors(t *testing.T) {
-	t.Parallel()
-	assert := assert.New(t)
-	_, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		&CollectionParams{
-			Annotation:   "annotation",
-			AnnoTerm:     "annotation_cvterm",
-			AnnoVersion:  "annotation_version",
-			AnnoTagGraph: "annotation_tag",
-			AnnoVerGraph: "annotation_history",
-			AnnoGroup:    "annotation_group",
-			AnnoIndexes:  []string{},
-		},
+	assert := require.New(t)
+	repo, err := NewTaggedAnnotationRepo(
+		getConnectParamsFromDb(tra),
+		getCollectionParams(),
 		getOntoParams(),
 	)
-	assert.Error(err, "should receive error if creating repo with no indexes")
+	assert.NoErrorf(err, "expect no error connecting to annotation repository, received %s", err)
+	err = loadData(tra)
+	assert.NoError(err, "expect no error from loading ontology")
+	return assert, repo
+}
+
+func tearDown(repo repository.TaggedAnnotationRepository) {
+	_ = repo.Dbh().Drop()
 }
 
 func TestLoadOboJSON(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	fh, err := oboReader()
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer fh.Close()
@@ -320,7 +289,8 @@ func oboReader() (*os.File, error) {
 	)
 }
 
-func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
+func testModelListSort(t *testing.T, m []*model.AnnoDoc) {
+	t.Helper()
 	assert := assert.New(t)
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -335,7 +305,8 @@ func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	}
 }
 
-func testGroupMember(gl []*model.AnnoGroup, count, idx int, email string, t *testing.T) {
+func testGroupMember(t *testing.T, gl []*model.AnnoGroup, count, idx int, email string) {
+	t.Helper()
 	assert := assert.New(t)
 	assert.Lenf(gl, count, "should have %d groups", count)
 	for _, g := range gl {
@@ -350,20 +321,13 @@ func testGroupMember(gl []*model.AnnoGroup, count, idx int, email string, t *tes
 }
 
 func testModelMaptoID(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []string {
-	var s []string
+	str := make([]string, 0)
 	for _, m := range am {
-		s = append(s, fn(m))
+		str = append(str, fn(m))
 	}
-	return s
+	return str
 }
 
-func model2IdCallback(m *model.AnnoDoc) string {
-	return m.Key
-}
-
-func annoCleanUp(anrepo repository.TaggedAnnotationRepository, t *testing.T) {
-	assert := assert.New(t)
-	if err := anrepo.ClearAnnotations(); err != nil {
-		assert.FailNow(err.Error(), "error in pruning test annotations")
-	}
+func model2IdCallback(mod *model.AnnoDoc) string {
+	return mod.Key
 }

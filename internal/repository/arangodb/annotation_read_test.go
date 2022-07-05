@@ -7,7 +7,6 @@ import (
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -24,14 +23,8 @@ const (
 
 func TestListAnnotations(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsList(15)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
@@ -78,22 +71,16 @@ func TestListAnnotations(t *testing.T) {
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(ml4, 3, "should have three annotations")
 	assert.Exactly(ml3[len(ml3)-1], ml4[0], "should have identical model objects")
-	testModelListSort(mla, t)
-	testModelListSort(ml2, t)
-	testModelListSort(ml3, t)
-	testModelListSort(ml4, t)
+	testModelListSort(t, mla)
+	testModelListSort(t, ml2)
+	testModelListSort(t, ml3)
+	testModelListSort(t, ml4)
 }
 
 func TestListAnnoFilter(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsListForFiltering(20)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
@@ -137,7 +124,7 @@ func TestListAnnoFilter(t *testing.T) {
 	assert.Len(ml5, 4, "should have four annotations")
 	assert.Exactly(ml4[len(ml4)-1], ml5[0], "should have identical model objects")
 	for _, sml := range [][]*model.AnnoDoc{mla, ml2, ml3, ml4, ml5} {
-		testModelListSort(sml, t)
+		testModelListSort(t, sml)
 	}
 	_, err = anrepo.ListAnnotations(0, 4, filterThree)
 	assert.Error(err, "expect error")
@@ -146,14 +133,8 @@ func TestListAnnoFilter(t *testing.T) {
 
 func TestGetAnnotationByID(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	nta := newTestTaggedAnnotation()
 	mann, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -185,16 +166,10 @@ func TestGetAnnotationByID(t *testing.T) {
 
 func TestGetAnnotationByEntry(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	nta := newTestTaggedAnnotation()
-	_, err = anrepo.AddAnnotation(nta)
+	_, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	nta2 := newTestTaggedAnnotationWithParams("curation", "DDB_G0287317")
 	_, err = anrepo.AddAnnotation(nta2)
@@ -232,24 +207,18 @@ func TestGetAnnotationByEntry(t *testing.T) {
 
 func TestAddAnnotation(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	nta := newTestAnnoWithTagAndOnto("dicty_annotation", "curator")
-	m, err := anrepo.AddAnnotation(nta)
+	mann, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.False(m.IsObsolete, "new tagged annotation should not be obsolete")
-	assert.Equal(m.Value, nta.Data.Attributes.Value, "should match the value")
-	assert.Equal(m.CreatedBy, nta.Data.Attributes.CreatedBy, "should match created_by")
-	assert.Equal(m.EnrtyId, nta.Data.Attributes.EntryId, "should match entry identifier")
-	assert.Equal(m.Rank, nta.Data.Attributes.Rank, "should match the rank")
-	assert.Equal(m.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
-	assert.Equal(m.Tag, nta.Data.Attributes.Tag, "should match the ontology tag")
+	assert.False(mann.IsObsolete, "new tagged annotation should not be obsolete")
+	assert.Equal(mann.Value, nta.Data.Attributes.Value, "should match the value")
+	assert.Equal(mann.CreatedBy, nta.Data.Attributes.CreatedBy, "should match created_by")
+	assert.Equal(mann.EnrtyId, nta.Data.Attributes.EntryId, "should match entry identifier")
+	assert.Equal(mann.Rank, nta.Data.Attributes.Rank, "should match the rank")
+	assert.Equal(mann.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
+	assert.Equal(mann.Tag, nta.Data.Attributes.Tag, "should match the ontology tag")
 	_, err = anrepo.AddAnnotation(nta)
 	assert.Error(err, "expect error for existing annotation")
 	assert.Regexp(
@@ -289,14 +258,8 @@ func TestAddAnnotation(t *testing.T) {
 
 func TestGetAnnotationGroup(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsList(4)
 	mla := make([]*model.AnnoDoc, 0)
 	for _, ann := range tal {
@@ -318,14 +281,8 @@ func TestGetAnnotationGroup(t *testing.T) {
 
 func TestListAnnGrFilter(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsListForFiltering(20)
 	mla := make([]*model.AnnoDoc, 0)
 	for _, ann := range tal {
@@ -340,21 +297,20 @@ func TestListAnnGrFilter(t *testing.T) {
 		assert.NoErrorf(err, "expect no error, received %s", err)
 		j += 5
 	}
-	assert.NoErrorf(err, "expect no error, received %s", err)
 	filterOne := `FILTER ann.entry_id == 'DDB_G0286429'
 				  AND cvt.label == 'private note'
 				  AND cv.metadata.namespace == 'dicty_annotation'
 	`
 	egl, err := anrepo.ListAnnotationGroup(0, 10, filterOne)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	testGroupMember(egl, 2, 0, "sidd@gmail.com", t)
+	testGroupMember(t, egl, 2, 0, "sidd@gmail.com")
 	filterTwo := `FILTER ann.entry_id == 'DDB_G0294491'
 				  AND cvt.label == 'name description'
 				  AND cv.metadata.namespace == 'dicty_annotation'
 	`
 	egl2, err := anrepo.ListAnnotationGroup(0, 10, filterTwo)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	testGroupMember(egl2, 2, 1, "basu@gmail.com", t)
+	testGroupMember(t, egl2, 2, 1, "basu@gmail.com")
 	filterThree := `FILTER cv.metadata.namespace == 'dicty_annotation'`
 	egl3, err := anrepo.ListAnnotationGroup(0, 2, filterThree)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -379,14 +335,8 @@ func TestListAnnGrFilter(t *testing.T) {
 
 func TestListAnnotationGroup(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsList(60)
 	mla := make([]*model.AnnoDoc, 0)
 	for _, ann := range tal {
@@ -441,14 +391,8 @@ func TestListAnnotationGroup(t *testing.T) {
 
 func TestGetAnnotationTag(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	for _, tag := range tags[:6] {
 		m, err := anrepo.GetAnnotationTag(tag, "dicty_annotation")
 		assert.NoErrorf(err, "expect no error from fetching %s tag", tag)
@@ -456,7 +400,7 @@ func TestGetAnnotationTag(t *testing.T) {
 		assert.Equal(m.Ontology, "dicty_annotation", "should match ontology")
 		assert.Falsef(m.IsObsolete, "tag %s should not be obsolete", tag)
 	}
-	_, err = anrepo.GetAnnotationTag("yadayada", "dicty_annotation")
+	_, err := anrepo.GetAnnotationTag("yadayada", "dicty_annotation")
 	assert.Error(err, "expect error from non-existent tag")
 	assert.True(repository.IsAnnoTagNotFound(err), "should be an error for non-existent tag")
 }

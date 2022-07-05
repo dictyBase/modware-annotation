@@ -5,19 +5,12 @@ import (
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEditAnnotation(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	nta := newTestTaggedAnnotation()
 	mda, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -42,14 +35,8 @@ func TestEditAnnotation(t *testing.T) {
 
 func TestAddAnnotationGroup(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsList(8)
 	mla := make([]*model.AnnoDoc, 0)
 	for _, ann := range tal {
@@ -65,14 +52,8 @@ func TestAddAnnotationGroup(t *testing.T) {
 
 func TestAppendToAnntationGroup(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsList(7)
 	mla := make([]*model.AnnoDoc, 0)
 	for _, ann := range tal {
