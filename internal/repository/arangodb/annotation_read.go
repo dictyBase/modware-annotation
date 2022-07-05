@@ -26,7 +26,7 @@ func (ar *arangorepository) GetAnnotationByID(annoid string) (*model.AnnoDoc, er
 	}
 	if res.IsEmpty() {
 		model.NotFound = true
-		return model, &repository.AnnoNotFound{Id: annoid}
+		return model, &repository.AnnoNotFoundError{Id: annoid}
 	}
 	if err := res.Read(model); err != nil {
 		return model, fmt.Errorf("error in reading data to structure %s", err)
@@ -54,7 +54,7 @@ func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotation
 	}
 	if res.IsEmpty() {
 		m.NotFound = true
-		return m, &repository.AnnoNotFound{Id: req.EntryId}
+		return m, &repository.AnnoNotFoundError{Id: req.EntryId}
 	}
 	if err := res.Read(m); err != nil {
 		return m, fmt.Errorf("error in reading data to structure %s", err)
@@ -79,7 +79,7 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 		return annoModel, fmt.Errorf("error in searching rows %s", err)
 	}
 	if res.IsEmpty() {
-		return annoModel, &repository.AnnoListNotFound{}
+		return annoModel, &repository.AnnoListNotFoundError{}
 	}
 	for res.Scan() {
 		m := &model.AnnoDoc{}
@@ -157,7 +157,7 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 		return agrp, fmt.Errorf("error in searching rows %s", err)
 	}
 	if res.IsEmpty() {
-		return agrp, &repository.AnnoGroupListNotFound{}
+		return agrp, &repository.AnnoGroupListNotFoundError{}
 	}
 	for res.Scan() {
 		m := &model.AnnoGroup{}
@@ -184,7 +184,7 @@ func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoT
 		return annoModel, fmt.Errorf("error in running tag query %s", err)
 	}
 	if res.IsEmpty() {
-		return annoModel, &repository.AnnoTagNotFound{Tag: tag}
+		return annoModel, &repository.AnnoTagNotFoundError{Tag: tag}
 	}
 	if err := res.Read(annoModel); err != nil {
 		return annoModel,
@@ -226,7 +226,7 @@ func (ar *arangorepository) groupID2Annotations(groupID string) ([]*model.AnnoDo
 			)
 	}
 	if !isOk {
-		return annoModel, &repository.GroupNotFound{Id: groupID}
+		return annoModel, &repository.GroupNotFoundError{Id: groupID}
 	}
 	// retrieve group object
 	dbg := &model.DbGroup{}

@@ -4,73 +4,78 @@ import (
 	"fmt"
 )
 
-type AnnoNotFound struct {
+type AnnoNotFoundError struct {
 	Id string
 }
 
-func (ae *AnnoNotFound) Error() string {
+func (ae *AnnoNotFoundError) Error() string {
 	return fmt.Sprintf("annotation id %s not found", ae.Id)
 }
 
-type GroupNotFound struct {
+type GroupNotFoundError struct {
 	Id string
 }
 
-func (ge *GroupNotFound) Error() string {
+func (ge *GroupNotFoundError) Error() string {
 	return fmt.Sprintf("group id %s not found", ge.Id)
 }
 
 func IsAnnotationNotFound(err error) bool {
-	if _, ok := err.(*AnnoNotFound); ok {
+	if _, ok := err.(*AnnoNotFoundError); ok {
 		return true
 	}
+
 	return false
 }
 
 func IsGroupNotFound(err error) bool {
-	if _, ok := err.(*GroupNotFound); ok {
+	if _, ok := err.(*GroupNotFoundError); ok {
 		return true
 	}
+
 	return false
 }
 
-type AnnoListNotFound struct{}
+type AnnoListNotFoundError struct{}
 
-func (al *AnnoListNotFound) Error() string {
+func (al *AnnoListNotFoundError) Error() string {
 	return "annotation list not found"
 }
 
 func IsAnnotationListNotFound(err error) bool {
-	if _, ok := err.(*AnnoListNotFound); ok {
+	if _, ok := err.(*AnnoListNotFoundError); ok {
 		return true
 	}
+
 	return false
 }
 
-type AnnoGroupListNotFound struct{}
+type AnnoGroupListNotFoundError struct{}
 
-func (agl *AnnoGroupListNotFound) Error() string {
+func (agl *AnnoGroupListNotFoundError) Error() string {
 	return "annotation group list not found"
 }
 
 func IsAnnotationGroupListNotFound(err error) bool {
-	if _, ok := err.(*AnnoGroupListNotFound); ok {
+	if _, ok := err.(*AnnoGroupListNotFoundError); ok {
 		return true
 	}
+
 	return false
 }
 
-type AnnoTagNotFound struct {
+type AnnoTagNotFoundError struct {
 	Tag string
 }
 
-func (at *AnnoTagNotFound) Error() string {
+func (at *AnnoTagNotFoundError) Error() string {
 	return fmt.Sprintf("annotation tag %s not found", at.Tag)
 }
 
 func IsAnnoTagNotFound(err error) bool {
-	if _, ok := err.(*AnnoTagNotFound); ok {
+	if _, ok := err.(*AnnoTagNotFoundError); ok {
 		return true
 	}
+
 	return false
 }

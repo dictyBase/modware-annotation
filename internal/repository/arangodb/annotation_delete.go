@@ -16,7 +16,7 @@ func (ar *arangorepository) RemoveAnnotation(id string, purge bool) error {
 	_, err := ar.anno.annot.ReadDocument(context.Background(), id, manno)
 	if err != nil {
 		if driver.IsNotFound(err) {
-			return &repository.AnnoNotFound{Id: id}
+			return &repository.AnnoNotFoundError{Id: id}
 		}
 
 		return fmt.Errorf("error in reading document %s", err)
@@ -61,7 +61,7 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(groupID string, idslice ..
 			)
 	}
 	if !isok {
-		return manno, &repository.GroupNotFound{Id: groupID}
+		return manno, &repository.GroupNotFoundError{Id: groupID}
 	}
 	// retrieve all annotations ids for the group
 	dbg := &model.DbGroup{}
