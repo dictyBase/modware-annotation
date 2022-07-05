@@ -21,12 +21,14 @@ func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.Ann
 		if repository.IsAnnotationNotFound(err) {
 			return tna, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return tna, aphgrpc.HandleGetError(ctx, err)
 	}
 	if mid.NotFound {
 		return tna, aphgrpc.HandleNotFoundError(ctx, err)
 	}
 	tna.Data = s.getAnnoData(mid)
+
 	return tna, nil
 }
 
@@ -42,9 +44,11 @@ func (s *AnnotationService) GetEntryAnnotation(
 		if repository.IsAnnotationNotFound(err) {
 			return tna, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return tna, aphgrpc.HandleGetError(ctx, err)
 	}
 	tna.Data = s.getAnnoData(mne)
+
 	return tna, nil
 }
 
@@ -60,8 +64,10 @@ func (s *AnnotationService) GetAnnotationGroup(
 		if repository.IsGroupNotFound(err) {
 			return gta, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return gta, aphgrpc.HandleGetError(ctx, err)
 	}
+
 	return s.getGroup(mga), nil
 }
 
@@ -83,6 +89,7 @@ func (s *AnnotationService) ListAnnotationGroups(
 		if repository.IsAnnotationGroupListNotFound(err) {
 			return gac, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return gac, aphgrpc.HandleGetError(ctx, err)
 	}
 	gcdata := make([]*annotation.TaggedAnnotationGroupCollection_Data, 0)
@@ -107,6 +114,7 @@ func (s *AnnotationService) ListAnnotationGroups(
 			Meta: &annotation.Meta{Limit: rgp.Limit},
 		}, nil
 	}
+
 	return &annotation.TaggedAnnotationGroupCollection{
 		Data: gcdata[:len(gcdata)-1],
 		Meta: &annotation.Meta{
@@ -134,6 +142,7 @@ func (s *AnnotationService) ListAnnotations(
 		if repository.IsAnnotationListNotFound(err) {
 			return tac, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return tac, aphgrpc.HandleGetError(ctx, err)
 	}
 	tcdata := make([]*annotation.TaggedAnnotationCollection_Data, 0)
@@ -147,6 +156,7 @@ func (s *AnnotationService) ListAnnotations(
 	if len(tcdata) < int(limit)-2 { // fewer result than limit
 		tac.Data = tcdata
 		tac.Meta = &annotation.Meta{Limit: ral.Limit}
+
 		return tac, nil
 	}
 	tac.Data = tcdata[:len(tcdata)-1]
@@ -154,6 +164,7 @@ func (s *AnnotationService) ListAnnotations(
 		Limit:      limit,
 		NextCursor: genNextCursorVal(mlc[len(mlc)-1].CreatedAt),
 	}
+
 	return tac, nil
 }
 
@@ -169,12 +180,14 @@ func (s *AnnotationService) GetAnnotationTag(
 		if repository.IsAnnoTagNotFound(err) {
 			return tag, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return tag, aphgrpc.HandleGetError(ctx, err)
 	}
 	tag.Id = mta.ID
 	tag.Name = mta.Name
 	tag.Ontology = mta.Ontology
 	tag.IsObsolete = mta.IsObsolete
+
 	return tag, nil
 }
 
@@ -188,6 +201,7 @@ func (s *AnnotationService) getGroup(mga *model.AnnoGroup) *annotation.TaggedAnn
 	gta.GroupId = mga.GroupId
 	gta.CreatedAt = aphgrpc.TimestampProto(mga.CreatedAt)
 	gta.UpdatedAt = aphgrpc.TimestampProto(mga.UpdatedAt)
+
 	return gta
 }
 

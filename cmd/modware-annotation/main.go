@@ -53,17 +53,18 @@ func main() {
 }
 
 func getServerFlags() []cli.Flag {
-	f := []cli.Flag{
+	flg := []cli.Flag{
 		cli.StringFlag{
 			Name:  "port",
 			Usage: "tcp port at which the server will be available",
 			Value: "9560",
 		},
 	}
-	f = append(f, annoCollFlags()...)
-	f = append(f, ontoCollFlags()...)
-	f = append(f, arangoflag.ArangodbFlags()...)
-	return append(f, apiflag.NatsFlag()...)
+	flg = append(flg, annoCollFlags()...)
+	flg = append(flg, ontoCollFlags()...)
+	flg = append(flg, arangoflag.ArangodbFlags()...)
+
+	return append(flg, apiflag.NatsFlag()...)
 }
 
 func ontoCollFlags() []cli.Flag {
