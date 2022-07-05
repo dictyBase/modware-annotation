@@ -33,15 +33,15 @@ func NewTaggedAnnotationRepo(
 ) (repo.TaggedAnnotationRepository, error) {
 	ar := &arangorepository{}
 	if err := validator.New().Struct(collP); err != nil {
-		return ar, err
+		return ar, fmt.Errorf("error in validation %s", err)
 	}
 	sess, db, err := manager.NewSessionDb(connP)
 	if err != nil {
-		return ar, err
+		return ar, fmt.Errorf("error in creating new session %s", err)
 	}
 	ontoc, err := ontoarango.CreateCollection(db, ontoP)
 	if err != nil {
-		return ar, err
+		return ar, fmt.Errorf("error in creating ontology collection %s", err)
 	}
 	annoc, err := setAnnotationCollection(db, ontoc, collP)
 	return &arangorepository{
@@ -55,7 +55,7 @@ func NewTaggedAnnotationRepo(
 func setAnnotationCollection(db *manager.Database, onto *ontoarango.OntoCollection, collP *CollectionParams) (*annoc, error) {
 	ac, err := setDocumentCollection(db, collP)
 	if err != nil {
-		return ac, err
+		return ac, fmt.Errorf("error in creating document collection %s", err)
 	}
 	verg, err := db.FindOrCreateGraph(
 		collP.AnnoVerGraph,
@@ -68,7 +68,7 @@ func setAnnotationCollection(db *manager.Database, onto *ontoarango.OntoCollecti
 		},
 	)
 	if err != nil {
-		return ac, err
+		return ac, fmt.Errorf("error in creating graph %s", err)
 	}
 	annotg, err := db.FindOrCreateGraph(
 		collP.AnnoTagGraph,
@@ -81,7 +81,7 @@ func setAnnotationCollection(db *manager.Database, onto *ontoarango.OntoCollecti
 		},
 	)
 	if err != nil {
-		return ac, err
+		return ac, fmt.Errorf("error in creating graph %s", err)
 	}
 	ac.verg = verg
 	ac.annotg = annotg
@@ -185,4 +185,8 @@ func DocumentsExists(c driver.Collection, ids ...string) error {
 		}
 	}
 	return nil
+}
+
+func (ar *arangorepository) Dbh() *manager.Database {
+	return ar.database
 }
