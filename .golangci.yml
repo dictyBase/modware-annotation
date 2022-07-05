@@ -8,6 +8,9 @@ linters-settings:
    gosec:
       excludes:
         - G404
+   wrapcheck:
+      ignorePackageGlobs:
+        - github.com/dictyBase/aphgrpc
 linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
