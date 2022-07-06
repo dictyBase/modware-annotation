@@ -26,7 +26,7 @@ type oboStreamHandler struct {
 	stream annotation.TaggedAnnotationService_OboJSONFileUploadServer
 }
 
-// Write write the content of the stream to a writer 
+// Write write the content of the stream to a writer.
 func (oh *oboStreamHandler) Write() error {
 	defer oh.writer.Close()
 	for {
@@ -92,6 +92,7 @@ func (s *AnnotationService) GetGroupResourceName() string {
 	return s.group
 }
 
+// OboJSONFileUpload uploads a obojson formatted file to the server.
 func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotationService_OboJSONFileUploadServer) error {
 	in, out := io.Pipe()
 	grp := new(errgroup.Group)
