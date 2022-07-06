@@ -10,77 +10,83 @@ import (
 
 func (s *AnnotationService) UpdateAnnotation(
 	ctx context.Context,
-	r *annotation.TaggedAnnotationUpdate,
+	rta *annotation.TaggedAnnotationUpdate,
 ) (*annotation.TaggedAnnotation, error) {
-	ta := &annotation.TaggedAnnotation{}
-	if err := r.Validate(); err != nil {
-		return ta, aphgrpc.HandleInvalidParamError(ctx, err)
+	tga := &annotation.TaggedAnnotation{}
+	if err := rta.Validate(); err != nil {
+		return tga, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	m, err := s.repo.EditAnnotation(r)
+	mde, err := s.repo.EditAnnotation(rta)
 	if err != nil {
-		return ta, aphgrpc.HandleUpdateError(ctx, err)
+		return tga, aphgrpc.HandleUpdateError(ctx, err)
 	}
-	if m.NotFound {
-		return ta, aphgrpc.HandleNotFoundError(ctx, err)
+	if mde.NotFound {
+		return tga, aphgrpc.HandleNotFoundError(ctx, err)
 	}
-	ta.Data = s.getAnnoData(m)
-	err = s.publisher.Publish(s.Topics["annotationUpdate"], ta)
+	tga.Data = s.getAnnoData(mde)
+	err = s.publisher.Publish(s.Topics["annotationUpdate"], tga)
 	if err != nil {
-		return ta, aphgrpc.HandleUpdateError(ctx, err)
+		return tga, aphgrpc.HandleUpdateError(ctx, err)
 	}
-	return ta, nil
+
+	return tga, nil
 }
 
 func (s *AnnotationService) CreateAnnotation(
 	ctx context.Context,
-	r *annotation.NewTaggedAnnotation,
+	rta *annotation.NewTaggedAnnotation,
 ) (*annotation.TaggedAnnotation, error) {
-	ta := &annotation.TaggedAnnotation{}
-	if err := r.Validate(); err != nil {
-		return ta, aphgrpc.HandleInvalidParamError(ctx, err)
+	tga := &annotation.TaggedAnnotation{}
+	if err := rta.Validate(); err != nil {
+		return tga, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	m, err := s.repo.AddAnnotation(r)
+	m, err := s.repo.AddAnnotation(rta)
 	if err != nil {
-		return ta, aphgrpc.HandleInsertError(ctx, err)
+		return tga, aphgrpc.HandleInsertError(ctx, err)
 	}
-	ta.Data = s.getAnnoData(m)
-	err = s.publisher.Publish(s.Topics["annotationCreate"], ta)
+	tga.Data = s.getAnnoData(m)
+	err = s.publisher.Publish(s.Topics["annotationCreate"], tga)
 	if err != nil {
-		return ta, aphgrpc.HandleInsertError(ctx, err)
+		return tga, aphgrpc.HandleInsertError(ctx, err)
 	}
-	return ta, nil
+
+	return tga, nil
 }
 
 func (s *AnnotationService) AddToAnnotationGroup(
-	ctx context.Context, r *annotation.AnnotationGroupId,
+	ctx context.Context, rta *annotation.AnnotationGroupId,
 ) (*annotation.TaggedAnnotationGroup, error) {
-	g := &annotation.TaggedAnnotationGroup{}
-	if err := r.Validate(); err != nil {
-		return g, aphgrpc.HandleInvalidParamError(ctx, err)
+	gta := &annotation.TaggedAnnotationGroup{}
+	if err := rta.Validate(); err != nil {
+		return gta, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mg, err := s.repo.AppendToAnnotationGroup(r.GroupId, r.Id)
+	mga, err := s.repo.AppendToAnnotationGroup(rta.GroupId, rta.Id)
 	if err != nil {
 		if repository.IsGroupNotFound(err) {
-			return g, aphgrpc.HandleNotFoundError(ctx, err)
+			return gta, aphgrpc.HandleNotFoundError(ctx, err)
 		}
-		return g, aphgrpc.HandleUpdateError(ctx, err)
+
+		return gta, aphgrpc.HandleUpdateError(ctx, err)
 	}
-	return s.getGroup(mg), nil
+
+	return s.getGroup(mga), nil
 }
 
 func (s *AnnotationService) CreateAnnotationGroup(
-	ctx context.Context, r *annotation.AnnotationIdList,
+	ctx context.Context, rta *annotation.AnnotationIdList,
 ) (*annotation.TaggedAnnotationGroup, error) {
-	g := &annotation.TaggedAnnotationGroup{}
-	if err := r.Validate(); err != nil {
-		return g, aphgrpc.HandleInvalidParamError(ctx, err)
+	gta := &annotation.TaggedAnnotationGroup{}
+	if err := rta.Validate(); err != nil {
+		return gta, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mg, err := s.repo.AddAnnotationGroup(r.Ids...)
+	mga, err := s.repo.AddAnnotationGroup(rta.Ids...)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
-			return g, aphgrpc.HandleNotFoundError(ctx, err)
+			return gta, aphgrpc.HandleNotFoundError(ctx, err)
 		}
-		return g, aphgrpc.HandleInsertError(ctx, err)
+
+		return gta, aphgrpc.HandleInsertError(ctx, err)
 	}
-	return s.getGroup(mg), nil
+
+	return s.getGroup(mga), nil
 }

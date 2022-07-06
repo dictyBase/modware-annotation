@@ -5,11 +5,10 @@ import (
 	"fmt"
 
 	driver "github.com/arangodb/go-driver"
-	"github.com/go-playground/validator/v10"
-
 	manager "github.com/dictyBase/arangomanager"
 	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/go-playground/validator/v10"
 )
 
 type annoc struct {
@@ -31,97 +30,100 @@ type arangorepository struct {
 func NewTaggedAnnotationRepo(
 	connP *manager.ConnectParams, collP *CollectionParams, ontoP *ontoarango.CollectionParams,
 ) (repo.TaggedAnnotationRepository, error) {
-	ar := &arangorepository{}
+	arp := &arangorepository{}
 	if err := validator.New().Struct(collP); err != nil {
-		return ar, err
+		return arp, fmt.Errorf("error in validation %s", err)
 	}
-	sess, db, err := manager.NewSessionDb(connP)
+	sess, dbh, err := manager.NewSessionDb(connP)
 	if err != nil {
-		return ar, err
+		return arp, fmt.Errorf("error in creating new session %s", err)
 	}
-	ontoc, err := ontoarango.CreateCollection(db, ontoP)
+	ontoc, err := ontoarango.CreateCollection(dbh, ontoP)
 	if err != nil {
-		return ar, err
+		return arp, fmt.Errorf("error in creating ontology collection %s", err)
 	}
-	annoc, err := setAnnotationCollection(db, ontoc, collP)
+	annoc, err := setAnnotationCollection(dbh, ontoc, collP)
+
 	return &arangorepository{
 		sess:     sess,
-		database: db,
+		database: dbh,
 		onto:     ontoc,
 		anno:     annoc,
 	}, err
 }
 
-func setAnnotationCollection(db *manager.Database, onto *ontoarango.OntoCollection, collP *CollectionParams) (*annoc, error) {
-	ac, err := setDocumentCollection(db, collP)
+func setAnnotationCollection(dbh *manager.Database, onto *ontoarango.OntoCollection, collP *CollectionParams) (*annoc, error) {
+	annoc, err := setDocumentCollection(dbh, collP)
 	if err != nil {
-		return ac, err
+		return annoc, fmt.Errorf("error in creating document collection %s", err)
 	}
-	verg, err := db.FindOrCreateGraph(
+	verg, err := dbh.FindOrCreateGraph(
 		collP.AnnoVerGraph,
 		[]driver.EdgeDefinition{
 			{
-				Collection: ac.ver.Name(),
-				From:       []string{ac.annot.Name()},
-				To:         []string{ac.annot.Name()},
+				Collection: annoc.ver.Name(),
+				From:       []string{annoc.annot.Name()},
+				To:         []string{annoc.annot.Name()},
 			},
 		},
 	)
 	if err != nil {
-		return ac, err
+		return annoc, fmt.Errorf("error in creating graph %s", err)
 	}
-	annotg, err := db.FindOrCreateGraph(
+	annotg, err := dbh.FindOrCreateGraph(
 		collP.AnnoTagGraph,
 		[]driver.EdgeDefinition{
 			{
-				Collection: ac.term.Name(),
-				From:       []string{ac.annot.Name()},
+				Collection: annoc.term.Name(),
+				From:       []string{annoc.annot.Name()},
 				To:         []string{onto.Term.Name()},
 			},
 		},
 	)
 	if err != nil {
-		return ac, err
+		return annoc, fmt.Errorf("error in creating graph %s", err)
 	}
-	ac.verg = verg
-	ac.annotg = annotg
-	_, _, err = db.EnsurePersistentIndex(
-		ac.annot.Name(),
+	annoc.verg = verg
+	annoc.annotg = annotg
+	_, _, err = dbh.EnsurePersistentIndex(
+		annoc.annot.Name(),
 		collP.AnnoIndexes,
 		&driver.EnsurePersistentIndexOptions{
 			InBackground: true,
 		},
 	)
-	return ac, err
+
+	return annoc, err
 }
 
-func setDocumentCollection(db *manager.Database, collP *CollectionParams) (*annoc, error) {
-	ac := &annoc{}
-	anno, err := db.FindOrCreateCollection(
+func setDocumentCollection(dbh *manager.Database, collP *CollectionParams) (*annoc, error) {
+	anns := &annoc{}
+	anno, err := dbh.FindOrCreateCollection(
 		collP.Annotation,
 		&driver.CreateCollectionOptions{},
 	)
 	if err != nil {
-		return ac, err
+		return anns, fmt.Errorf("error in finding or creating collection %s", err)
 	}
-	annogrp, err := db.FindOrCreateCollection(
+	annogrp, err := dbh.FindOrCreateCollection(
 		collP.AnnoGroup,
 		&driver.CreateCollectionOptions{},
 	)
 	if err != nil {
-		return ac, err
+		return anns, fmt.Errorf("error in finding or creating collection %s", err)
 	}
-	annocvt, err := db.FindOrCreateCollection(
+	annocvt, err := dbh.FindOrCreateCollection(
 		collP.AnnoTerm,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
 	if err != nil {
-		return ac, err
+		return anns, fmt.Errorf("error in finding or creating collection %s", err)
 	}
-	annov, err := db.FindOrCreateCollection(
+	annov, err := dbh.FindOrCreateCollection(
 		collP.AnnoVersion,
 		&driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge},
 	)
+
 	return &annoc{
 		annot: anno,
 		annog: annogrp,
@@ -131,7 +133,7 @@ func setDocumentCollection(db *manager.Database, collP *CollectionParams) (*anno
 }
 
 // Clear clears all annotations and related ontologies from the repository
-// datasource
+// datasource.
 func (ar *arangorepository) Clear() error {
 	if err := ar.ClearAnnotations(); err != nil {
 		return err
@@ -140,41 +142,61 @@ func (ar *arangorepository) Clear() error {
 		ar.onto.Term, ar.onto.Cv, ar.onto.Rel,
 	} {
 		if err := c.Truncate(context.Background()); err != nil {
-			return err
+			return fmt.Errorf("error in truncating %s", err)
 		}
 	}
-	return ar.onto.Obog.Remove(context.Background())
+
+	err := ar.onto.Obog.Remove(context.Background())
+	if err != nil {
+		return fmt.Errorf("error in removing graph %s", err)
+	}
+
+	return nil
 }
 
-// ClearAnnotations clears all annotations from the repository datasource
+// ClearAnnotations clears all annotations from the repository datasource.
 func (ar *arangorepository) ClearAnnotations() error {
 	for _, c := range []driver.Collection{
 		ar.anno.annot, ar.anno.ver, ar.anno.term, ar.anno.annog,
 	} {
 		if err := c.Truncate(context.Background()); err != nil {
-			return err
+			return fmt.Errorf("error in truncating %s", err)
 		}
 	}
-	for _, g := range []driver.Graph{
+	for _, grph := range []driver.Graph{
 		ar.anno.verg,
 		ar.anno.annotg,
 	} {
-		if err := g.Remove(context.Background()); err != nil {
-			return err
+		arangoDb := ar.database.Handler()
+		isok, err := arangoDb.GraphExists(context.Background(), grph.Name())
+		if err != nil {
+			return fmt.Errorf("error in checking existence of graph %s", err)
+		}
+		if !isok {
+			continue
+		}
+		if err := grph.Remove(context.Background()); err != nil {
+			return fmt.Errorf("error in removing graph %s", err)
 		}
 	}
+
 	return nil
 }
 
 func DocumentsExists(c driver.Collection, ids ...string) error {
-	for _, k := range ids {
-		ok, err := c.DocumentExists(context.Background(), k)
+	for _, kdi := range ids {
+		ok, err := c.DocumentExists(context.Background(), kdi)
 		if err != nil {
-			return fmt.Errorf("error in checking for existence of identifier %s %s", k, err)
+			return fmt.Errorf("error in checking for existence of identifier %s %s", kdi, err)
 		}
 		if !ok {
-			return &repo.AnnoNotFound{Id: k}
+			return &repo.AnnoNotFoundError{Id: kdi}
 		}
 	}
+
 	return nil
+}
+
+func (ar *arangorepository) Dbh() *manager.Database {
+	return ar.database
 }

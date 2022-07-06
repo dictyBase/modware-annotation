@@ -5,25 +5,19 @@ import (
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEditAnnotation(t *testing.T) {
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	nta := newTestTaggedAnnotation()
-	m, err := anrepo.AddAnnotation(nta)
+	mda, err := anrepo.AddAnnotation(nta)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	ua := &annotation.TaggedAnnotationUpdate{
+	uan := &annotation.TaggedAnnotationUpdate{
 		Data: &annotation.TaggedAnnotationUpdate_Data{
 			Type: "annotations",
-			Id:   m.Key,
+			Id:   mda.Key,
 			Attributes: &annotation.TaggedAnnotationUpdateAttributes{
 				Value:         "updated gene description",
 				EditableValue: "updated gene description",
@@ -31,56 +25,46 @@ func TestEditAnnotation(t *testing.T) {
 			},
 		},
 	}
-	um, err := anrepo.EditAnnotation(ua)
+	um, err := anrepo.EditAnnotation(uan)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(m.Version+1, um.Version, "version should be incremented by 1")
-	assert.NotEqual(ua.Data.Id, um.Key, "identifier should not match")
-	assert.Equal(ua.Data.Attributes.Value, um.Value, "should matches the value")
-	assert.Equal(ua.Data.Attributes.CreatedBy, um.CreatedBy, "should matches created by")
+	assert.Equal(mda.Version+1, um.Version, "version should be incremented by 1")
+	assert.NotEqual(uan.Data.Id, um.Key, "identifier should not match")
+	assert.Equal(uan.Data.Attributes.Value, um.Value, "should matches the value")
+	assert.Equal(uan.Data.Attributes.CreatedBy, um.CreatedBy, "should matches created by")
 }
 
 func TestAddAnnotationGroup(t *testing.T) {
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsList(8)
-	var ml []*model.AnnoDoc
+	mla := make([]*model.AnnoDoc, 0)
 	for _, ann := range tal {
 		m, err := anrepo.AddAnnotation(ann)
 		assert.NoErrorf(err, "expect no error, received %s", err)
-		ml = append(ml, m)
+		mla = append(mla, m)
 	}
-	ids := testModelMaptoID(ml, model2IdCallback)
+	ids := testModelMaptoID(mla, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Lenf(g.AnnoDocs, len(ids), "should have %d annotations", len(ids))
 }
 
 func TestAppendToAnntationGroup(t *testing.T) {
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		getCollectionParams(),
-		getOntoParams(),
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	tal := newTestTaggedAnnotationsList(7)
-	var ml []*model.AnnoDoc
+	mla := make([]*model.AnnoDoc, 0)
 	for _, ann := range tal {
 		m, err := anrepo.AddAnnotation(ann)
 		assert.NoErrorf(err, "expect no error, received %s", err)
-		ml = append(ml, m)
+		mla = append(mla, m)
 	}
-	ids := testModelMaptoID(ml[:4], model2IdCallback)
+	ids := testModelMaptoID(mla[:4], model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	nids := testModelMaptoID(ml[4:], model2IdCallback)
+	nids := testModelMaptoID(mla[4:], model2IdCallback)
 	eg, err := anrepo.AppendToAnnotationGroup(g.GroupId, nids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.ElementsMatch(

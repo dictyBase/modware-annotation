@@ -4,28 +4,24 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
+	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/arangomanager/testarango"
-	ontostorage "github.com/dictyBase/go-obograph/storage"
-	"github.com/dictyBase/modware-annotation/internal/repository"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/go-obograph/graph"
+	ontostorage "github.com/dictyBase/go-obograph/storage"
 	araobo "github.com/dictyBase/go-obograph/storage/arangodb"
 	"github.com/dictyBase/modware-annotation/internal/model"
-
-	manager "github.com/dictyBase/arangomanager"
+	"github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var ahost, aport, auser, apass, adb string
 var tags = []string{
 	"private note",
 	"name description",
@@ -57,14 +53,13 @@ func getOntoParams() *araobo.CollectionParams {
 	}
 }
 
-func getConnectParams() *manager.ConnectParams {
-	arPort, _ := strconv.Atoi(aport)
+func getConnectParamsFromDb(tra *testarango.TestArango) *manager.ConnectParams {
 	return &manager.ConnectParams{
-		User:     auser,
-		Pass:     apass,
-		Database: adb,
-		Host:     ahost,
-		Port:     arPort,
+		User:     tra.User,
+		Pass:     tra.Pass,
+		Database: tra.Database,
+		Host:     tra.Host,
+		Port:     tra.Port,
 		Istls:    false,
 	}
 }
@@ -81,54 +76,55 @@ func getCollectionParams() *CollectionParams {
 	}
 }
 
-func loadAnnotationObo() error {
+func loadData(tra *testarango.TestArango) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("unable to get current dir %s", err)
 	}
-	r, err := os.Open(
+	res, err := os.Open(
 		filepath.Join(
 			filepath.Dir(dir), "testdata", "dicty_annotation.json",
 		),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in open file %s", err)
 	}
-	defer r.Close()
-	g, err := graph.BuildGraph(r)
+	defer res.Close()
+	gra, err := graph.BuildGraph(res)
 	if err != nil {
 		return fmt.Errorf("error in building graph %s", err)
 	}
-	connP := getConnectParams()
-	ds, err := araobo.NewDataSource(
+	dsr, err := araobo.NewDataSource(
 		&araobo.ConnectParams{
-			User:     connP.User,
-			Pass:     connP.Pass,
-			Host:     connP.Host,
-			Database: connP.Database,
-			Port:     connP.Port,
-			Istls:    connP.Istls,
+			User:     tra.User,
+			Pass:     tra.Pass,
+			Host:     tra.Host,
+			Database: tra.Database,
+			Port:     tra.Port,
+			Istls:    tra.Istls,
 		}, getOntoParams(),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in creating datasource %s", err)
 	}
-	if ds.ExistsOboGraph(g) {
-		return errors.New("dicty_annotation already exist, needs a cleanp!!!!")
+	if dsr.ExistsOboGraph(gra) {
+		return errors.New("dicty_annotation already exist, needs a cleanp")
 	}
-	return saveExistentTestGraph(ds, g)
+
+	return saveExistentTestGraph(dsr, gra)
 }
 
-func saveExistentTestGraph(ds ontostorage.DataSource, g graph.OboGraph) error {
-	if err := ds.SaveOboGraphInfo(g); err != nil {
+func saveExistentTestGraph(dsr ontostorage.DataSource, gra graph.OboGraph) error {
+	if err := dsr.SaveOboGraphInfo(gra); err != nil {
 		return fmt.Errorf("error in saving graph %s", err)
 	}
-	if _, err := ds.SaveTerms(g); err != nil {
+	if _, err := dsr.SaveTerms(gra); err != nil {
 		return fmt.Errorf("error in saving terms %s", err)
 	}
-	if _, err := ds.SaveRelationships(g); err != nil {
+	if _, err := dsr.SaveRelationships(gra); err != nil {
 		return fmt.Errorf("error in saving relationships %s", err)
 	}
+
 	return nil
 }
 
@@ -186,7 +182,7 @@ func newTestTaggedAnnotation() *annotation.NewTaggedAnnotation {
 func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAnnotation {
 	var nal []*annotation.NewTaggedAnnotation
 	value := fmt.Sprintf("cool gene %s", tags[0])
-	for z := 0; z < num/2; z++ {
+	for zcount := 0; zcount < num/2; zcount++ {
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
 				Type: "annotations",
@@ -197,13 +193,13 @@ func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAn
 					Tag:           tags[0],
 					Ontology:      "dicty_annotation",
 					EntryId:       ddbg[0],
-					Rank:          int64(z),
+					Rank:          int64(zcount),
 				},
 			},
 		})
 	}
 	value = fmt.Sprintf("cool gene %s", tags[1])
-	for y := num / 2; y < num; y++ {
+	for ycount := num / 2; ycount < num; ycount++ {
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
 				Type: "annotations",
@@ -214,21 +210,22 @@ func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAn
 					Tag:           tags[1],
 					Ontology:      "dicty_annotation",
 					EntryId:       ddbg[1],
-					Rank:          int64(y),
+					Rank:          int64(ycount),
 				},
 			},
 		})
 	}
+
 	return nal
 }
 
 func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
-	var nal []*annotation.NewTaggedAnnotation
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	nal := make([]*annotation.NewTaggedAnnotation, 0)
+	rsrc := rand.New(rand.NewSource(time.Now().UnixNano()))
 	max := 800000
 	min := 300000
 	for i := 0; i < num; i++ {
-		value := fmt.Sprintf("cool gene %s", tags[r.Intn(len(tags)-1)])
+		value := fmt.Sprintf("cool gene %s", tags[rsrc.Intn(len(tags)-1)])
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
 				Type: "annotations",
@@ -236,68 +233,45 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 					Value:         value,
 					EditableValue: value,
 					CreatedBy:     "siddbasu@gmail.com",
-					Tag:           tags[r.Intn(len(tags)-1)],
+					Tag:           tags[rsrc.Intn(len(tags)-1)],
 					Ontology:      "dicty_annotation",
-					EntryId:       fmt.Sprintf("DDB_G0%d", r.Intn(max-min)+min),
+					EntryId:       fmt.Sprintf("DDB_G0%d", rsrc.Intn(max-min)+min),
 					Rank:          0,
 				},
 			},
 		})
 	}
+
 	return nal
 }
 
-func TestMain(m *testing.M) {
-	ta, err := testarango.NewTestArangoFromEnv(true)
+func setUp(t *testing.T) (*require.Assertions, repository.TaggedAnnotationRepository) {
+	t.Helper()
+	tra, err := testarango.NewTestArangoFromEnv(true)
 	if err != nil {
-		log.Fatalf("unable to construct new TestArango instance %s", err)
+		t.Fatalf("unable to construct new TestArango instance %s", err)
 	}
-	dbh, err := ta.DB(ta.Database)
-	if err != nil {
-		log.Fatalf("unable to get database %s", err)
-	}
-	auser = ta.User
-	apass = ta.Pass
-	ahost = ta.Host
-	aport = strconv.Itoa(ta.Port)
-	adb = ta.Database
-	if err := loadAnnotationObo(); err != nil {
-		log.Fatalf("error in loading test annotation obograph %s", err)
-	}
-	code := m.Run()
-	if err := dbh.Drop(); err != nil {
-		log.Printf("error in dropping database %s", err)
-	}
-	os.Exit(code)
-}
-
-func TestCollectionIndexErrors(t *testing.T) {
-	assert := assert.New(t)
-	_, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
-		&CollectionParams{
-			Annotation:   "annotation",
-			AnnoTerm:     "annotation_cvterm",
-			AnnoVersion:  "annotation_version",
-			AnnoTagGraph: "annotation_tag",
-			AnnoVerGraph: "annotation_history",
-			AnnoGroup:    "annotation_group",
-			AnnoIndexes:  []string{},
-		},
-		getOntoParams(),
-	)
-	assert.Error(err, "should receive error if creating repo with no indexes")
-}
-
-func TestLoadOboJSON(t *testing.T) {
-	assert := assert.New(t)
-	anrepo, err := NewTaggedAnnotationRepo(
-		getConnectParams(),
+	assert := require.New(t)
+	repo, err := NewTaggedAnnotationRepo(
+		getConnectParamsFromDb(tra),
 		getCollectionParams(),
 		getOntoParams(),
 	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer annoCleanUp(anrepo, t)
+	assert.NoErrorf(err, "expect no error connecting to annotation repository, received %s", err)
+	err = loadData(tra)
+	assert.NoError(err, "expect no error from loading ontology")
+
+	return assert, repo
+}
+
+func tearDown(repo repository.TaggedAnnotationRepository) {
+	_ = repo.Dbh().Drop()
+}
+
+func TestLoadOboJSON(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
 	fh, err := oboReader()
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	defer fh.Close()
@@ -311,14 +285,21 @@ func oboReader() (*os.File, error) {
 	if err != nil {
 		return &os.File{}, fmt.Errorf("unable to get current dir %s", err)
 	}
-	return os.Open(
+
+	fhr, err := os.Open(
 		filepath.Join(
 			filepath.Dir(dir), "testdata", "dicty_phenotypes.json",
 		),
 	)
+	if err != nil {
+		return fhr, fmt.Errorf("error in opening file %s", err)
+	}
+
+	return fhr, nil
 }
 
-func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
+func testModelListSort(t *testing.T, m []*model.AnnoDoc) {
+	t.Helper()
 	assert := assert.New(t)
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -333,7 +314,8 @@ func testModelListSort(m []*model.AnnoDoc, t *testing.T) {
 	}
 }
 
-func testGroupMember(gl []*model.AnnoGroup, count, idx int, email string, t *testing.T) {
+func testGroupMember(t *testing.T, gl []*model.AnnoGroup, count, idx int, email string) {
+	t.Helper()
 	assert := assert.New(t)
 	assert.Lenf(gl, count, "should have %d groups", count)
 	for _, g := range gl {
@@ -348,20 +330,14 @@ func testGroupMember(gl []*model.AnnoGroup, count, idx int, email string, t *tes
 }
 
 func testModelMaptoID(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []string {
-	var s []string
+	str := make([]string, 0)
 	for _, m := range am {
-		s = append(s, fn(m))
+		str = append(str, fn(m))
 	}
-	return s
+
+	return str
 }
 
-func model2IdCallback(m *model.AnnoDoc) string {
-	return m.Key
-}
-
-func annoCleanUp(anrepo repository.TaggedAnnotationRepository, t *testing.T) {
-	assert := assert.New(t)
-	if err := anrepo.ClearAnnotations(); err != nil {
-		assert.FailNow(err.Error(), "error in pruning test annotations")
-	}
+func model2IdCallback(mod *model.AnnoDoc) string {
+	return mod.Key
 }

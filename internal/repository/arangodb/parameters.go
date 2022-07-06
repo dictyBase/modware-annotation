@@ -9,7 +9,7 @@ type createParams struct {
 }
 
 // CollectionParams are the arangodb collections required for storing
-// annotations
+// annotations.
 type CollectionParams struct {
 	// Annotation is the collection for storing annotation
 	Annotation string `validate:"required"`

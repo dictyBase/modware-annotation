@@ -3,13 +3,14 @@ package repository
 import (
 	"io"
 
+	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/go-obograph/storage"
 	"github.com/dictyBase/modware-annotation/internal/model"
 )
 
 // TaggedAnnotationRepository is an interface for accessing annotation
-// data from its data sources
+// data from its data sources.
 type TaggedAnnotationRepository interface {
 	// GetAnnotationById retrieves an annotation
 	GetAnnotationByID(id string) (*model.AnnoDoc, error)
@@ -37,5 +38,6 @@ type TaggedAnnotationRepository interface {
 	ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroup, error)
 	// GetAnnotationTag retrieves tag information
 	GetAnnotationTag(name, ontology string) (*model.AnnoTag, error)
+	Dbh() *manager.Database
 	LoadOboJSON(r io.Reader) (*storage.UploadInformation, error)
 }

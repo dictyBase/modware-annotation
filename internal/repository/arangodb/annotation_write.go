@@ -11,23 +11,26 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
+const maxTransactionSize = 10000
+
 func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*model.AnnoDoc, error) {
-	m := &model.AnnoDoc{}
+	mann := &model.AnnoDoc{}
 	attr := na.Data.Attributes
 	// check if the tag and ontology exist
 	cvtid, err := ar.termID(attr.Ontology, attr.Tag)
 	if err != nil {
-		return m, err
+		return mann, err
 	}
 	// get the tag from database
 	tag, err := ar.termName(cvtid)
 	if err != nil {
-		return m, err
+		return mann, err
 	}
 	// check if the annotation exist
 	if err := ar.existAnno(attr, tag); err != nil {
-		return m, err
+		return mann, err
 	}
+
 	return ar.createAnno(
 		&createParams{
 			attr: attr,
@@ -37,27 +40,28 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 	)
 }
 
-func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error) {
-	m := &model.AnnoDoc{}
-	attr := ua.Data.Attributes
-	r, err := ar.database.Get(
+func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error) {
+	mann := &model.AnnoDoc{}
+	attr := uat.Data.Attributes
+	rgt, err := ar.database.Get(
 		fmt.Sprintf(
 			annGetQ,
 			ar.anno.annot.Name(),
 			ar.anno.annotg.Name(),
 			ar.onto.Cv.Name(),
-			ua.Data.Id,
+			uat.Data.Id,
 		),
 	)
 	if err != nil {
-		return m, err
+		return mann, fmt.Errorf("error in fetching id %s", err)
 	}
-	if r.IsEmpty() {
-		m.NotFound = true
-		return m, &repository.AnnoNotFound{Id: ua.Data.Id}
+	if rgt.IsEmpty() {
+		mann.NotFound = true
+
+		return mann, &repository.AnnoNotFoundError{Id: uat.Data.Id}
 	}
-	if err := r.Read(m); err != nil {
-		return m, err
+	if err := rgt.Read(mann); err != nil {
+		return mann, fmt.Errorf("error in reading to struct %s", err)
 	}
 	// create annotation document
 	bindParams := []interface{}{
@@ -67,14 +71,14 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 		attr.Value,
 		attr.EditableValue,
 		attr.CreatedBy,
-		m.EnrtyId,
-		m.Rank,
-		m.Version + 1,
-		m.CvtId,
-		m.ID.String(),
+		mann.EnrtyId,
+		mann.Rank,
+		mann.Version + 1,
+		mann.CvtId,
+		mann.ID.String(),
 	}
 	dbh := ar.database.Handler()
-	i, err := dbh.Transaction(
+	idt, err := dbh.Transaction(
 		context.Background(),
 		annVerInstFn,
 		&driver.TransactionOptions{
@@ -84,37 +88,38 @@ func (ar *arangorepository) EditAnnotation(ua *annotation.TaggedAnnotationUpdate
 				ar.anno.ver.Name(),
 			},
 			Params:             bindParams,
-			MaxTransactionSize: 10000,
+			MaxTransactionSize: maxTransactionSize,
 		})
 	if err != nil {
-		return m, err
+		return mann, fmt.Errorf("error in running transaction %s", err)
 	}
-	um, err := model.ConvToModel(i)
+	umd, err := model.ConvToModel(idt)
 	if err != nil {
-		return um, err
+		return umd, fmt.Errorf("error in converting model struct %s", err)
 	}
-	um.Ontology = m.Ontology
-	um.Tag = m.Tag
-	return um, nil
+	umd.Ontology = mann.Ontology
+	umd.Tag = mann.Tag
+
+	return umd, nil
 }
 
-// Creates a new annotation group
+// Creates a new annotation group.
 func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGroup, error) {
-	g := &model.AnnoGroup{}
+	grp := &model.AnnoGroup{}
 	if len(idslice) <= 1 {
-		return g, errors.New("need at least more than one entry to form a group")
+		return grp, errors.New("need at least more than one entry to form a group")
 	}
 	// check if the annotations exists
 	if err := DocumentsExists(ar.anno.annot, idslice...); err != nil {
-		return g, err
+		return grp, err
 	}
 	// retrieve all annotations objects
-	ml, err := ar.getAllAnnotations(idslice...)
+	mla, err := ar.getAllAnnotations(idslice...)
 	if err != nil {
-		return g, err
+		return grp, err
 	}
 	dbg := &model.DbGroup{}
-	r, err := ar.database.DoRun(
+	rdn, err := ar.database.DoRun(
 		annGroupInst,
 		map[string]interface{}{
 			"@anno_group_collection": ar.anno.annog.Name(),
@@ -122,19 +127,20 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 		},
 	)
 	if err != nil {
-		return g, fmt.Errorf("error in creating group %s", err)
+		return grp, fmt.Errorf("error in creating group %s", err)
 	}
-	if err := r.Read(dbg); err != nil {
-		return g, err
+	if err := rdn.Read(dbg); err != nil {
+		return grp, fmt.Errorf("error in reading to struct %s", err)
 	}
-	g.CreatedAt = dbg.CreatedAt
-	g.UpdatedAt = dbg.UpdatedAt
-	g.GroupId = dbg.GroupId
-	g.AnnoDocs = ml
-	return g, nil
+	grp.CreatedAt = dbg.CreatedAt
+	grp.UpdatedAt = dbg.UpdatedAt
+	grp.GroupId = dbg.GroupId
+	grp.AnnoDocs = mla
+
+	return grp, nil
 }
 
-// Delete an annotation group
+// Delete an annotation group.
 func (ar *arangorepository) RemoveAnnotationGroup(groupID string) error {
 	_, err := ar.anno.annog.RemoveDocument(
 		context.Background(),
@@ -143,29 +149,30 @@ func (ar *arangorepository) RemoveAnnotationGroup(groupID string) error {
 	if err != nil {
 		return fmt.Errorf("error in removing group with id %s %s", groupID, err)
 	}
+
 	return nil
 }
 
-// Add a new annotations to an existing group
+// Add a new annotations to an existing group.
 func (ar *arangorepository) AppendToAnnotationGroup(groupID string, idslice ...string) (*model.AnnoGroup, error) {
-	g := &model.AnnoGroup{}
+	grp := &model.AnnoGroup{}
 	if len(idslice) <= 1 {
-		return g, errors.New("need at least more than one entry to form a group")
+		return grp, errors.New("need at least more than one entry to form a group")
 	}
 	// retrieve annotation objects for existing group
 	gml, err := ar.groupID2Annotations(groupID)
 	if err != nil {
-		return g, err
+		return grp, err
 	}
 	// retrieve annotation objects for given identifiers
 	ml, err := ar.getAllAnnotations(idslice...)
 	if err != nil {
-		return g, err
+		return grp, err
 	}
 	// remove duplicates
 	aml := model.UniqueModel(append(gml, ml...))
 	// update the new group
-	r, err := ar.database.DoRun(
+	rdn, err := ar.database.DoRun(
 		annGroupUpd,
 		map[string]interface{}{
 			"@anno_group_collection": ar.anno.annog.Name(),
@@ -174,21 +181,22 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupID string, idslice ...s
 		},
 	)
 	if err != nil {
-		return g, fmt.Errorf("error in updating group with id %s %s", groupID, err)
+		return grp, fmt.Errorf("error in updating group with id %s %s", groupID, err)
 	}
 	dbg := &model.DbGroup{}
-	if err := r.Read(dbg); err != nil {
-		return g, err
+	if err := rdn.Read(dbg); err != nil {
+		return grp, fmt.Errorf("error in reading to struct %s", err)
 	}
-	g.CreatedAt = dbg.CreatedAt
-	g.UpdatedAt = dbg.UpdatedAt
-	g.GroupId = dbg.GroupId
-	g.AnnoDocs = aml
-	return g, nil
+	grp.CreatedAt = dbg.CreatedAt
+	grp.UpdatedAt = dbg.UpdatedAt
+	grp.GroupId = dbg.GroupId
+	grp.AnnoDocs = aml
+
+	return grp, nil
 }
 
 func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, error) {
-	m := &model.AnnoDoc{}
+	mann := &model.AnnoDoc{}
 	attr := params.attr
 	rins, err := ar.database.DoRun(
 		annInst, map[string]interface{}{
@@ -203,15 +211,16 @@ func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, er
 			"version":             1,
 		})
 	if err != nil {
-		return m, err
+		return mann, fmt.Errorf("error in running query %s", err)
 	}
 	if rins.IsEmpty() {
-		return m, fmt.Errorf("error in returning newly created document")
+		return mann, fmt.Errorf("error in returning newly created document")
 	}
-	if err := rins.Read(m); err != nil {
-		return m, err
+	if err := rins.Read(mann); err != nil {
+		return mann, fmt.Errorf("error in reading to struct %s", err)
 	}
-	m.Tag = params.tag
-	m.Ontology = attr.Ontology
-	return m, nil
+	mann.Tag = params.tag
+	mann.Ontology = attr.Ontology
+
+	return mann, nil
 }

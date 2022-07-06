@@ -1,6 +1,6 @@
 package arangodb
 
-// FilterMap provides mapping of filter attributes to database fields
+// FilterMap provides mapping of filter attributes to database fields.
 func FilterMap() map[string]string {
 	return map[string]string{
 		"entry_id":   "ann.entry_id",

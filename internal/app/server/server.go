@@ -27,53 +27,57 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+const errCode = 2
+const waitTime = 2
+
 type serverParams struct {
 	repo repository.TaggedAnnotationRepository
 	msg  message.Publisher
 }
 
-func RunServer(c *cli.Context) error {
-	sp, err := repoAndNatsConn(c)
+func RunServer(clt *cli.Context) error {
+	spn, err := repoAndNatsConn(clt)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 2)
+		return cli.NewExitError(err.Error(), errCode)
 	}
 	grpcS := grpc.NewServer(
 		grpc_middleware.WithUnaryServerChain(
 			grpc_ctxtags.UnaryServerInterceptor(),
-			grpc_logrus.UnaryServerInterceptor(getLogger(c)),
+			grpc_logrus.UnaryServerInterceptor(getLogger(clt)),
 		),
 	)
 	srv, err := service.NewAnnotationService(
-		&service.ServiceParams{
-			Repository: sp.repo,
-			Publisher:  sp.msg,
+		&service.Params{
+			Repository: spn.repo,
+			Publisher:  spn.msg,
 			Group:      "groups",
 			Options:    getGrpcOpt(),
 		})
 	if err != nil {
-		return cli.NewExitError(err.Error(), 2)
+		return cli.NewExitError(err.Error(), errCode)
 	}
 	annotation.RegisterTaggedAnnotationServiceServer(grpcS, srv)
 	reflection.Register(grpcS)
 	// create listener
-	endP := fmt.Sprintf(":%s", c.String("port"))
+	endP := fmt.Sprintf(":%s", clt.String("port"))
 	lis, err := net.Listen("tcp", endP)
 	if err != nil {
 		return cli.NewExitError(
-			fmt.Sprintf("failed to listen %s", err), 2,
+			fmt.Sprintf("failed to listen %s", err), errCode,
 		)
 	}
 	log.Printf("starting grpc server on %s", endP)
 	if err := grpcS.Serve(lis); err != nil {
-		return cli.NewExitError(err.Error(), 2)
+		return cli.NewExitError(err.Error(), errCode)
 	}
+
 	return nil
 }
 
-func getLogger(c *cli.Context) *logrus.Entry {
+func getLogger(clt *cli.Context) *logrus.Entry {
 	log := logrus.New()
 	log.Out = os.Stderr
-	switch c.GlobalString("log-format") {
+	switch clt.GlobalString("log-format") {
 	case "text":
 		log.Formatter = &logrus.TextFormatter{
 			TimestampFormat: "02/Jan/2006:15:04:05",
@@ -83,7 +87,7 @@ func getLogger(c *cli.Context) *logrus.Entry {
 			TimestampFormat: "02/Jan/2006:15:04:05",
 		}
 	}
-	l := c.GlobalString("log-level")
+	l := clt.GlobalString("log-level")
 	switch l {
 	case "debug":
 		log.Level = logrus.DebugLevel
@@ -96,31 +100,33 @@ func getLogger(c *cli.Context) *logrus.Entry {
 	case "panic":
 		log.Level = logrus.PanicLevel
 	}
+
 	return logrus.NewEntry(log)
 }
 
-func allParams(c *cli.Context) (*manager.ConnectParams, *arangodb.CollectionParams, *ontoarango.CollectionParams) {
-	arPort, _ := strconv.Atoi(c.String("arangodb-port"))
+func allParams(clt *cli.Context) (*manager.ConnectParams, *arangodb.CollectionParams, *ontoarango.CollectionParams) {
+	arPort, _ := strconv.Atoi(clt.String("arangodb-port"))
+
 	return &manager.ConnectParams{
-			User:     c.String("arangodb-user"),
-			Pass:     c.String("arangodb-pass"),
-			Database: c.String("arangodb-database"),
-			Host:     c.String("arangodb-host"),
+			User:     clt.String("arangodb-user"),
+			Pass:     clt.String("arangodb-pass"),
+			Database: clt.String("arangodb-database"),
+			Host:     clt.String("arangodb-host"),
 			Port:     arPort,
-			Istls:    c.Bool("is-secure"),
+			Istls:    clt.Bool("is-secure"),
 		}, &arangodb.CollectionParams{
-			Annotation:   c.String("anno-collection"),
-			AnnoTerm:     c.String("annoterm-collection"),
-			AnnoVersion:  c.String("annover-collection"),
-			AnnoTagGraph: c.String("annoterm-graph"),
-			AnnoVerGraph: c.String("annover-graph"),
-			AnnoGroup:    c.String("annogroup-collection"),
-			AnnoIndexes:  c.StringSlice("annotation-index-fields"),
+			Annotation:   clt.String("anno-collection"),
+			AnnoTerm:     clt.String("annoterm-collection"),
+			AnnoVersion:  clt.String("annover-collection"),
+			AnnoTagGraph: clt.String("annoterm-graph"),
+			AnnoVerGraph: clt.String("annover-graph"),
+			AnnoGroup:    clt.String("annogroup-collection"),
+			AnnoIndexes:  clt.StringSlice("annotation-index-fields"),
 		}, &ontoarango.CollectionParams{
-			GraphInfo:    c.String("cv-collection"),
-			OboGraph:     c.String("obograph"),
-			Relationship: c.String("rel-collection"),
-			Term:         c.String("term-collection"),
+			GraphInfo:    clt.String("cv-collection"),
+			OboGraph:     clt.String("obograph"),
+			Relationship: clt.String("rel-collection"),
+			Term:         clt.String("term-collection"),
 		}
 }
 
@@ -134,22 +140,23 @@ func getGrpcOpt() []aphgrpc.Option {
 	}
 }
 
-func repoAndNatsConn(c *cli.Context) (*serverParams, error) {
-	anrepo, err := arangodb.NewTaggedAnnotationRepo(allParams(c))
+func repoAndNatsConn(clt *cli.Context) (*serverParams, error) {
+	anrepo, err := arangodb.NewTaggedAnnotationRepo(allParams(clt))
 	if err != nil {
 		return &serverParams{},
 			fmt.Errorf("cannot connect to arangodb annotation repository %s", err)
 	}
-	ms, err := nats.NewPublisher(
-		c.String("nats-host"), c.String("nats-port"),
-		gnats.MaxReconnects(-1), gnats.ReconnectWait(2*time.Second),
+	msp, err := nats.NewPublisher(
+		clt.String("nats-host"), clt.String("nats-port"),
+		gnats.MaxReconnects(-1), gnats.ReconnectWait(waitTime*time.Second),
 	)
 	if err != nil {
 		return &serverParams{},
 			fmt.Errorf("cannot connect to messaging server %s", err)
 	}
+
 	return &serverParams{
 		repo: anrepo,
-		msg:  ms,
+		msg:  msp,
 	}, nil
 }
