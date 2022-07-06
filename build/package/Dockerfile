@@ -1,6 +1,5 @@
-FROM golang:1.13.15-buster AS builder
+FROM golang:1.18.3-buster AS builder
 LABEL maintainer="Siddhartha Basu <siddhartha-basu@northwestern.edu>"
-LABEL maintainer="Eric Hartline <eric.hartline@northwestern.edu>"
 ENV GOPROXY https://proxy.golang.org
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
