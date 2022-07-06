@@ -47,7 +47,6 @@ linters:
     - grouper
     - ifshort
     - ineffassign
-    - interfacer
     - importas
     - lll
     - maintidx

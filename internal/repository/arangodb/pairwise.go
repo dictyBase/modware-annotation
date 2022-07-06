@@ -25,6 +25,7 @@ func NewStringPairWiseIterator(mdl []string) (StringPairWiseIterator, error) {
 	if len(mdl) <= 1 {
 		return StringPairWiseIterator{}, errors.New("not enough element to fetch pairs")
 	}
+
 	return StringPairWiseIterator{
 		slice:     mdl,
 		firstIdx:  0,
@@ -40,6 +41,7 @@ func NewStringPairWiseIterator(mdl []string) (StringPairWiseIterator, error) {
 func (p *StringPairWiseIterator) NextStringPair() bool {
 	if p.firstPair {
 		p.firstPair = false
+
 		return true
 	}
 	if p.secondIdx == p.lastIdx {
@@ -47,6 +49,7 @@ func (p *StringPairWiseIterator) NextStringPair() bool {
 	}
 	p.firstIdx++
 	p.secondIdx++
+
 	return true
 }
 
@@ -74,6 +77,7 @@ func NewModelAnnoDocPairWiseIterator(mdl []*model.AnnoDoc) (ModelAnnoDocPairWise
 	if len(mdl) <= 1 {
 		return ModelAnnoDocPairWiseIterator{}, errors.New("not enough element to fetch pairs")
 	}
+
 	return ModelAnnoDocPairWiseIterator{
 		slice:     mdl,
 		firstIdx:  0,
@@ -89,6 +93,7 @@ func NewModelAnnoDocPairWiseIterator(mdl []*model.AnnoDoc) (ModelAnnoDocPairWise
 func (p *ModelAnnoDocPairWiseIterator) NextModelAnnoDocPair() bool {
 	if p.firstPair {
 		p.firstPair = false
+
 		return true
 	}
 	if p.secondIdx == p.lastIdx {
@@ -96,6 +101,7 @@ func (p *ModelAnnoDocPairWiseIterator) NextModelAnnoDocPair() bool {
 	}
 	p.firstIdx++
 	p.secondIdx++
+
 	return true
 }
 

@@ -10,18 +10,16 @@ import (
 	"testing"
 	"time"
 
+	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/arangomanager/testarango"
+	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
+	"github.com/dictyBase/go-obograph/graph"
 	ontostorage "github.com/dictyBase/go-obograph/storage"
+	araobo "github.com/dictyBase/go-obograph/storage/arangodb"
+	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
-	"github.com/dictyBase/go-obograph/graph"
-	araobo "github.com/dictyBase/go-obograph/storage/arangodb"
-	"github.com/dictyBase/modware-annotation/internal/model"
-
-	manager "github.com/dictyBase/arangomanager"
 )
 
 var tags = []string{
@@ -112,6 +110,7 @@ func loadData(tra *testarango.TestArango) error {
 	if dsr.ExistsOboGraph(gra) {
 		return errors.New("dicty_annotation already exist, needs a cleanp")
 	}
+
 	return saveExistentTestGraph(dsr, gra)
 }
 
@@ -125,6 +124,7 @@ func saveExistentTestGraph(dsr ontostorage.DataSource, gra graph.OboGraph) error
 	if _, err := dsr.SaveRelationships(gra); err != nil {
 		return fmt.Errorf("error in saving relationships %s", err)
 	}
+
 	return nil
 }
 
@@ -215,6 +215,7 @@ func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAn
 			},
 		})
 	}
+
 	return nal
 }
 
@@ -240,6 +241,7 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 			},
 		})
 	}
+
 	return nal
 }
 
@@ -258,6 +260,7 @@ func setUp(t *testing.T) (*require.Assertions, repository.TaggedAnnotationReposi
 	assert.NoErrorf(err, "expect no error connecting to annotation repository, received %s", err)
 	err = loadData(tra)
 	assert.NoError(err, "expect no error from loading ontology")
+
 	return assert, repo
 }
 
@@ -282,11 +285,17 @@ func oboReader() (*os.File, error) {
 	if err != nil {
 		return &os.File{}, fmt.Errorf("unable to get current dir %s", err)
 	}
-	return os.Open(
+
+	fhr, err := os.Open(
 		filepath.Join(
 			filepath.Dir(dir), "testdata", "dicty_phenotypes.json",
 		),
 	)
+	if err != nil {
+		return fhr, fmt.Errorf("error in opening file %s", err)
+	}
+
+	return fhr, nil
 }
 
 func testModelListSort(t *testing.T, m []*model.AnnoDoc) {
@@ -325,6 +334,7 @@ func testModelMaptoID(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []s
 	for _, m := range am {
 		str = append(str, fn(m))
 	}
+
 	return str
 }
 

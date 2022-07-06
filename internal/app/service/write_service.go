@@ -28,6 +28,7 @@ func (s *AnnotationService) UpdateAnnotation(
 	if err != nil {
 		return tga, aphgrpc.HandleUpdateError(ctx, err)
 	}
+
 	return tga, nil
 }
 
@@ -48,6 +49,7 @@ func (s *AnnotationService) CreateAnnotation(
 	if err != nil {
 		return tga, aphgrpc.HandleInsertError(ctx, err)
 	}
+
 	return tga, nil
 }
 
@@ -63,8 +65,10 @@ func (s *AnnotationService) AddToAnnotationGroup(
 		if repository.IsGroupNotFound(err) {
 			return gta, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return gta, aphgrpc.HandleUpdateError(ctx, err)
 	}
+
 	return s.getGroup(mga), nil
 }
 
@@ -80,7 +84,9 @@ func (s *AnnotationService) CreateAnnotationGroup(
 		if repository.IsAnnotationNotFound(err) {
 			return gta, aphgrpc.HandleNotFoundError(ctx, err)
 		}
+
 		return gta, aphgrpc.HandleInsertError(ctx, err)
 	}
+
 	return s.getGroup(mga), nil
 }
