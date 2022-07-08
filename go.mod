@@ -5,10 +5,11 @@ require (
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.3.2
 	github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622
-	github.com/dictyBase/go-obograph v1.4.0
+	github.com/dictyBase/go-obograph v1.4.1
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/nats-io/go-nats v1.7.2
+	github.com/nats-io/nats.go v1.16.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli v1.22.9
@@ -31,14 +32,15 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mwitkow/go-proto-validators v0.3.0 // indirect
 	github.com/nats-io/gnatsd v1.4.1 // indirect
-	github.com/nats-io/nkeys v0.1.3 // indirect
+	github.com/nats-io/nats-server/v2 v2.8.4 // indirect
+	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
-	golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6 // indirect
+	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210927142257-433400c27d05 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
