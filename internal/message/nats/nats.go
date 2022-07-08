@@ -5,8 +5,8 @@ import (
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/message"
-	gnats "github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats/encoders/protobuf"
+	gnats "github.com/nats-io/nats.go"
 )
 
 type natsPublisher struct {
