@@ -3,7 +3,7 @@ module github.com/dictyBase/modware-annotation
 require (
 	github.com/arangodb/go-driver v0.0.0-20210804111724-721038b2c5bd
 	github.com/dictyBase/aphgrpc v1.4.2
-	github.com/dictyBase/arangomanager v0.3.2
+	github.com/dictyBase/arangomanager v0.3.3
 	github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622
 	github.com/dictyBase/go-obograph v1.4.1
 	github.com/go-playground/validator/v10 v10.11.0
