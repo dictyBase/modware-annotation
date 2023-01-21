@@ -12,7 +12,7 @@ require (
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
-	github.com/urfave/cli v1.22.10
+	github.com/urfave/cli v1.22.11
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/grpc v1.52.0
 	google.golang.org/protobuf v1.28.1
