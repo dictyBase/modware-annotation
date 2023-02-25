@@ -11,7 +11,7 @@ require (
 	github.com/nats-io/go-nats v1.7.2
 	github.com/nats-io/nats.go v1.23.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/urfave/cli v1.22.12
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/grpc v1.53.0
