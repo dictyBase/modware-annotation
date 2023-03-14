@@ -15,7 +15,7 @@ require (
 	github.com/urfave/cli v1.22.12
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.53.0
-	google.golang.org/protobuf v1.29.0
+	google.golang.org/protobuf v1.29.1
 )
 
 require (
