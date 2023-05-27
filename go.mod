@@ -9,7 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/nats-io/go-nats v1.7.2
-	github.com/nats-io/nats.go v1.25.0
+	github.com/nats-io/nats.go v1.26.0
 	github.com/sirupsen/logrus v1.9.2
 	github.com/stretchr/testify v1.8.3
 	github.com/urfave/cli v1.22.13
@@ -30,6 +30,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/jinzhu/now v1.1.1 // indirect
+	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mwitkow/go-proto-validators v0.3.0 // indirect
 	github.com/nats-io/gnatsd v1.4.1 // indirect
