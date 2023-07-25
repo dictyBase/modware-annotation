@@ -17,7 +17,6 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/message/nats"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	gnats "github.com/nats-io/nats.go"
@@ -41,7 +40,7 @@ func RunServer(clt *cli.Context) error {
 		return cli.NewExitError(err.Error(), errCode)
 	}
 	grpcS := grpc.NewServer(
-		grpc_middleware.WithUnaryServerChain(
+		grpc.ChainUnaryInterceptor(
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpc_logrus.UnaryServerInterceptor(getLogger(clt)),
 		),
@@ -104,7 +103,9 @@ func getLogger(clt *cli.Context) *logrus.Entry {
 	return logrus.NewEntry(log)
 }
 
-func allParams(clt *cli.Context) (*manager.ConnectParams, *arangodb.CollectionParams, *ontoarango.CollectionParams) {
+func allParams(
+	clt *cli.Context,
+) (*manager.ConnectParams, *arangodb.CollectionParams, *ontoarango.CollectionParams) {
 	arPort, _ := strconv.Atoi(clt.String("arangodb-port"))
 
 	return &manager.ConnectParams{
@@ -144,7 +145,10 @@ func repoAndNatsConn(clt *cli.Context) (*serverParams, error) {
 	anrepo, err := arangodb.NewTaggedAnnotationRepo(allParams(clt))
 	if err != nil {
 		return &serverParams{},
-			fmt.Errorf("cannot connect to arangodb annotation repository %s", err)
+			fmt.Errorf(
+				"cannot connect to arangodb annotation repository %s",
+				err,
+			)
 	}
 	msp, err := nats.NewPublisher(
 		clt.String("nats-host"), clt.String("nats-port"),
