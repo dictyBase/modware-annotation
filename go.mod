@@ -5,7 +5,7 @@ require (
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.3.4
 	github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622
-	github.com/dictyBase/go-obograph v1.4.1
+	github.com/dictyBase/go-obograph v1.4.2
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/nats-io/nats.go v1.28.0
