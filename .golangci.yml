@@ -21,7 +21,6 @@ linters:
     - bodyclose
     - bidichk
     - cyclop 
-    - deadcode
     - decorder
     - depguard
     - dogsled
@@ -45,7 +44,6 @@ linters:
     - gomoddirectives
     - gomodguard
     - grouper
-    - ifshort
     - ineffassign
     - importas
     - lll
@@ -62,7 +60,6 @@ linters:
     - revive
     - rowserrcheck
     - staticcheck
-    - structcheck
     - typecheck
     - unconvert
     - thelper
@@ -73,7 +70,6 @@ linters:
     - unparam
     - varnamelen
     - wastedassign
-    - varcheck
     - whitespace
     - wrapcheck
 
