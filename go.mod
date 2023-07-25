@@ -7,7 +7,7 @@ require (
 	github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622
 	github.com/dictyBase/go-obograph v1.4.1
 	github.com/go-playground/validator/v10 v10.14.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/nats-io/go-nats v1.7.2
 	github.com/nats-io/nats.go v1.26.0
 	github.com/sirupsen/logrus v1.9.2
