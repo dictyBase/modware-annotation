@@ -62,7 +62,7 @@ func getServerFlags() []cli.Flag {
 	}
 	flg = append(flg, annoCollFlags()...)
 	flg = append(flg, ontoCollFlags()...)
-	flg = append(flg, arangoflag.ArangodbFlags()...)
+	flg = append(flg, arangoflag.ArangoFlags()...)
 
 	return append(flg, apiflag.NatsFlag()...)
 }
