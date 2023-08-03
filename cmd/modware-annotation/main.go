@@ -62,7 +62,15 @@ func getServerFlags() []cli.Flag {
 	}
 	flg = append(flg, annoCollFlags()...)
 	flg = append(flg, ontoCollFlags()...)
-	flg = append(flg, arangoflag.ArangodbFlags()...)
+	flg = append(flg, arangoflag.ArangoFlags()...)
+	flg = append(flg, []cli.Flag{
+		cli.StringFlag{
+			Name:   "arangodb-database, db",
+			EnvVar: "ARANGODB_DATABASE",
+			Usage:  "arangodb database name",
+			Value:  "annotation",
+		},
+	}...)
 
 	return append(flg, apiflag.NatsFlag()...)
 }
