@@ -26,8 +26,8 @@ github.com/dictyBase/arangomanager v0.4.0 h1:+HgmadUY0qXFMLfZocktynbERkX/FgWzC3v
 github.com/dictyBase/arangomanager v0.4.0/go.mod h1:SmElsQJN3EbTjfYCkjS7/uyUkNVwaO2qJB9Mqrs0ND8=
 github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622 h1:UqICH4tshsyfhtwFv/0i48bddx9cJXcPsYEbZFVyULE=
 github.com/dictyBase/go-genproto v0.0.0-20211001224012-6cf691015622/go.mod h1:KY6iUqXl1lLq81WTW9u5DfZE58xM61PsGLSLwwtePlk=
-github.com/dictyBase/go-obograph v1.4.2 h1:mO+EeCTD3mstlQ2zZpX9Ye1najXshoGSa7Jm6FwLW2w=
-github.com/dictyBase/go-obograph v1.4.2/go.mod h1:yyY3lPFmmqVNNMfyAp7ft/UG/ayI5vN6wY0K/d1BgVc=
+github.com/dictyBase/go-obograph v1.5.1 h1:3ad8yM57n06zG7sCAKe9xI3YZY7gq68AVV0Klbxlk9c=
+github.com/dictyBase/go-obograph v1.5.1/go.mod h1:osNZ7PRqai1OTnrLy8SoDavKIMaDp7Sw8CFh52ddBkY=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
