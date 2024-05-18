@@ -35,8 +35,10 @@ jobs:
           file: ./profile.cov
   call-docker-build:
     needs: test
-    uses: dictyBase/workflows/.github/workflows/docker-build-push.yaml@develop
+    uses: dictyBase/workflows/.github/workflows/docker-publish.yaml@develop
     secrets: inherit
     with:
       repository: ${{ github.repository }}
       ref: ${{ github.ref_name }}
+      image: modware-annotation
+      dockerfile: build/package/Dockerfile
