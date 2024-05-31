@@ -25,7 +25,6 @@ linters:
     - bidichk
     - cyclop 
     - decorder
-    - depguard
     - dogsled
     - dupl
     - errcheck
