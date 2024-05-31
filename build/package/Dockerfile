@@ -1,4 +1,4 @@
-FROM golang:1.20.6-bullseye AS builder
+FROM golang:1.22-bullseye AS builder
 LABEL maintainer="Siddhartha Basu <siddhartha-basu@northwestern.edu>"
 ENV GOPROXY https://proxy.golang.org
 ENV GO111MODULE=on \
