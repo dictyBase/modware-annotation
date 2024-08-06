@@ -4,9 +4,16 @@ on:
     branches:
       - staging
 jobs:
-  call-docker-build:
-    uses: dictyBase/workflows/.github/workflows/docker-build-push.yaml@develop
+  call-build-deploy:
+    uses: dictyBase/workflows/.github/workflows/composite-deploy.yaml@main
     secrets: inherit
     with:
+      app: annotation
       repository: ${{ github.repository }}
       ref: ${{ github.ref_name }}
+      dockerfile: build/package/Dockerfile 
+      docker_image: modware-annotation
+      cluster: ${{ vars.DEV_STAGING_CLUSTER }}
+      cluster_state_storage: ${{ vars.DEV_STAGING_KOPS_STATE_STORAGE }}
+      stack: staging
+      environment: staging
