@@ -34,12 +34,15 @@ jobs:
         with:
           file: ./profile.cov
           token: ${{ secrets.CODECOV }}
-  call-docker-build:
+  call-build-deploy:
     needs: test
-    uses: dictyBase/workflows/.github/workflows/docker-publish.yaml@main
+    uses: dictyBase/workflows/.github/workflows/composite-deploy.yaml@main
     secrets: inherit
     with:
+      app: annotation
       repository: ${{ github.repository }}
       ref: ${{ github.ref_name }}
-      image: modware-annotation
       dockerfile: build/package/Dockerfile
+      docker_image: modware-annotation
+      cluster: ${{ vars.DEV_STAGING_CLUSTER }}
+      cluster_state_storage: ${{ vars.DEV_STAGING_KOPS_STATE_STORAGE }}
