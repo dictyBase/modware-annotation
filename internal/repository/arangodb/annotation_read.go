@@ -10,7 +10,9 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
-func (ar *arangorepository) GetAnnotationByID(annoid string) (*model.AnnoDoc, error) {
+func (ar *arangorepository) GetAnnotationByID(
+	annoid string,
+) (*model.AnnoDoc, error) {
 	model := &model.AnnoDoc{}
 	res, err := ar.database.Get(
 		fmt.Sprintf(
@@ -36,7 +38,9 @@ func (ar *arangorepository) GetAnnotationByID(annoid string) (*model.AnnoDoc, er
 	return model, nil
 }
 
-func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotationRequest) (*model.AnnoDoc, error) {
+func (ar *arangorepository) GetAnnotationByEntry(
+	req *annotation.EntryAnnotationRequest,
+) (*model.AnnoDoc, error) {
 	mann := &model.AnnoDoc{}
 	res, err := ar.database.Get(
 		fmt.Sprintf(
@@ -66,7 +70,11 @@ func (ar *arangorepository) GetAnnotationByEntry(req *annotation.EntryAnnotation
 	return mann, nil
 }
 
-func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter string) ([]*model.AnnoDoc, error) {
+func (ar *arangorepository) ListAnnotations(
+	cursor int64,
+	limit int64,
+	filter string,
+) ([]*model.AnnoDoc, error) {
 	annoModel := make([]*model.AnnoDoc, 0)
 	bindVars := map[string]interface{}{
 		"@cvt_collection":   ar.onto.Term.Name(),
@@ -86,18 +94,23 @@ func (ar *arangorepository) ListAnnotations(cursor int64, limit int64, filter st
 		return annoModel, &repository.AnnoListNotFoundError{}
 	}
 	for res.Scan() {
-		m := &model.AnnoDoc{}
-		if err := res.Read(m); err != nil {
-			return annoModel, fmt.Errorf("error in reading data to structure %s", err)
+		amodel := &model.AnnoDoc{}
+		if err := res.Read(amodel); err != nil {
+			return annoModel, fmt.Errorf(
+				"error in reading data to structure %s",
+				err,
+			)
 		}
-		annoModel = append(annoModel, m)
+		annoModel = append(annoModel, amodel)
 	}
 
 	return annoModel, nil
 }
 
 // Retrieves an annotation group.
-func (ar *arangorepository) GetAnnotationGroup(groupID string) (*model.AnnoGroup, error) {
+func (ar *arangorepository) GetAnnotationGroup(
+	groupID string,
+) (*model.AnnoGroup, error) {
 	grp := &model.AnnoGroup{}
 	ann, err := ar.groupID2Annotations(groupID)
 	if err != nil {
@@ -123,7 +136,10 @@ func (ar *arangorepository) GetAnnotationGroup(groupID string) (*model.AnnoGroup
 
 // ListAnnotationGroup provides a paginated list of annotation groups along
 // with optional filtering.
-func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter string) ([]*model.AnnoGroup, error) {
+func (ar *arangorepository) ListAnnotationGroup(
+	cursor, limit int64,
+	filter string,
+) ([]*model.AnnoGroup, error) {
 	var agrp []*model.AnnoGroup
 	var stmt string
 	if len(filter) > 0 { // filter
@@ -166,18 +182,23 @@ func (ar *arangorepository) ListAnnotationGroup(cursor, limit int64, filter stri
 		return agrp, &repository.AnnoGroupListNotFoundError{}
 	}
 	for res.Scan() {
-		m := &model.AnnoGroup{}
-		if err := res.Read(m); err != nil {
-			return agrp, fmt.Errorf("error in reading data to structure %s", err)
+		amodel := &model.AnnoGroup{}
+		if err := res.Read(amodel); err != nil {
+			return agrp, fmt.Errorf(
+				"error in reading data to structure %s",
+				err,
+			)
 		}
-		agrp = append(agrp, m)
+		agrp = append(agrp, amodel)
 	}
 
 	return agrp, nil
 }
 
 // GetAnnotationTag retrieves tag information.
-func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoTag, error) {
+func (ar *arangorepository) GetAnnotationTag(
+	tag, ontology string,
+) (*model.AnnoTag, error) {
 	annoModel := new(model.AnnoTag)
 	res, err := ar.database.GetRow(
 		tagGetQ,
@@ -204,7 +225,10 @@ func (ar *arangorepository) GetAnnotationTag(tag, ontology string) (*model.AnnoT
 	return annoModel, nil
 }
 
-func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttributes, tag string) error {
+func (ar *arangorepository) existAnno(
+	attr *annotation.NewTaggedAnnotationAttributes,
+	tag string,
+) error {
 	count, err := ar.database.CountWithParams(annExistQ, map[string]interface{}{
 		"@anno_collection":  ar.anno.annot.Name(),
 		"@cv_collection":    ar.onto.Cv.Name(),
@@ -224,14 +248,18 @@ func (ar *arangorepository) existAnno(attr *annotation.NewTaggedAnnotationAttrib
 	return nil
 }
 
-func (ar *arangorepository) groupID2Annotations(groupID string) ([]*model.AnnoDoc, error) {
+func (ar *arangorepository) groupID2Annotations(
+	groupID string,
+) ([]*model.AnnoDoc, error) {
 	var annoModel []*model.AnnoDoc
 	// check if the group exists
 	isOk, err := ar.anno.annog.DocumentExists(context.Background(), groupID)
 	if err != nil {
 		return annoModel,
-			fmt.Errorf("error in checking for existence of group identifier %s %s",
-				groupID, err,
+			fmt.Errorf(
+				"error in checking for existence of group identifier %s %s",
+				groupID,
+				err,
 			)
 	}
 	if !isOk {
@@ -250,7 +278,9 @@ func (ar *arangorepository) groupID2Annotations(groupID string) ([]*model.AnnoDo
 	return ar.getAllAnnotations(dbg.Group...)
 }
 
-func (ar *arangorepository) getAllAnnotations(ids ...string) ([]*model.AnnoDoc, error) {
+func (ar *arangorepository) getAllAnnotations(
+	ids ...string,
+) ([]*model.AnnoDoc, error) {
 	annoModel := make([]*model.AnnoDoc, 0)
 	for _, k := range ids {
 		res, err := ar.database.Get(
@@ -262,11 +292,14 @@ func (ar *arangorepository) getAllAnnotations(ids ...string) ([]*model.AnnoDoc, 
 		if err != nil {
 			return annoModel, fmt.Errorf("error in fetching id %s", err)
 		}
-		m := &model.AnnoDoc{}
-		if err := res.Read(m); err != nil {
-			return annoModel, fmt.Errorf("error in reading data to structure %s", err)
+		amodel := &model.AnnoDoc{}
+		if err := res.Read(amodel); err != nil {
+			return annoModel, fmt.Errorf(
+				"error in reading data to structure %s",
+				err,
+			)
 		}
-		annoModel = append(annoModel, m)
+		annoModel = append(annoModel, amodel)
 	}
 
 	return annoModel, nil
