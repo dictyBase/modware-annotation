@@ -11,12 +11,19 @@ import (
 
 const limit = 10
 
-func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.AnnotationId) (*annotation.TaggedAnnotation, error) {
-	tna := &annotation.TaggedAnnotation{}
-	if err := r.Validate(); err != nil {
-		return tna, aphgrpc.HandleInvalidParamError(ctx, err)
+type Validatable interface {
+	Validate() error
+}
+
+func (srv *AnnotationService) GetAnnotation(
+	ctx context.Context,
+	req *annotation.AnnotationId,
+) (*annotation.TaggedAnnotation, error) {
+	tna, err := srv.initializeTaggedAnnotation(ctx, req)
+	if err != nil {
+		return tna, err
 	}
-	mid, err := s.repo.GetAnnotationByID(r.Id)
+	mid, err := srv.repo.GetAnnotationByID(req.Id)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return tna, aphgrpc.HandleNotFoundError(ctx, err)
@@ -27,19 +34,19 @@ func (s *AnnotationService) GetAnnotation(ctx context.Context, r *annotation.Ann
 	if mid.NotFound {
 		return tna, aphgrpc.HandleNotFoundError(ctx, err)
 	}
-	tna.Data = s.getAnnoData(mid)
+	tna.Data = srv.getAnnoData(mid)
 
 	return tna, nil
 }
 
-func (s *AnnotationService) GetEntryAnnotation(
+func (srv *AnnotationService) GetEntryAnnotation(
 	ctx context.Context, rea *annotation.EntryAnnotationRequest,
 ) (*annotation.TaggedAnnotation, error) {
-	tna := &annotation.TaggedAnnotation{}
-	if err := rea.Validate(); err != nil {
-		return tna, aphgrpc.HandleInvalidParamError(ctx, err)
+	tna, err := srv.initializeTaggedAnnotation(ctx, rea)
+	if err != nil {
+		return tna, err
 	}
-	mne, err := s.repo.GetAnnotationByEntry(rea)
+	mne, err := srv.repo.GetAnnotationByEntry(rea)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return tna, aphgrpc.HandleNotFoundError(ctx, err)
@@ -47,19 +54,19 @@ func (s *AnnotationService) GetEntryAnnotation(
 
 		return tna, aphgrpc.HandleGetError(ctx, err)
 	}
-	tna.Data = s.getAnnoData(mne)
+	tna.Data = srv.getAnnoData(mne)
 
 	return tna, nil
 }
 
-func (s *AnnotationService) GetAnnotationGroup(
+func (srv *AnnotationService) GetAnnotationGroup(
 	ctx context.Context, rid *annotation.GroupEntryId,
 ) (*annotation.TaggedAnnotationGroup, error) {
-	gta := &annotation.TaggedAnnotationGroup{}
-	if err := rid.Validate(); err != nil {
-		return gta, aphgrpc.HandleInvalidParamError(ctx, err)
+	gta, err := srv.initializeTaggedAnnotationGroup(ctx, rid)
+	if err != nil {
+		return gta, err
 	}
-	mga, err := s.repo.GetAnnotationGroup(rid.GroupId)
+	mga, err := srv.repo.GetAnnotationGroup(rid.GroupId)
 	if err != nil {
 		if repository.IsGroupNotFound(err) {
 			return gta, aphgrpc.HandleNotFoundError(ctx, err)
@@ -68,10 +75,10 @@ func (s *AnnotationService) GetAnnotationGroup(
 		return gta, aphgrpc.HandleGetError(ctx, err)
 	}
 
-	return s.getGroup(mga), nil
+	return srv.getGroup(mga), nil
 }
 
-func (s *AnnotationService) ListAnnotationGroups(
+func (srv *AnnotationService) ListAnnotationGroups(
 	ctx context.Context, rgp *annotation.ListGroupParameters,
 ) (*annotation.TaggedAnnotationGroupCollection, error) {
 	gac := &annotation.TaggedAnnotationGroupCollection{}
@@ -84,7 +91,7 @@ func (s *AnnotationService) ListAnnotationGroups(
 	if err != nil {
 		return gac, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mgc, err := s.repo.ListAnnotationGroup(rgp.Cursor, limit, astmt)
+	mgc, err := srv.repo.ListAnnotationGroup(rgp.Cursor, limit, astmt)
 	if err != nil {
 		if repository.IsAnnotationGroupListNotFound(err) {
 			return gac, aphgrpc.HandleNotFoundError(ctx, err)
@@ -96,17 +103,20 @@ func (s *AnnotationService) ListAnnotationGroups(
 	for _, mgs := range mgc {
 		var gdata []*annotation.TaggedAnnotationGroup_Data
 		for _, m := range mgs.AnnoDocs {
-			gdata = append(gdata, s.getAnnoGroupData(m))
+			gdata = append(gdata, srv.getAnnoGroupData(m))
 		}
-		gcdata = append(gcdata, &annotation.TaggedAnnotationGroupCollection_Data{
-			Type: s.GetGroupResourceName(),
-			Group: &annotation.TaggedAnnotationGroup{
-				Data:      gdata,
-				GroupId:   mgs.GroupId,
-				CreatedAt: aphgrpc.TimestampProto(mgs.CreatedAt),
-				UpdatedAt: aphgrpc.TimestampProto(mgs.UpdatedAt),
+		gcdata = append(
+			gcdata,
+			&annotation.TaggedAnnotationGroupCollection_Data{
+				Type: srv.GetGroupResourceName(),
+				Group: &annotation.TaggedAnnotationGroup{
+					Data:      gdata,
+					GroupId:   mgs.GroupId,
+					CreatedAt: aphgrpc.TimestampProto(mgs.CreatedAt),
+					UpdatedAt: aphgrpc.TimestampProto(mgs.UpdatedAt),
+				},
 			},
-		})
+		)
 	}
 	if len(gcdata) < int(limit)-2 {
 		return &annotation.TaggedAnnotationGroupCollection{
@@ -124,7 +134,7 @@ func (s *AnnotationService) ListAnnotationGroups(
 	}, nil
 }
 
-func (s *AnnotationService) ListAnnotations(
+func (srv *AnnotationService) ListAnnotations(
 	ctx context.Context, ral *annotation.ListParameters,
 ) (*annotation.TaggedAnnotationCollection, error) {
 	tac := &annotation.TaggedAnnotationCollection{}
@@ -137,7 +147,7 @@ func (s *AnnotationService) ListAnnotations(
 	if err != nil {
 		return tac, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mlc, err := s.repo.ListAnnotations(ral.Cursor, limit, astmt)
+	mlc, err := srv.repo.ListAnnotations(ral.Cursor, limit, astmt)
 	if err != nil {
 		if repository.IsAnnotationListNotFound(err) {
 			return tac, aphgrpc.HandleNotFoundError(ctx, err)
@@ -148,7 +158,7 @@ func (s *AnnotationService) ListAnnotations(
 	tcdata := make([]*annotation.TaggedAnnotationCollection_Data, 0)
 	for _, m := range mlc {
 		tcdata = append(tcdata, &annotation.TaggedAnnotationCollection_Data{
-			Type:       s.GetResourceName(),
+			Type:       srv.GetResourceName(),
 			Id:         m.Key,
 			Attributes: getAnnoAttributes(m),
 		})
@@ -168,14 +178,14 @@ func (s *AnnotationService) ListAnnotations(
 	return tac, nil
 }
 
-func (s *AnnotationService) GetAnnotationTag(
+func (srv *AnnotationService) GetAnnotationTag(
 	ctx context.Context, rta *annotation.TagRequest,
 ) (*annotation.AnnotationTag, error) {
 	tag := &annotation.AnnotationTag{}
 	if err := rta.Validate(); err != nil {
 		return tag, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mta, err := s.repo.GetAnnotationTag(rta.Name, rta.Ontology)
+	mta, err := srv.repo.GetAnnotationTag(rta.Name, rta.Ontology)
 	if err != nil {
 		if repository.IsAnnoTagNotFound(err) {
 			return tag, aphgrpc.HandleNotFoundError(ctx, err)
@@ -191,13 +201,11 @@ func (s *AnnotationService) GetAnnotationTag(
 	return tag, nil
 }
 
-func (s *AnnotationService) getGroup(mga *model.AnnoGroup) *annotation.TaggedAnnotationGroup {
+func (srv *AnnotationService) getGroup(
+	mga *model.AnnoGroup,
+) *annotation.TaggedAnnotationGroup {
 	gta := &annotation.TaggedAnnotationGroup{}
-	gdata := make([]*annotation.TaggedAnnotationGroup_Data, 0)
-	for _, m := range mga.AnnoDocs {
-		gdata = append(gdata, s.getAnnoGroupData(m))
-	}
-	gta.Data = gdata
+	gta.Data = srv.getGroupData(mga)
 	gta.GroupId = mga.GroupId
 	gta.CreatedAt = aphgrpc.TimestampProto(mga.CreatedAt)
 	gta.UpdatedAt = aphgrpc.TimestampProto(mga.UpdatedAt)
@@ -205,18 +213,57 @@ func (s *AnnotationService) getGroup(mga *model.AnnoGroup) *annotation.TaggedAnn
 	return gta
 }
 
-func (s *AnnotationService) getAnnoGroupData(m *model.AnnoDoc) *annotation.TaggedAnnotationGroup_Data {
+func (srv *AnnotationService) getAnnoGroupData(
+	m *model.AnnoDoc,
+) *annotation.TaggedAnnotationGroup_Data {
 	return &annotation.TaggedAnnotationGroup_Data{
-		Type:       s.GetGroupResourceName(),
+		Type:       srv.GetGroupResourceName(),
 		Id:         m.Key,
 		Attributes: getAnnoAttributes(m),
 	}
 }
 
-func (s *AnnotationService) getAnnoData(m *model.AnnoDoc) *annotation.TaggedAnnotation_Data {
+func (srv *AnnotationService) getAnnoData(
+	m *model.AnnoDoc,
+) *annotation.TaggedAnnotation_Data {
 	return &annotation.TaggedAnnotation_Data{
-		Type:       s.GetGroupResourceName(),
+		Type:       srv.GetGroupResourceName(),
 		Id:         m.Key,
 		Attributes: getAnnoAttributes(m),
 	}
+}
+
+func (srv *AnnotationService) initializeTaggedAnnotation(
+	ctx context.Context,
+	req Validatable,
+) (*annotation.TaggedAnnotation, error) {
+	tna := &annotation.TaggedAnnotation{}
+	if err := req.Validate(); err != nil {
+		return tna, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+
+	return tna, nil
+}
+
+func (srv *AnnotationService) initializeTaggedAnnotationGroup(
+	ctx context.Context,
+	rid *annotation.GroupEntryId,
+) (*annotation.TaggedAnnotationGroup, error) {
+	gta := &annotation.TaggedAnnotationGroup{}
+	if err := rid.Validate(); err != nil {
+		return gta, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+
+	return gta, nil
+}
+
+func (srv *AnnotationService) getGroupData(
+	mga *model.AnnoGroup,
+) []*annotation.TaggedAnnotationGroup_Data {
+	gdata := make([]*annotation.TaggedAnnotationGroup_Data, 0)
+	for _, m := range mga.AnnoDocs {
+		gdata = append(gdata, srv.getAnnoGroupData(m))
+	}
+
+	return gdata
 }
