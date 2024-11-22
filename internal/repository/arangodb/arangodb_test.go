@@ -222,8 +222,8 @@ func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAn
 func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 	nal := make([]*annotation.NewTaggedAnnotation, 0)
 	rsrc := rand.New(rand.NewSource(time.Now().UnixNano()))
-	max := 800000
-	min := 300000
+	geneIDMax := 800000
+	geneIDMin := 300000
 	for i := 0; i < num; i++ {
 		value := fmt.Sprintf("cool gene %s", tags[rsrc.Intn(len(tags)-1)])
 		nal = append(nal, &annotation.NewTaggedAnnotation{
@@ -235,7 +235,7 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 					CreatedBy:     "siddbasu@gmail.com",
 					Tag:           tags[rsrc.Intn(len(tags)-1)],
 					Ontology:      "dicty_annotation",
-					EntryId:       fmt.Sprintf("DDB_G0%d", rsrc.Intn(max-min)+min),
+					EntryId:       fmt.Sprintf("DDB_G0%d", rsrc.Intn(geneIDMax-geneIDMin)+geneIDMin),
 					Rank:          0,
 				},
 			},
