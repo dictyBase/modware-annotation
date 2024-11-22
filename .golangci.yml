@@ -42,7 +42,6 @@ linters:
     - gosimple
     - govet
     - gocognit
-    - gomnd 
     - gomoddirectives
     - gomodguard
     - grouper
