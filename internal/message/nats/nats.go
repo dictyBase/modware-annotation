@@ -1,23 +1,23 @@
 package nats
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/message"
 	gnats "github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/encoders/protobuf"
 )
 
 type natsPublisher struct {
-	econn *gnats.EncodedConn
+	conn *gnats.Conn
 }
 
 func NewPublisher(
 	host, port string,
 	options ...gnats.Option,
 ) (message.Publisher, error) {
-	ncr, err := gnats.Connect(
+	nconn, err := gnats.Connect(
 		fmt.Sprintf("nats://%s:%s", host, port),
 		options...)
 	if err != nil {
@@ -26,19 +26,19 @@ func NewPublisher(
 			err,
 		)
 	}
-	ec, err := gnats.NewEncodedConn(ncr, protobuf.PROTOBUF_ENCODER)
-	if err != nil {
-		return &natsPublisher{}, fmt.Errorf("error in encoding %s", err)
-	}
 
-	return &natsPublisher{econn: ec}, nil
+	return &natsPublisher{conn: nconn}, nil
 }
 
 func (n *natsPublisher) Publish(
 	subj string,
 	ann *annotation.TaggedAnnotation,
 ) error {
-	if err := n.econn.Publish(subj, ann); err != nil {
+	data, err := json.Marshal(ann)
+	if err != nil {
+		return fmt.Errorf("error in marshaling annotation %s", err)
+	}
+	if err := n.conn.Publish(subj, data); err != nil {
 		return fmt.Errorf("error in publishing through nats %s", err)
 	}
 
@@ -46,7 +46,7 @@ func (n *natsPublisher) Publish(
 }
 
 func (n *natsPublisher) Close() error {
-	n.econn.Close()
+	n.conn.Close()
 
 	return nil
 }

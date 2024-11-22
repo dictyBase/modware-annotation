@@ -67,7 +67,7 @@ func UniqueModel(a []*AnnoDoc) []*AnnoDoc {
 	return mdoc
 }
 
-func DocToIds(ml []*AnnoDoc) []string {
+func DocToIDs(ml []*AnnoDoc) []string {
 	str := make([]string, 0)
 	for _, m := range ml {
 		str = append(str, m.Key)
