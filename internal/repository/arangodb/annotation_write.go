@@ -177,7 +177,7 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupID string, idslice ...s
 		map[string]interface{}{
 			"@anno_group_collection": ar.anno.annog.Name(),
 			"key":                    groupID,
-			"group":                  model.DocToIds(aml),
+			"group":                  model.DocToIDs(aml),
 		},
 	)
 	if err != nil {
