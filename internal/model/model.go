@@ -53,18 +53,17 @@ type DbGroup struct {
 	GroupId   string    `json:"_key,omitempty"`
 }
 
-func UniqueModel(a []*AnnoDoc) []*AnnoDoc {
-	mdoc := make([]*AnnoDoc, 0)
-	hmap := make(map[string]int)
-	for _, m := range a {
-		if _, ok := hmap[m.Key]; ok {
-			continue
+func UniqueModel[T comparable](slice []T) []T {
+	result := make([]T, 0)
+	seen := make(map[T]bool)
+	for _, item := range slice {
+		if _, ok := seen[item]; !ok {
+			result = append(result, item)
+			seen[item] = true
 		}
-		mdoc = append(mdoc, m)
-		hmap[m.Key] = 1
 	}
 
-	return mdoc
+	return result
 }
 
 func DocToIDs(ml []*AnnoDoc) []string {
