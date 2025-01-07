@@ -8,6 +8,13 @@ type createParams struct {
 	tag  string
 }
 
+// OrganismCollectionParams are the arangodb collections required for storing
+// organisms.
+type OrganismCollectionParams struct {
+	// Organism is the collection for storing organisms
+	Organism string `validate:"required"`
+}
+
 // CollectionParams are the arangodb collections required for storing
 // annotations.
 type CollectionParams struct {
