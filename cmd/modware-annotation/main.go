@@ -70,6 +70,11 @@ func getServerFlags() []cli.Flag {
 			Usage:  "arangodb database name",
 			Value:  "annotation",
 		},
+		cli.StringFlag{
+			Name:  "organism-collection",
+			Usage: "arangodb collection for storing organisms",
+			Value: "organism",
+		},
 	}...)
 
 	return append(flg, apiflag.NatsFlag()...)
