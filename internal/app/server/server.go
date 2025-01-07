@@ -26,8 +26,10 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-const errCode = 2
-const waitTime = 2
+const (
+	errCode  = 2
+	waitTime = 2
+)
 
 type serverParams struct {
 	repo repository.TaggedAnnotationRepository
