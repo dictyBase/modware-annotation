@@ -18,3 +18,46 @@ type OrganismDoc struct {
 	Genus        string    `json:"genus"`
 	NotFound     bool
 }
+
+// GetOrganismSchema returns a JSON schema definition for OrganismDoc as []byte.
+func Schema() []byte {
+	return []byte(`{
+        "type": "object",
+        "properties": {
+            "created_at": {
+                "type": "string",
+                "format": "date-time"
+            },
+            "updated_at": {
+                "type": "string",
+                "format": "date-time"
+            },
+            "created_by": {
+                "type": "string",
+                "format": "email"
+            },
+            "updated_by": {
+                "type": "string",
+                "format": "email"
+            },
+            "abbreviation": {
+                "type": "string"
+            },
+            "common_name": {
+                "type": "string"
+            },
+            "species": {
+                "type": "string"
+            },
+            "genus": {
+                "type": "string"
+            }
+        },
+        "required": [
+            "created_by", 
+            "species",
+            "genus"
+        ],
+        "additionalProperties": false
+    }`)
+}
