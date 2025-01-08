@@ -5,6 +5,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
+	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
 )
@@ -15,7 +16,8 @@ type organismRepo struct {
 	organism driver.Collection
 }
 
-// NewOrganismRepo is the constructor for creating a new instance of OrganismRepository
+// NewOrganismRepo is the constructor for creating a new instance of
+// OrganismRepository.
 func NewOrganismRepo(
 	connP *manager.ConnectParams,
 	collP *OrganismCollectionParams,
@@ -48,4 +50,46 @@ func NewOrganismRepo(
 		database: dbh,
 		organism: orgColl,
 	}, nil
+}
+
+func (org *organismRepo) GetOrganism(id string) (*model.OrganismDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (org *organismRepo) GetOrganismByName(
+	genus, species string,
+) (*model.OrganismDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (org *organismRepo) AddOrganism(
+	doc *model.OrganismDoc,
+) (*model.OrganismDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (org *organismRepo) EditOrganism(
+	doc *model.OrganismDoc,
+) (*model.OrganismDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (org *organismRepo) RemoveOrganism(id string) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (org *organismRepo) ListOrganisms(
+	cursor int64,
+	limit int64,
+	filter string,
+) ([]*model.OrganismDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (org *organismRepo) ClearOrganisms() error {
+	return nil
+}
+
+func (org *organismRepo) Dbh() *manager.Database {
+	return org.database
 }
