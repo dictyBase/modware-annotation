@@ -33,10 +33,20 @@ func NewOrganismRepo(
 		return nil, fmt.Errorf("error in creating new session %s", err)
 	}
 
-	// Create or find organism collection
+	// Create or find organism collection with schema validation
+	schemaOpt := &driver.CollectionSchemaOptions{
+		Level:   driver.CollectionSchemaLevelStrict,
+		Message: "organism schema validation failed",
+		Type:    "json",
+	}
+	if err := schemaOpt.LoadRule(model.Schema()); err != nil {
+		return nil, fmt.Errorf("error in loading schema %s", err)
+	}
 	orgColl, err := dbh.FindOrCreateCollection(
 		collP.Organism,
-		&driver.CreateCollectionOptions{},
+		&driver.CreateCollectionOptions{
+			Schema: schemaOpt,
+		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
