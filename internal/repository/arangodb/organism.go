@@ -265,6 +265,10 @@ func (org *organismRepo) ListOrganisms() ([]*model.OrganismDoc, error) {
 }
 
 func (org *organismRepo) ClearOrganisms() error {
+	if err := org.organism.Truncate(context.Background()); err != nil {
+		return fmt.Errorf("error clearing organisms collection: %w", err)
+	}
+
 	return nil
 }
 
