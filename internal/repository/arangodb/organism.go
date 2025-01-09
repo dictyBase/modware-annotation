@@ -6,6 +6,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
+	dorg "github.com/dictyBase/go-genproto/dictybaseapis/organism"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
@@ -112,13 +113,13 @@ func (org *organismRepo) GetOrganismByName(
 }
 
 func (org *organismRepo) AddOrganism(
-	doc *model.OrganismDoc,
+	doc *dorg.NewOrganism,
 ) (*model.OrganismDoc, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 func (org *organismRepo) EditOrganism(
-	doc *model.OrganismDoc,
+	doc *dorg.OrganismUpdate,
 ) (*model.OrganismDoc, error) {
 	return nil, fmt.Errorf("not implemented")
 }

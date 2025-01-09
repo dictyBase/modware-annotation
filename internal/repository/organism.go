@@ -2,6 +2,7 @@ package repository
 
 import (
 	manager "github.com/dictyBase/arangomanager"
+	"github.com/dictyBase/go-genproto/dictybaseapis/organism"
 	"github.com/dictyBase/modware-annotation/internal/model"
 )
 
@@ -13,9 +14,9 @@ type OrganismRepository interface {
 	// GetOrganismByName retrieves an organism by scientific name (genus + species)
 	GetOrganismByName(genus, species string) (*model.OrganismDoc, error)
 	// AddOrganism creates a new organism
-	AddOrganism(doc *model.OrganismDoc) (*model.OrganismDoc, error)
+	AddOrganism(doc *organism.NewOrganism) (*model.OrganismDoc, error)
 	// EditOrganism updates an existing organism
-	EditOrganism(doc *model.OrganismDoc) (*model.OrganismDoc, error)
+	EditOrganism(doc *organism.OrganismUpdate) (*model.OrganismDoc, error)
 	// RemoveOrganism deletes an organism
 	RemoveOrganism(id string) error
 	// ListOrganisms provides a paginated list of organisms along with optional filtering
