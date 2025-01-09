@@ -115,7 +115,28 @@ func (org *organismRepo) GetOrganismByName(
 func (org *organismRepo) AddOrganism(
 	doc *dorg.NewOrganism,
 ) (*model.OrganismDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	// Create new organism document
+	orgDoc := &model.OrganismDoc{
+		CreatedAt:    doc.CreatedAt.AsTime(),
+		UpdatedAt:    doc.CreatedAt.AsTime(),
+		CreatedBy:    doc.CreatedBy,
+		UpdatedBy:    doc.CreatedBy,
+		Abbreviation: doc.Attributes.Abbreviation,
+		CommonName:   doc.Attributes.CommonName,
+		Species:      doc.Attributes.Species,
+		Genus:        doc.Attributes.Genus,
+	}
+
+	// Insert document into collection
+	meta, err := org.organism.CreateDocument(context.Background(), orgDoc)
+	if err != nil {
+		return nil, fmt.Errorf("error creating organism document: %w", err)
+	}
+
+	// Add document metadata
+	orgDoc.DocumentMeta = meta
+
+	return orgDoc, nil
 }
 
 func (org *organismRepo) EditOrganism(
