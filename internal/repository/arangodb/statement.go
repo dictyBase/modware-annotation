@@ -1,6 +1,7 @@
 package arangodb
 
 const (
+	orgListQ = `FOR org IN @@collection RETURN org`
 	tagGetQ = `
 		FOR cv IN @@cv_collection
 			FOR cvt IN @@cvterm_collection
