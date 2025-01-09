@@ -3,6 +3,7 @@ package arangodb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
@@ -162,7 +163,58 @@ func (org *organismRepo) AddOrganism(
 func (org *organismRepo) EditOrganism(
 	doc *dorg.OrganismUpdate,
 ) (*model.OrganismDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	orgDoc := &model.OrganismDoc{}
+	_, err := org.organism.ReadDocument(context.Background(), doc.Id, orgDoc)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			return nil, &repository.OrganismNotFoundError{ID: doc.Id}
+		}
+
+		return nil, fmt.Errorf("error reading organism document: %w", err)
+	}
+
+	update := map[string]interface{}{
+		"updated_at": time.Now(),
+		"updated_by": doc.UpdatedBy,
+	}
+	attr := doc.Attributes
+	if attr.Abbreviation != "" {
+		update["abbreviation"] = attr.Abbreviation
+	}
+	if attr.CommonName != "" {
+		update["common_name"] = attr.CommonName
+	}
+	if attr.Species != "" {
+		update["species"] = attr.Species
+	}
+	if attr.Genus != "" {
+		update["genus"] = attr.Genus
+	}
+	meta, err := org.organism.UpdateDocument(
+		context.Background(),
+		doc.Id,
+		update,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error updating organism document: %w", err)
+	}
+
+	// Read the updated document
+	updatedDoc := &model.OrganismDoc{}
+	_, err = org.organism.ReadDocument(
+		context.Background(),
+		doc.Id,
+		updatedDoc,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"error reading updated organism document: %w",
+			err,
+		)
+	}
+	updatedDoc.DocumentMeta = meta
+
+	return updatedDoc, nil
 }
 
 func (org *organismRepo) RemoveOrganism(oid string) error {
