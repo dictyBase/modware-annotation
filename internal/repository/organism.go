@@ -20,11 +20,7 @@ type OrganismRepository interface {
 	// RemoveOrganism deletes an organism
 	RemoveOrganism(id string) error
 	// ListOrganisms provides a paginated list of organisms along with optional filtering
-	ListOrganisms(
-		cursor int64,
-		limit int64,
-		filter string,
-	) ([]*model.OrganismDoc, error)
+	ListOrganisms() ([]*model.OrganismDoc, error)
 	// ClearOrganisms removes all organisms
 	ClearOrganisms() error
 	// Dbh returns the underlying database handler
