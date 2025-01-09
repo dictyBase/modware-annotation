@@ -297,4 +297,11 @@ const (
 					LIMIT 1
 					RETURN MERGE(ann, { ontology: cv.metadata.namespace, tag: v.label })
 	`
+	orgGetByNameQ = `
+		FOR org IN @@collection
+			FILTER org.genus == @genus 
+			FILTER org.species == @species
+			LIMIT 1
+			RETURN org
+	`
 )
