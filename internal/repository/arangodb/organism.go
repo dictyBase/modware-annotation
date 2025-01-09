@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"context"
 	"fmt"
 
 	driver "github.com/arangodb/go-driver"
@@ -63,7 +64,18 @@ func NewOrganismRepo(
 }
 
 func (org *organismRepo) GetOrganism(id string) (*model.OrganismDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	doc := &model.OrganismDoc{}
+	meta, err := org.organism.ReadDocument(context.Background(), id, doc)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			return nil, &repository.OrganismNotFoundError{ID: id}
+		}
+
+		return nil, fmt.Errorf("error reading organism document: %w", err)
+	}
+	doc.DocumentMeta = meta
+
+	return doc, nil
 }
 
 func (org *organismRepo) GetOrganismByName(
