@@ -63,6 +63,9 @@ func NewOrganismRepo(
 	}, nil
 }
 
+// GetOrganism retrieves an organism by its unique identifier. It returns an
+// OrganismDoc containing the organism's details or an error. If the organism is
+// not found, it returns an OrganismNotFoundError.
 func (org *organismRepo) GetOrganism(id string) (*model.OrganismDoc, error) {
 	doc := &model.OrganismDoc{}
 	meta, err := org.organism.ReadDocument(context.Background(), id, doc)
@@ -78,6 +81,10 @@ func (org *organismRepo) GetOrganism(id string) (*model.OrganismDoc, error) {
 	return doc, nil
 }
 
+// GetOrganismByName retrieves an organism by its genus and species names. It
+// returns an OrganismDoc containing the organism's details or an error. If no
+// organism matches the given genus and species combination, it returns an
+// OrganismNotFoundError.
 func (org *organismRepo) GetOrganismByName(
 	genus, species string,
 ) (*model.OrganismDoc, error) {
