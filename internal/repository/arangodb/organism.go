@@ -237,12 +237,31 @@ func (org *organismRepo) RemoveOrganism(oid string) error {
 	return nil
 }
 
-func (org *organismRepo) ListOrganisms(
-	cursor int64,
-	limit int64,
-	filter string,
-) ([]*model.OrganismDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+func (org *organismRepo) ListOrganisms() ([]*model.OrganismDoc, error) {
+	cursor, err := org.database.SearchRows(
+		orgListQ,
+		map[string]interface{}{
+			"@collection": org.organism.Name(),
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error executing organism list query: %w", err)
+	}
+	defer cursor.Close()
+	if cursor.IsEmpty() {
+		return nil, &repository.AnnoListNotFoundError{}
+	}
+
+	var organisms []*model.OrganismDoc
+	for cursor.Scan() {
+		omodel := &model.OrganismDoc{}
+		if err := cursor.Read(omodel); err != nil {
+			return nil, fmt.Errorf("error reading organism document: %w", err)
+		}
+		organisms = append(organisms, omodel)
+	}
+
+	return organisms, nil
 }
 
 func (org *organismRepo) ClearOrganisms() error {
