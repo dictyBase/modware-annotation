@@ -79,3 +79,19 @@ func IsAnnoTagNotFound(err error) bool {
 
 	return false
 }
+
+type OrganismNotFoundError struct {
+	ID string
+}
+
+func (onf *OrganismNotFoundError) Error() string {
+	return fmt.Sprintf("organism id %s not found", onf.ID)
+}
+
+func IsOrganismNotFound(err error) bool {
+	if _, ok := err.(*OrganismNotFoundError); ok {
+		return true
+	}
+
+	return false
+}
