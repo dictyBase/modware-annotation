@@ -165,8 +165,24 @@ func (org *organismRepo) EditOrganism(
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (org *organismRepo) RemoveOrganism(id string) error {
-	return fmt.Errorf("not implemented")
+func (org *organismRepo) RemoveOrganism(oid string) error {
+	// Check if organism exists first
+	_, err := org.organism.ReadDocument(context.Background(), oid, nil)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			return &repository.OrganismNotFoundError{ID: oid}
+		}
+
+		return fmt.Errorf("error checking organism existence: %w", err)
+	}
+
+	// Remove the organism document
+	_, err = org.organism.RemoveDocument(context.Background(), oid)
+	if err != nil {
+		return fmt.Errorf("error removing organism document: %w", err)
+	}
+
+	return nil
 }
 
 func (org *organismRepo) ListOrganisms(
