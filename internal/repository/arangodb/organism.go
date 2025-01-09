@@ -81,7 +81,27 @@ func (org *organismRepo) GetOrganism(id string) (*model.OrganismDoc, error) {
 func (org *organismRepo) GetOrganismByName(
 	genus, species string,
 ) (*model.OrganismDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	bindVars := map[string]interface{}{
+		"@collection": org.organism.Name(),
+		"genus":       genus,
+		"species":     species,
+	}
+
+	doc := &model.OrganismDoc{}
+	res, err := org.database.GetRow(orgGetByNameQ, bindVars)
+	if err != nil {
+		return nil, fmt.Errorf("error executing query: %w", err)
+	}
+	if res.IsEmpty() {
+		return nil, &repository.OrganismNotFoundError{
+			ID: fmt.Sprintf("%s %s", genus, species),
+		}
+	}
+	if err := res.Read(doc); err != nil {
+		return nil, fmt.Errorf("error reading document: %w", err)
+	}
+
+	return doc, nil
 }
 
 func (org *organismRepo) AddOrganism(
