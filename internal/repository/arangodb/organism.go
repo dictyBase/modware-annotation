@@ -115,6 +115,26 @@ func (org *organismRepo) GetOrganismByName(
 func (org *organismRepo) AddOrganism(
 	doc *dorg.NewOrganism,
 ) (*model.OrganismDoc, error) {
+	// First check if organism already exists
+	existing, err := org.GetOrganismByName(
+		doc.Attributes.Genus,
+		doc.Attributes.Species,
+	)
+	if err != nil {
+		// Only proceed if it's a "not found" error
+		if !repository.IsOrganismNotFound(err) {
+			return nil, fmt.Errorf("error checking existing organism: %w", err)
+		}
+	}
+	// If organism exists, return error
+	if existing != nil {
+		return nil, fmt.Errorf(
+			"organism %s %s already exists",
+			doc.Attributes.Genus,
+			doc.Attributes.Species,
+		)
+	}
+
 	// Create new organism document
 	orgDoc := &model.OrganismDoc{
 		CreatedAt:    doc.CreatedAt.AsTime(),
