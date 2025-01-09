@@ -81,14 +81,12 @@ func (org *organismRepo) GetOrganism(id string) (*model.OrganismDoc, error) {
 func (org *organismRepo) GetOrganismByName(
 	genus, species string,
 ) (*model.OrganismDoc, error) {
-	bindVars := map[string]interface{}{
-		"@collection": org.organism.Name(),
-		"genus":       genus,
-		"species":     species,
-	}
-
-	doc := &model.OrganismDoc{}
-	res, err := org.database.GetRow(orgGetByNameQ, bindVars)
+	res, err := org.database.GetRow(orgGetByNameQ,
+		map[string]interface{}{
+			"@collection": org.organism.Name(),
+			"genus":       genus,
+			"species":     species,
+		})
 	if err != nil {
 		return nil, fmt.Errorf("error executing query: %w", err)
 	}
@@ -97,6 +95,8 @@ func (org *organismRepo) GetOrganismByName(
 			ID: fmt.Sprintf("%s %s", genus, species),
 		}
 	}
+
+	doc := &model.OrganismDoc{}
 	if err := res.Read(doc); err != nil {
 		return nil, fmt.Errorf("error reading document: %w", err)
 	}
