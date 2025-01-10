@@ -95,3 +95,17 @@ func IsOrganismNotFound(err error) bool {
 
 	return false
 }
+
+type ListNotFoundError struct{}
+
+func (lnf *ListNotFoundError) Error() string {
+	return "list not found"
+}
+
+func IsListNotFound(err error) bool {
+	if _, ok := err.(*ListNotFoundError); ok {
+		return true
+	}
+
+	return false
+}
