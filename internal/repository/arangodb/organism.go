@@ -249,7 +249,7 @@ func (org *organismRepo) ListOrganisms() ([]*model.OrganismDoc, error) {
 	}
 	defer cursor.Close()
 	if cursor.IsEmpty() {
-		return nil, &repository.AnnoListNotFoundError{}
+		return nil, &repository.ListNotFoundError{}
 	}
 
 	var organisms []*model.OrganismDoc
