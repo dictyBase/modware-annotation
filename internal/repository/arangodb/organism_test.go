@@ -101,3 +101,32 @@ func TestAddOrganism(t *testing.T) {
 		})
 	}
 }
+
+func TestAddDuplicateOrganism(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpOrganismTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Create base organism
+	baseOrg := &organism.NewOrganism{
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &organism.OrganismAttributes{
+			Species: "discoideum",
+			Genus:   "Dictyostelium",
+		},
+	}
+
+	// Add first organism
+	_, err := repo.AddOrganism(baseOrg)
+	asrt.NoError(err, "expected no error adding first organism")
+
+	// Attempt to add duplicate organism
+	_, err = repo.AddOrganism(baseOrg)
+	asrt.Error(err, "expected error when adding duplicate organism")
+	asrt.Contains(
+		err.Error(),
+		"organism Dictyostelium discoideum already exists",
+		"expected duplicate organism error message",
+	)
+}
