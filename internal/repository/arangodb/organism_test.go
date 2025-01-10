@@ -281,3 +281,39 @@ func TestListOrganisms(t *testing.T) {
 		}
 	})
 }
+
+func TestClearOrganisms(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpOrganismTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Add test organisms
+	organisms := getTestOrganisms()
+	for _, org := range organisms {
+		_, err := repo.AddOrganism(org)
+		asrt.NoError(err, "expected no error adding test organism")
+	}
+
+	// Verify organisms were added
+	list, err := repo.ListOrganisms()
+	asrt.NoError(err, "expected no error listing organisms")
+	asrt.Len(list, len(organisms), "should have correct number of organisms")
+
+	// Clear organisms
+	err = repo.ClearOrganisms()
+	asrt.NoError(err, "expected no error clearing organisms")
+
+	_, err = repo.GetOrganismByName("Dictyostelium", "discoideum")
+	asrt.Error(err, "expected error getting cleared organism")
+	asrt.True(
+		repository.IsOrganismNotFound(err),
+		"should be organism not found error",
+	)
+
+	_, err = repo.GetOrganismByName("Polysphondylium", "fasciculatum")
+	asrt.Error(err, "expected error getting cleared organism")
+	asrt.True(
+		repository.IsOrganismNotFound(err),
+		"should be organism not found error",
+	)
+}
