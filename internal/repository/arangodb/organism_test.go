@@ -211,3 +211,54 @@ func validateOrganism(params validateOrganismParams) {
 		"should have matching creator",
 	)
 }
+
+//nolint:tparallel
+func TestGetOrganismByName(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpOrganismTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Add test organism first
+	baseOrg := &organism.NewOrganism{
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &organism.OrganismAttributes{
+			Species:      "discoideum",
+			Genus:        "Dictyostelium",
+			CommonName:   "slime mold",
+			Abbreviation: "ddis",
+		},
+	}
+	added, err := repo.AddOrganism(baseOrg)
+	asrt.NoError(err, "expected no error adding test organism")
+
+	//nolint:paralleltest
+	t.Run("success", func(t *testing.T) {
+		got, err := repo.GetOrganismByName(
+			baseOrg.Attributes.Genus,
+			baseOrg.Attributes.Species,
+		)
+		asrt.NoError(err, "expected no error getting organism by name")
+		validateOrganism(validateOrganismParams{
+			assertions: asrt,
+			got:        got,
+			key:        added.Key,
+			baseOrg:    baseOrg,
+		})
+	})
+
+	//nolint:paralleltest
+	t.Run("not found", func(t *testing.T) {
+		_, err := repo.GetOrganismByName("NonExistent", "Species")
+		asrt.Error(err, "expected error for non-existent organism")
+		asrt.True(
+			repository.IsOrganismNotFound(err),
+			"should be organism not found error",
+		)
+		asrt.Contains(
+			err.Error(),
+			"NonExistent Species",
+			"error should contain the non-existent organism name",
+		)
+	})
+}
