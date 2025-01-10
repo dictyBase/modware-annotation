@@ -207,6 +207,35 @@ func setUpOrganismTest(
 	return assert, repo
 }
 
+func getTestOrganisms() []*organism.NewOrganism {
+	return []*organism.NewOrganism{
+		{
+			CreatedBy: "mock@email.com",
+			CreatedAt: timestamppb.New(time.Now()),
+			Attributes: &organism.OrganismAttributes{
+				Species: "discoideum",
+				Genus:   "Dictyostelium",
+			},
+		},
+		{
+			CreatedBy: "mock@email.com",
+			CreatedAt: timestamppb.New(time.Now()),
+			Attributes: &organism.OrganismAttributes{
+				Species: "purpureum",
+				Genus:   "Dictyostelium",
+			},
+		},
+		{
+			CreatedBy: "mock@email.com",
+			CreatedAt: timestamppb.New(time.Now()),
+			Attributes: &organism.OrganismAttributes{
+				Species: "fasciculatum",
+				Genus:   "Polysphondylium",
+			},
+		},
+	}
+}
+
 func getConnectParamsFromDb(tra *testarango.TestArango) *manager.ConnectParams {
 	return &manager.ConnectParams{
 		User:     tra.User,
