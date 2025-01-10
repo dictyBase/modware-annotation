@@ -26,11 +26,11 @@ func Schema() []byte {
         "properties": {
             "created_at": {
                 "type": "string",
-                "format": "date-time"
+		"format": "date-time"
             },
             "updated_at": {
                 "type": "string",
-                "format": "date-time"
+		"format": "date-time"
             },
             "created_by": {
                 "type": "string",
@@ -53,11 +53,6 @@ func Schema() []byte {
                 "type": "string"
             }
         },
-        "required": [
-            "created_by", 
-            "species",
-            "genus"
-        ],
-        "additionalProperties": false
+	"required": ["genus", "species"]
     }`)
 }
