@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -222,5 +223,61 @@ func TestRemoveOrganism(t *testing.T) {
 			repository.IsOrganismNotFound(err),
 			"should be organism not found error",
 		)
+	})
+}
+
+//nolint:tparallel
+func TestListOrganisms(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpOrganismTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	organisms := getTestOrganisms()
+	for _, org := range organisms {
+		_, err := repo.AddOrganism(org)
+		asrt.NoError(err, "expected no error adding test organism")
+	}
+	t.Run("success", func(t *testing.T) {
+		olist, err := repo.ListOrganisms()
+		asrt.NoError(err, "expected no error listing organisms")
+		asrt.Len(
+			olist,
+			len(organisms),
+			"should return correct number of organisms",
+		)
+		expectedOrgs := make(map[string]*organism.NewOrganism)
+		for _, org := range organisms {
+			key := fmt.Sprintf(
+				"%s_%s",
+				org.Attributes.Genus,
+				org.Attributes.Species,
+			)
+			expectedOrgs[key] = org
+		}
+		for _, org := range olist {
+			key := fmt.Sprintf("%s_%s", org.Genus, org.Species)
+			expected, ok := expectedOrgs[key]
+			asrt.True(
+				ok,
+				"should find matching organism for %s %s",
+				org.Genus,
+				org.Species,
+			)
+			asrt.Equal(
+				expected.Attributes.Species,
+				org.Species,
+				"should have matching species",
+			)
+			asrt.Equal(
+				expected.Attributes.Genus,
+				org.Genus,
+				"should have matching genus",
+			)
+			asrt.Equal(
+				expected.CreatedBy,
+				org.CreatedBy,
+				"should have matching creator",
+			)
+			asrt.False(org.NotFound, "organism should exist")
+		}
 	})
 }
