@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/arangomanager/testarango"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/go-obograph/graph"
@@ -50,17 +49,6 @@ func getOntoParams() *araobo.CollectionParams {
 		OboGraph:     "obograph",
 		Relationship: "cvterm_relationship",
 		Term:         "cvterm",
-	}
-}
-
-func getConnectParamsFromDb(tra *testarango.TestArango) *manager.ConnectParams {
-	return &manager.ConnectParams{
-		User:     tra.User,
-		Pass:     tra.Pass,
-		Database: tra.Database,
-		Host:     tra.Host,
-		Port:     tra.Port,
-		Istls:    false,
 	}
 }
 
@@ -114,7 +102,10 @@ func loadData(tra *testarango.TestArango) error {
 	return saveExistentTestGraph(dsr, gra)
 }
 
-func saveExistentTestGraph(dsr ontostorage.DataSource, gra graph.OboGraph) error {
+func saveExistentTestGraph(
+	dsr ontostorage.DataSource,
+	gra graph.OboGraph,
+) error {
 	if err := dsr.SaveOboGraphInfo(gra); err != nil {
 		return fmt.Errorf("error in saving graph %s", err)
 	}
@@ -128,7 +119,9 @@ func saveExistentTestGraph(dsr ontostorage.DataSource, gra graph.OboGraph) error
 	return nil
 }
 
-func newTestAnnoWithTagAndOnto(onto, tag string) *annotation.NewTaggedAnnotation {
+func newTestAnnoWithTagAndOnto(
+	onto, tag string,
+) *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
@@ -145,7 +138,9 @@ func newTestAnnoWithTagAndOnto(onto, tag string) *annotation.NewTaggedAnnotation
 	}
 }
 
-func newTestTaggedAnnotationWithParams(tag, entryID string) *annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotationWithParams(
+	tag, entryID string,
+) *annotation.NewTaggedAnnotation {
 	return &annotation.NewTaggedAnnotation{
 		Data: &annotation.NewTaggedAnnotation_Data{
 			Type: "annotations",
@@ -179,7 +174,9 @@ func newTestTaggedAnnotation() *annotation.NewTaggedAnnotation {
 	}
 }
 
-func newTestTaggedAnnotationsListForFiltering(num int) []*annotation.NewTaggedAnnotation {
+func newTestTaggedAnnotationsListForFiltering(
+	num int,
+) []*annotation.NewTaggedAnnotation {
 	var nal []*annotation.NewTaggedAnnotation
 	value := fmt.Sprintf("cool gene %s", tags[0])
 	for zcount := 0; zcount < num/2; zcount++ {
@@ -235,8 +232,11 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 					CreatedBy:     "siddbasu@gmail.com",
 					Tag:           tags[rsrc.Intn(len(tags)-1)],
 					Ontology:      "dicty_annotation",
-					EntryId:       fmt.Sprintf("DDB_G0%d", rsrc.Intn(geneIDMax-geneIDMin)+geneIDMin),
-					Rank:          0,
+					EntryId: fmt.Sprintf(
+						"DDB_G0%d",
+						rsrc.Intn(geneIDMax-geneIDMin)+geneIDMin,
+					),
+					Rank: 0,
 				},
 			},
 		})
@@ -245,7 +245,9 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 	return nal
 }
 
-func setUp(t *testing.T) (*require.Assertions, repository.TaggedAnnotationRepository) {
+func setUp(
+	t *testing.T,
+) (*require.Assertions, repository.TaggedAnnotationRepository) {
 	t.Helper()
 	tra, err := testarango.NewTestArangoFromEnv(true)
 	if err != nil {
@@ -257,7 +259,11 @@ func setUp(t *testing.T) (*require.Assertions, repository.TaggedAnnotationReposi
 		getCollectionParams(),
 		getOntoParams(),
 	)
-	assert.NoErrorf(err, "expect no error connecting to annotation repository, received %s", err)
+	assert.NoErrorf(
+		err,
+		"expect no error connecting to annotation repository, received %s",
+		err,
+	)
 	err = loadData(tra)
 	assert.NoError(err, "expect no error from loading ontology")
 
@@ -314,22 +320,44 @@ func testModelListSort(t *testing.T, m []*model.AnnoDoc) {
 	}
 }
 
-func testGroupMember(t *testing.T, gl []*model.AnnoGroup, count, idx int, email string) {
+func testGroupMember(
+	t *testing.T,
+	gla []*model.AnnoGroup,
+	count, idx int,
+	email string,
+) {
 	t.Helper()
 	assert := assert.New(t)
-	assert.Lenf(gl, count, "should have %d groups", count)
-	for _, g := range gl {
+	assert.Lenf(gla, count, "should have %d groups", count)
+	for _, g := range gla {
 		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
-		for _, d := range g.AnnoDocs {
-			assert.Equalf(d.Tag, tags[idx], "should have %d as the tag", idx)
-			assert.Equalf(d.CreatedBy, email, "should be created by %s", email)
-			assert.Equal(d.Ontology, "dicty_annotation", "should have dicty_annotation ontology")
-			assert.Equalf(d.EnrtyId, ddbg[idx], "should have %d as entry id", idx)
+		for _, gdoc := range g.AnnoDocs {
+			assert.Equalf(gdoc.Tag, tags[idx], "should have %d as the tag", idx)
+			assert.Equalf(
+				gdoc.CreatedBy,
+				email,
+				"should be created by %s",
+				email,
+			)
+			assert.Equal(
+				gdoc.Ontology,
+				"dicty_annotation",
+				"should have dicty_annotation ontology",
+			)
+			assert.Equalf(
+				gdoc.EnrtyId,
+				ddbg[idx],
+				"should have %d as entry id",
+				idx,
+			)
 		}
 	}
 }
 
-func testModelMaptoID(am []*model.AnnoDoc, fn func(m *model.AnnoDoc) string) []string {
+func testModelMaptoID(
+	am []*model.AnnoDoc,
+	fn func(m *model.AnnoDoc) string,
+) []string {
 	str := make([]string, 0)
 	for _, m := range am {
 		str = append(str, fn(m))
