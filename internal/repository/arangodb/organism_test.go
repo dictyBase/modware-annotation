@@ -12,6 +12,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type validateOrganismParams struct {
+	assertions *require.Assertions
+	got        *model.OrganismDoc
+	key        string
+	baseOrg    *organism.NewOrganism
+}
+
 func setUpOrganismTest(
 	t *testing.T,
 ) (*require.Assertions, repository.OrganismRepository) {
@@ -128,5 +135,79 @@ func TestAddDuplicateOrganism(t *testing.T) {
 		err.Error(),
 		"organism Dictyostelium discoideum already exists",
 		"expected duplicate organism error message",
+	)
+}
+
+//nolint:tparallel
+func TestGetOrganism(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpOrganismTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	baseOrg := &organism.NewOrganism{
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &organism.OrganismAttributes{
+			Species:      "discoideum",
+			Genus:        "Dictyostelium",
+			CommonName:   "slime mold",
+			Abbreviation: "ddis",
+		},
+	}
+	added, err := repo.AddOrganism(baseOrg)
+	asrt.NoError(err, "expected no error adding test organism")
+
+	//nolint:paralleltest
+	t.Run("success", func(t *testing.T) {
+		got, err := repo.GetOrganism(added.Key)
+		asrt.NoError(err, "expected no error getting organism")
+		validateOrganism(validateOrganismParams{
+			assertions: asrt,
+			got:        got,
+			key:        added.Key,
+			baseOrg:    baseOrg,
+		})
+	})
+
+	//nolint:paralleltest
+	t.Run("not found", func(t *testing.T) {
+		_, err := repo.GetOrganism("non_existent_id")
+		asrt.Error(err, "expected error for non-existent organism")
+		asrt.True(
+			repository.IsOrganismNotFound(err),
+			"should be organism not found error",
+		)
+	})
+}
+
+func validateOrganism(params validateOrganismParams) {
+	params.assertions.Equal(
+		params.key,
+		params.got.Key,
+		"should have matching keys",
+	)
+	params.assertions.Equal(
+		params.baseOrg.Attributes.Species,
+		params.got.Species,
+		"should have matching species",
+	)
+	params.assertions.Equal(
+		params.baseOrg.Attributes.Genus,
+		params.got.Genus,
+		"should have matching genus",
+	)
+	params.assertions.Equal(
+		params.baseOrg.Attributes.CommonName,
+		params.got.CommonName,
+		"should have matching common name",
+	)
+	params.assertions.Equal(
+		params.baseOrg.Attributes.Abbreviation,
+		params.got.Abbreviation,
+		"should have matching abbreviation",
+	)
+	params.assertions.Equal(
+		params.baseOrg.CreatedBy,
+		params.got.CreatedBy,
+		"should have matching creator",
 	)
 }
