@@ -192,3 +192,35 @@ func TestEditOrganism(t *testing.T) {
 		asrt.True(repository.IsOrganismNotFound(err))
 	})
 }
+
+//nolint:tparallel
+func TestRemoveOrganism(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpOrganismTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	added := setupTestOrganism(t, asrt, repo)
+
+	//nolint:paralleltest
+	t.Run("success", func(t *testing.T) {
+		err := repo.RemoveOrganism(added.Key)
+		asrt.NoError(err, "expected no error removing organism")
+
+		// Verify organism was removed
+		_, err = repo.GetOrganism(added.Key)
+		asrt.Error(err, "expected error getting removed organism")
+		asrt.True(
+			repository.IsOrganismNotFound(err),
+			"should be organism not found error",
+		)
+	})
+
+	//nolint:paralleltest
+	t.Run("not found", func(t *testing.T) {
+		err := repo.RemoveOrganism("non_existent_id")
+		asrt.Error(err, "expected error removing non-existent organism")
+		asrt.True(
+			repository.IsOrganismNotFound(err),
+			"should be organism not found error",
+		)
+	})
+}
