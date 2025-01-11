@@ -1,0 +1,30 @@
+// add FeatureAnnotationRepository interface to access data
+// from its data sources. AI!
+package repository
+
+import (
+	manager "github.com/dictyBase/arangomanager"
+	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/model"
+)
+
+// FeatureAnnotationRepository is an interface for accessing feature annotation data
+// from its data sources.
+type FeatureAnnotationRepository interface {
+	// GetFeatureAnnotation retrieves a feature annotation by ID
+	GetFeatureAnnotation(id string) (*model.FeatureAnnotationDoc, error)
+	// AddFeatureAnnotation creates a new feature annotation
+	AddFeatureAnnotation(
+		doc *feature.NewFeatureAnnotation,
+	) (*model.FeatureAnnotationDoc, error)
+	// EditFeatureAnnotation updates an existing feature annotation
+	EditFeatureAnnotation(
+		doc *feature.FeatureAnnotationUpdate,
+	) (*model.FeatureAnnotationDoc, error)
+	// RemoveFeatureAnnotation deletes a feature annotation
+	RemoveFeatureAnnotation(id string) error
+	// ClearFeatureAnnotations removes all feature annotations
+	ClearFeatureAnnotations() error
+	// Dbh returns the underlying database handler
+	Dbh() *manager.Database
+}
