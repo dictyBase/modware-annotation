@@ -1,6 +1,7 @@
 package arangodb
 
 const (
+	featureGetByIdQ = `FOR f IN @@collection FILTER f.id == @id LIMIT 1 RETURN f`
 	orgListQ = `FOR org IN @@collection RETURN org`
 	tagGetQ = `
 		FOR cv IN @@cv_collection
