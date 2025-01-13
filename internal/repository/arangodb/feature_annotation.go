@@ -1,7 +1,6 @@
 package arangodb
 
 import (
-	"context"
 	"fmt"
 
 	driver "github.com/arangodb/go-driver"
@@ -71,18 +70,22 @@ func (fr *featureAnnoRepo) GetFeatureAnnotation(
 	fid string,
 ) (*model.FeatureAnnotationDoc, error) {
 	doc := &model.FeatureAnnotationDoc{}
-	meta, err := fr.feature.ReadDocument(context.Background(), fid, doc)
+	res, err := fr.database.GetRow(
+		featureGetByIdQ,
+		map[string]interface{}{
+			"@collection": fr.feature.Name(),
+			"id":          fid,
+		},
+	)
 	if err != nil {
-		if driver.IsNotFoundGeneral(err) {
-			return nil, &repository.AnnoNotFoundError{Id: fid}
-		}
-
-		return nil, fmt.Errorf(
-			"error reading feature annotation document: %w",
-			err,
-		)
+		return nil, fmt.Errorf("error executing query: %w", err)
 	}
-	doc.DocumentMeta = meta
+	if res.IsEmpty() {
+		return nil, &repository.AnnoNotFoundError{Id: fid}
+	}
+	if err := res.Read(doc); err != nil {
+		return nil, fmt.Errorf("error reading document: %w", err)
+	}
 
 	return doc, nil
 }
