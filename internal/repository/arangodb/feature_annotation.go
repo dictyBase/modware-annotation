@@ -45,6 +45,18 @@ func NewFeatureAnnoRepo(
 			err,
 		)
 	}
+	// Create persistent index on Id field
+	_, _, err = dbh.EnsurePersistentIndex(
+		featureColl.Name(),
+		[]string{"id", "vesion"},
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+			Unique:       true,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error creating index on id field %s", err)
+	}
 
 	return &featureAnnoRepo{
 		sess:     sess,
