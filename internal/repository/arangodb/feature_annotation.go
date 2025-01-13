@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"context"
 	"fmt"
 
 	driver "github.com/arangodb/go-driver"
@@ -67,9 +68,23 @@ func NewFeatureAnnoRepo(
 
 // GetFeatureAnnotation retrieves a feature annotation by ID.
 func (fr *featureAnnoRepo) GetFeatureAnnotation(
-	id string,
+	fid string,
 ) (*model.FeatureAnnotationDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	doc := &model.FeatureAnnotationDoc{}
+	meta, err := fr.feature.ReadDocument(context.Background(), fid, doc)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			return nil, &repository.AnnoNotFoundError{Id: fid}
+		}
+
+		return nil, fmt.Errorf(
+			"error reading feature annotation document: %w",
+			err,
+		)
+	}
+	doc.DocumentMeta = meta
+
+	return doc, nil
 }
 
 // AddFeatureAnnotation creates a new feature annotation.
