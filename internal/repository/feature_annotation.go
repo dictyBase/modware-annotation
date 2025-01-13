@@ -1,5 +1,3 @@
-// add FeatureAnnotationRepository interface to access data
-// from its data sources. AI!
 package repository
 
 import (
