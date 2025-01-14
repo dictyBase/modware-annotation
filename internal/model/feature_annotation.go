@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
@@ -43,39 +45,87 @@ type FeatureAnnotationDoc struct {
 	NotFound     bool             `json:"-"`
 }
 
-        "id": {"type": "string"},
-        "created_at": {"type": "string", "format": "date-time"},
-        "updated_at": {"type": "string", "format": "date-time"},
-        "created_by": {"type": "string", "format": "email"},
-        "updated_by": {"type": "string", "format": "email"},
-        "name": {"type": "string"},
-        "synonyms": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
-        "publications": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
-        "pubmed": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
-        "dbxrefs": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "dbxref_id": {"type": "string"},
-                    "version": {"type": "integer"},
-                    "database": {"type": "string"}
-                },
-                "required": ["dbxref_id", "database"]
-            }
-        },
-        "is_obsolete": {"type": "boolean"},
-        "version": {"type": "integer"}
-    },
-    "required": ["id", "version"]
-}`)
+func FeatureAnnotationSchema() ([]byte, error) {
+	baseSchema := `{
+        "type": "object",
+        "properties": %s,
+        "required": ["id", "version"]
+    }`
+
+	properties := map[string]interface{}{
+		"feature_type": map[string]string{"type": "string"},
+		"id":           map[string]string{"type": "string"},
+		"created_at": map[string]string{
+			"type":   "string",
+			"format": "date-time",
+		},
+		"updated_at": map[string]string{
+			"type":   "string",
+			"format": "date-time",
+		},
+		"created_by": map[string]string{"type": "string", "format": "email"},
+		"updated_by": map[string]string{"type": "string", "format": "email"},
+		"name":       map[string]string{"type": "string"},
+		"synonyms": map[string]interface{}{
+			"type":  "array",
+			"items": map[string]string{"type": "string"},
+		},
+		"publications": map[string]interface{}{
+			"type":  "array",
+			"items": map[string]string{"type": "string"},
+		},
+		"pubmed": map[string]interface{}{
+			"type":  "array",
+			"items": map[string]string{"type": "string"},
+		},
+		"dblinks":     getDbLinksSchema(),
+		"properties":  getPropertiesSchema(),
+		"is_obsolete": map[string]string{"type": "boolean"},
+		"version":     map[string]string{"type": "integer"},
+	}
+
+	// Convert properties to JSON and handle potential error
+	propsJSON, err := json.Marshal(properties)
+	if err != nil {
+		return []byte(
+				"",
+			), fmt.Errorf(
+				"failed to marshal feature annotation schema: %v",
+				err,
+			)
+	}
+
+	return []byte(fmt.Sprintf(baseSchema, string(propsJSON))), nil
+}
+
+func getDbLinksSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "array",
+		"items": map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"primary_id": map[string]string{"type": "string"},
+				"version":    map[string]string{"type": "integer"},
+				"database":   map[string]string{"type": "string"},
+				"linktype":   map[string]string{"type": "string"},
+				"url":        map[string]string{"type": "string"},
+				"label":      map[string]string{"type": "string"},
+			},
+			"required": []string{"primary_id", "database", "version"},
+		},
+	}
+}
+
+func getPropertiesSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "array",
+		"items": map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"tag":   map[string]string{"type": "string"},
+				"value": map[string]string{"type": "string"},
+			},
+			"required": []string{"tag", "value"},
+		},
+	}
 }
