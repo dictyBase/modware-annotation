@@ -305,7 +305,14 @@ func (fr *featureAnnoRepo) RemoveFeatureAnnotation(fid string) error {
 
 // ClearFeatureAnnotations removes all feature annotations.
 func (fr *featureAnnoRepo) ClearFeatureAnnotations() error {
-	return fmt.Errorf("not implemented")
+	if err := fr.feature.Truncate(context.Background()); err != nil {
+		return fmt.Errorf(
+			"error clearing feature annotations collection: %w",
+			err,
+		)
+	}
+
+	return nil
 }
 
 // Dbh returns the underlying database handler.
