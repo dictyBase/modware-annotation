@@ -7,6 +7,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
@@ -189,6 +190,27 @@ func (fr *featureAnnoRepo) ClearFeatureAnnotations() error {
 }
 
 // Dbh returns the underlying database handler.
+func toDbLink(link *feature.DbLink) model.DbLinkDoc {
+	dbLink := model.DbLinkDoc{
+		PrimaryId: link.PrimaryId,
+		Version:   link.Version,
+		Database:  link.Database,
+	}
+
+	// Set optional fields only if present
+	if link.Linktype != "" {
+		dbLink.LinkType = link.Linktype
+	}
+	if link.Url != "" {
+		dbLink.URL = link.Url
+	}
+	if link.Label != "" {
+		dbLink.Label = link.Label
+	}
+
+	return dbLink
+}
+
 func (fr *featureAnnoRepo) Dbh() *manager.Database {
 	return fr.database
 }
