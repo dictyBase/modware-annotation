@@ -55,21 +55,52 @@ func validateParams(collP *FeatureCollectionParams) error {
 	return nil
 }
 
-func createSession(connP *manager.ConnectParams) (*manager.Session, *manager.Database, error) {
+func createSession(
+	connP *manager.ConnectParams,
+) (*manager.Session, *manager.Database, error) {
 	sess, dbh, err := manager.NewSessionDb(connP)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create database session: %w", err)
+		return nil, nil, fmt.Errorf(
+			"failed to create database session: %w",
+			err,
+		)
 	}
 	return sess, dbh, nil
 }
 
-func createFeatureCollection(dbh *manager.Database, collP *FeatureCollectionParams) (driver.Collection, error) {
+func createFeatureCollection(
+	dbh *manager.Database,
+	collP *FeatureCollectionParams,
+) (driver.Collection, error) {
+	// Get JSON schema for validation
+	schema, err := model.FeatureAnnotationSchema()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to generate feature annotation schema: %w",
+			err,
+		)
+	}
+
+	schemaOpt := &driver.CollectionSchemaOptions{
+		Level:   driver.CollectionSchemaLevelModerate,
+		Message: "Feature annotation validation failed",
+		Type:    "json",
+	}
+	if err := schemaOpt.LoadRule(schema); err != nil {
+		return nil, fmt.Errorf("error in loading schema %s", err)
+	}
+	// Create collection with schema validation
 	coll, err := dbh.FindOrCreateCollection(
 		collP.Feature,
-		&driver.CreateCollectionOptions{},
+		&driver.CreateCollectionOptions{
+			Schema: schemaOpt,
+		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create/find feature collection: %w", err)
+		return nil, fmt.Errorf(
+			"failed to create/find feature collection: %w",
+			err,
+		)
 	}
 	return coll, nil
 }
