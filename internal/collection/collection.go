@@ -29,11 +29,11 @@ func Include[T cmp.Ordered](slice []T, element T) bool {
 
 // RemoveStringItems removes elements from a that are present in
 // items.
-func RemoveStringItems(a []string, items ...string) []string {
-	var str []string
-	for _, v := range a {
-		if !IncludeString(items, v) {
-			str = append(str, v)
+func RemoveStringItems(slice []string, items ...string) []string {
+	str := make([]string, 0)
+	for _, val := range slice {
+		if !Include(items, val) {
+			str = append(str, val)
 		}
 	}
 
