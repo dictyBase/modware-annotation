@@ -190,6 +190,21 @@ func (fr *featureAnnoRepo) ClearFeatureAnnotations() error {
 }
 
 // Dbh returns the underlying database handler.
+func setOptionalFields(
+	doc *feature.NewFeatureAnnotation,
+	faDoc *model.FeatureAnnotationDoc,
+) {
+	if len(doc.Attributes.Synonyms) > 0 {
+		faDoc.Synonyms = doc.Attributes.Synonyms
+	}
+	if len(doc.Attributes.Publications) > 0 {
+		faDoc.Publications = doc.Attributes.Publications
+	}
+	if len(doc.Attributes.Pubmed) > 0 {
+		faDoc.Pubmed = doc.Attributes.Pubmed
+	}
+}
+
 func toDbLink(link *feature.DbLink) model.DbLinkDoc {
 	dbLink := model.DbLinkDoc{
 		PrimaryId: link.PrimaryId,
