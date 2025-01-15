@@ -50,7 +50,7 @@ func FeatureAnnotationSchema() ([]byte, error) {
 	baseSchema := `{
         "type": "object",
         "properties": %s,
-        "required": ["id", "version"]
+        "required": ["id", "version", "name"]
     }`
 
 	properties := map[string]interface{}{
