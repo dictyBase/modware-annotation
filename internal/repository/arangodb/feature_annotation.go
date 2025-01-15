@@ -203,6 +203,17 @@ func setOptionalFields(
 	if len(doc.Attributes.Pubmed) > 0 {
 		faDoc.Pubmed = doc.Attributes.Pubmed
 	}
+	if len(doc.Attributes.Properties) > 0 {
+		faDoc.Properties = collection.Map(
+			doc.Attributes.Properties,
+			func(prop *feature.TagProperty) model.TagPropertyDoc {
+				return model.TagPropertyDoc{
+					Tag:   prop.Tag,
+					Value: prop.Value,
+				}
+			},
+		)
+	}
 }
 
 func toDbLink(link *feature.DbLink) model.DbLinkDoc {
