@@ -18,55 +18,27 @@ type featureAnnoRepo struct {
 	feature  driver.Collection
 }
 
-// NewFeatureAnnoRepo is the constructor for creating a new instance of
-// FeatureAnnotationRepository.
+// NewFeatureAnnoRepo creates a new instance of FeatureAnnotationRepository
 func NewFeatureAnnoRepo(
 	connP *manager.ConnectParams,
 	collP *FeatureCollectionParams,
 ) (repository.FeatureAnnotationRepository, error) {
-	// Validate collection parameters
-	if err := validator.New().Struct(collP); err != nil {
-		return nil, fmt.Errorf("error in validation %s", err)
+	if err := validateParams(collP); err != nil {
+		return nil, err
 	}
 
-	// Create new database session
-	sess, dbh, err := manager.NewSessionDb(connP)
+	sess, dbh, err := createSession(connP)
 	if err != nil {
-		return nil, fmt.Errorf("error in creating new session %s", err)
+		return nil, err
 	}
 
-	// Create or find feature collection
-	featureColl, err := dbh.FindOrCreateCollection(
-		collP.Feature,
-		&driver.CreateCollectionOptions{},
-	)
+	featureColl, err := createFeatureCollection(dbh, collP)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"error in finding or creating feature collection %s",
-			err,
-		)
+		return nil, err
 	}
-	// Create persistent index on Id field
-	_, _, err = dbh.EnsurePersistentIndex(
-		featureColl.Name(),
-		[]string{"id", "vesion"},
-		&driver.EnsurePersistentIndexOptions{
-			InBackground: true,
-			Unique:       true,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error creating index on id field %s", err)
-	}
-	_, _, err = dbh.EnsurePersistentIndex(
-		featureColl.Name(),
-		[]string{"name"},
-		&driver.EnsurePersistentIndexOptions{
-			InBackground: true,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error creating index on name field %s", err)
+
+	if err := createIndices(dbh, featureColl); err != nil {
+		return nil, err
 	}
 
 	return &featureAnnoRepo{
@@ -74,6 +46,61 @@ func NewFeatureAnnoRepo(
 		database: dbh,
 		feature:  featureColl,
 	}, nil
+}
+
+func validateParams(collP *FeatureCollectionParams) error {
+	if err := validator.New().Struct(collP); err != nil {
+		return fmt.Errorf("invalid collection parameters: %w", err)
+	}
+	return nil
+}
+
+func createSession(connP *manager.ConnectParams) (*manager.Session, *manager.Database, error) {
+	sess, dbh, err := manager.NewSessionDb(connP)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create database session: %w", err)
+	}
+	return sess, dbh, nil
+}
+
+func createFeatureCollection(dbh *manager.Database, collP *FeatureCollectionParams) (driver.Collection, error) {
+	coll, err := dbh.FindOrCreateCollection(
+		collP.Feature,
+		&driver.CreateCollectionOptions{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create/find feature collection: %w", err)
+	}
+	return coll, nil
+}
+
+func createIndices(dbh *manager.Database, coll driver.Collection) error {
+	// Create compound index for id and version
+	_, _, err := dbh.EnsurePersistentIndex(
+		coll.Name(),
+		[]string{"id", "vesion"},
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+			Unique:       true,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create id-version index: %w", err)
+	}
+
+	// Create index for name field
+	_, _, err = dbh.EnsurePersistentIndex(
+		coll.Name(),
+		[]string{"name"},
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create name index: %w", err)
+	}
+
+	return nil
 }
 
 // GetFeatureAnnotation retrieves a feature annotation by ID.
