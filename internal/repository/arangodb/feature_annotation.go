@@ -19,7 +19,7 @@ type featureAnnoRepo struct {
 	feature  driver.Collection
 }
 
-// NewFeatureAnnoRepo creates a new instance of FeatureAnnotationRepository
+// NewFeatureAnnoRepo creates a new instance of FeatureAnnotationRepository.
 func NewFeatureAnnoRepo(
 	connP *manager.ConnectParams,
 	collP *FeatureCollectionParams,
@@ -53,6 +53,7 @@ func validateParams(collP *FeatureCollectionParams) error {
 	if err := validator.New().Struct(collP); err != nil {
 		return fmt.Errorf("invalid collection parameters: %w", err)
 	}
+
 	return nil
 }
 
@@ -66,6 +67,7 @@ func createSession(
 			err,
 		)
 	}
+
 	return sess, dbh, nil
 }
 
@@ -103,6 +105,7 @@ func createFeatureCollection(
 			err,
 		)
 	}
+
 	return coll, nil
 }
 
@@ -164,7 +167,38 @@ func (fr *featureAnnoRepo) GetFeatureAnnotation(
 func (fr *featureAnnoRepo) AddFeatureAnnotation(
 	doc *feature.NewFeatureAnnotation,
 ) (*model.FeatureAnnotationDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	// Create new feature annotation document
+	faDoc := &model.FeatureAnnotationDoc{
+		Id:        doc.Id,
+		Version:   doc.Version,
+		Name:      doc.Attributes.Name,
+		CreatedAt: doc.CreatedAt.AsTime(),
+		UpdatedAt: doc.CreatedAt.AsTime(), // Initially same as created_at
+		CreatedBy: doc.CreatedBy,
+		UpdatedBy: doc.CreatedBy, // Initially same as created_by
+	}
+
+	// Set optional fields
+	setOptionalFields(doc, faDoc)
+
+	// Add DbLinks if present
+	if len(doc.Attributes.Dblinks) > 0 {
+		faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, toDbLink)
+	}
+
+	// Insert document into collection
+	meta, err := fr.feature.CreateDocument(context.Background(), faDoc)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"error creating feature annotation document: %w",
+			err,
+		)
+	}
+
+	// Add document metadata
+	faDoc.DocumentMeta = meta
+
+	return faDoc, nil
 }
 
 // EditFeatureAnnotation updates an existing feature annotation.
