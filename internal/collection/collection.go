@@ -1,5 +1,10 @@
 package collection
 
+import (
+	"cmp"
+	"slices"
+)
+
 // Map returns the slice obtained after applying the given function over every
 // element in the given slice.
 func Map[T1, T2 any](slc []T1, fnc func(T1) T2) []T2 {
@@ -11,16 +16,15 @@ func Map[T1, T2 any](slc []T1, fnc func(T1) T2) []T2 {
 	return ret
 }
 
-// IncludeString determines whether the given string
-// string is included in the string slice.
-func IncludeString(a []string, s string) bool {
-	for _, v := range a {
-		if v == s {
-			return true
-		}
+// Include determines whether the given element is present in the slice.
+// The slice is sorted before searching.
+func Include[T cmp.Ordered](slice []T, element T) bool {
+	if !slices.IsSorted(slice) {
+		slices.Sort(slice)
 	}
+	_, found := slices.BinarySearch(slice, element)
 
-	return false
+	return found
 }
 
 // RemoveStringItems removes elements from a that are present in
