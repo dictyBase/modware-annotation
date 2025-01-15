@@ -287,7 +287,20 @@ func (fr *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotationD
 
 // RemoveFeatureAnnotation deletes a feature annotation.
 func (fr *featureAnnoRepo) RemoveFeatureAnnotation(fid string) error {
-	return fmt.Errorf("not implemented")
+	_, err := fr.feature.RemoveDocument(context.Background(), fid)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			return &repository.AnnoNotFoundError{Id: fid}
+		}
+
+		return fmt.Errorf(
+			"error in removing feature annotation %s: %s",
+			fid,
+			err,
+		)
+	}
+
+	return nil
 }
 
 // ClearFeatureAnnotations removes all feature annotations.
