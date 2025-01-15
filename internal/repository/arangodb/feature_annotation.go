@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"context"
 	"fmt"
 
 	driver "github.com/arangodb/go-driver"
@@ -56,6 +57,16 @@ func NewFeatureAnnoRepo(
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error creating index on id field %s", err)
+	}
+	_, _, err = dbh.EnsurePersistentIndex(
+		featureColl.Name(),
+		[]string{"name"},
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error creating index on name field %s", err)
 	}
 
 	return &featureAnnoRepo{
