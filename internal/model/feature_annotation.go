@@ -45,6 +45,7 @@ type FeatureAnnotationDoc struct {
 	NotFound     bool             `json:"-"`
 }
 
+// FeatureAnnotationSchema returns a JSON schema for validating feature annotations.
 func FeatureAnnotationSchema() ([]byte, error) {
 	baseSchema := `{
         "type": "object",
