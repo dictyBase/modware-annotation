@@ -205,7 +205,79 @@ func (fr *featureAnnoRepo) AddFeatureAnnotation(
 func (fr *featureAnnoRepo) EditFeatureAnnotation(
 	doc *feature.FeatureAnnotationUpdate,
 ) (*model.FeatureAnnotationDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	faDoc, err := fr.GetFeatureAnnotation(doc.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	updateBasicFields(faDoc, doc)
+	if doc.Attributes != nil {
+		updateAttributes(faDoc, doc.Attributes)
+	}
+
+	meta, err := fr.feature.UpdateDocument(context.Background(), doc.Id, faDoc)
+	if err != nil {
+		return nil, fmt.Errorf("error in updating document %s", err)
+	}
+	faDoc.DocumentMeta = meta
+
+	return faDoc, nil
+}
+
+func updateBasicFields(
+	faDoc *model.FeatureAnnotationDoc,
+	doc *feature.FeatureAnnotationUpdate,
+) {
+	faDoc.UpdatedBy = doc.UpdatedBy
+	if faDoc.IsObsolete != doc.IsObsolete {
+		faDoc.IsObsolete = doc.IsObsolete
+	}
+}
+
+func updateAttributes(
+	mdoc *model.FeatureAnnotationDoc,
+	attrs *feature.FeatureAnnotationAttributes,
+) {
+	if len(attrs.Name) > 0 {
+		mdoc.Name = attrs.Name
+	}
+	if len(attrs.Synonyms) > 0 {
+		mdoc.Synonyms = append(mdoc.Synonyms, attrs.Synonyms...)
+	}
+	if len(attrs.Publications) > 0 {
+		mdoc.Publications = append(mdoc.Publications, attrs.Publications...)
+	}
+	if len(attrs.Pubmed) > 0 {
+		mdoc.Pubmed = append(mdoc.Pubmed, attrs.Pubmed...)
+	}
+	if len(attrs.Dblinks) > 0 {
+		mdoc.DbLinks = append(
+			mdoc.DbLinks,
+			collection.Map(attrs.Dblinks, convertDbLink)...)
+	}
+	if len(attrs.Properties) > 0 {
+		mdoc.Properties = append(
+			mdoc.Properties,
+			collection.Map(attrs.Properties, convertProperty)...)
+	}
+}
+
+func convertDbLink(link *feature.DbLink) model.DbLinkDoc {
+	return model.DbLinkDoc{
+		PrimaryId: link.PrimaryId,
+		Database:  link.Database,
+		Version:   link.Version,
+		LinkType:  link.Linktype,
+		URL:       link.Url,
+		Label:     link.Label,
+	}
+}
+
+func convertProperty(prop *feature.TagProperty) model.TagPropertyDoc {
+	return model.TagPropertyDoc{
+		Tag:   prop.Tag,
+		Value: prop.Value,
+	}
 }
 
 // ListFeatureAnnotations lists all feature annotations.
@@ -214,7 +286,7 @@ func (fr *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotationD
 }
 
 // RemoveFeatureAnnotation deletes a feature annotation.
-func (fr *featureAnnoRepo) RemoveFeatureAnnotation(id string) error {
+func (fr *featureAnnoRepo) RemoveFeatureAnnotation(fid string) error {
 	return fmt.Errorf("not implemented")
 }
 
