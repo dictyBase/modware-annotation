@@ -11,11 +11,11 @@ import (
 // DbLinkDoc represents a link to an external database identifier.
 type DbLinkDoc struct {
 	PrimaryId string `json:"primary_id"`
-	Version   int64  `json:"version"`
 	Database  string `json:"database"`
-	LinkType  string `json:"linktype"`
-	URL       string `json:"url"`
-	Label     string `json:"label"`
+	Version   int64  `json:"version"`
+	LinkType  string `json:"linktype,omitempty"`
+	URL       string `json:"url,omitempty"`
+	Label     string `json:"label,omitempty"`
 }
 
 // TagPropertyDoc represents a key-value pair for custom attributes.
