@@ -75,6 +75,124 @@ type validateFeatureAnnotationParams struct {
 	key        string
 }
 
+func TestAddFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	baseDoc := &feature.NewFeatureAnnotation{
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+	}
+	for _, tcs := range getFeatureTestCases() {
+		t.Run(tcs.name, func(t *testing.T) {
+			t.Parallel()
+			asrt, repo := setUpFeatureTest(t)
+			t.Cleanup(func() { _ = repo.Dbh().Drop() })
+			baseDoc.Attributes = tcs.attrs
+			baseDoc.Id = tcs.id
+			baseDoc.Version = tcs.version
+			doc, err := repo.AddFeatureAnnotation(baseDoc)
+			if tcs.wantErr {
+				asrt.Error(err)
+
+				return
+			}
+			asrt.NoError(err)
+			validateFeatureAnnotation(validateFeatureAnnotationParams{
+				t:          t,
+				assertions: asrt,
+				got:        doc,
+				base:       baseDoc,
+				key:        doc.Key,
+			})
+		})
+	}
+}
+
+type featureTestCase struct {
+	name    string
+	attrs   *feature.FeatureAnnotationAttributes
+	id      string
+	version int64
+	wantErr bool
+}
+
+func getFeatureTestCases() []featureTestCase {
+	return []featureTestCase{
+		{
+			name: "success with all fields",
+			attrs: &feature.FeatureAnnotationAttributes{
+				Name:         "gene name",
+				Synonyms:     []string{"synonym1", "synonym2"},
+				Publications: []string{"pub1", "pub2"},
+				Pubmed:       []string{"123", "456"},
+				Dblinks: []*feature.DbLink{
+					{
+						PrimaryId: "DDB_G0285425",
+						Database:  "dictyBase",
+						Version:   1,
+						Linktype:  "gene",
+						Url:       "http://dictybase.org/gene/DDB_G0285425",
+						Label:     "gene page",
+					},
+				},
+				Properties: []*feature.TagProperty{
+					{
+						Tag:   "description",
+						Value: "test gene",
+					},
+				},
+			},
+			id:      "DDB_G0285425",
+			version: 1,
+		},
+		{
+			name: "success with custom version",
+			attrs: &feature.FeatureAnnotationAttributes{
+				Name: "versioned gene",
+			},
+			id:      "DDB_G0285427",
+			version: 2,
+		},
+		{
+			name: "success with only required fields",
+			attrs: &feature.FeatureAnnotationAttributes{
+				Name: "required fields gene",
+			},
+			id:      "DDB_G0285428",
+			version: 1,
+		},
+	}
+}
+
+func TestAddDuplicateFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Create base feature annotation
+	baseDoc := &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285425",
+		Version:   1,
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: "gene name",
+		},
+	}
+
+	// Add first feature annotation
+	_, err := repo.AddFeatureAnnotation(baseDoc)
+	asrt.NoError(err, "expected no error adding first feature annotation")
+
+	// Attempt to add duplicate feature annotation
+	_, err = repo.AddFeatureAnnotation(baseDoc)
+	asrt.Error(err, "expected error when adding duplicate feature annotation")
+	asrt.Contains(
+		err.Error(),
+		"unique constraint violated",
+		"expected duplicate error message",
+	)
+}
+
 func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 	params.t.Helper()
 	params.assertions.Equal(
