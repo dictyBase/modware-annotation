@@ -4,7 +4,7 @@ require (
 	github.com/arangodb/go-driver v1.6.5
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.4.0
-	github.com/dictyBase/go-genproto v0.0.0-20250114195313-714622da2b85
+	github.com/dictyBase/go-genproto v0.0.0-20250117183845-ba0105105187
 	github.com/dictyBase/go-obograph v1.6.0
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
