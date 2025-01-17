@@ -12,6 +12,21 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type validateFeatureAnnotationParams struct {
+	t          *testing.T
+	assertions *require.Assertions
+	got        *model.FeatureAnnotationDoc
+	base       *feature.NewFeatureAnnotation
+	key        string
+}
+
+type featureTestCase struct {
+	name    string
+	attrs   *feature.FeatureAnnotationAttributes
+	id      string
+	wantErr bool
+}
+
 func TestGetFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -67,14 +82,6 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	)
 }
 
-type validateFeatureAnnotationParams struct {
-	t          *testing.T
-	assertions *require.Assertions
-	got        *model.FeatureAnnotationDoc
-	base       *feature.NewFeatureAnnotation
-	key        string
-}
-
 func TestAddFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	baseDoc := &feature.NewFeatureAnnotation{
@@ -106,14 +113,6 @@ func TestAddFeatureAnnotation(t *testing.T) {
 	}
 }
 
-type featureTestCase struct {
-	name    string
-	attrs   *feature.FeatureAnnotationAttributes
-	id      string
-	version int64
-	wantErr bool
-}
-
 func getFeatureTestCases() []featureTestCase {
 	return []featureTestCase{
 		{
@@ -141,14 +140,6 @@ func getFeatureTestCases() []featureTestCase {
 				},
 			},
 			id: "DDB_G0285425",
-		},
-		{
-			name: "success with custom version",
-			attrs: &feature.FeatureAnnotationAttributes{
-				Name: "versioned gene",
-			},
-			id:      "DDB_G0285427",
-			version: 2,
 		},
 		{
 			name: "success with only required fields",
