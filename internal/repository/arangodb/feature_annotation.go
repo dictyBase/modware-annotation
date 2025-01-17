@@ -7,7 +7,6 @@ import (
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
-	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
@@ -77,14 +76,9 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	doc *feature.NewFeatureAnnotation,
 ) (*model.FeatureAnnotationDoc, error) {
-	ver := int64(1)
-	if doc.Version != 0 {
-		ver = doc.Version
-	}
 	// Create new feature annotation document
 	faDoc := &model.FeatureAnnotationDoc{
 		Id:        doc.Id,
-		Version:   ver,
 		Name:      doc.Attributes.Name,
 		CreatedAt: doc.CreatedAt.AsTime(),
 		UpdatedAt: doc.CreatedAt.AsTime(), // Initially same as created_at
@@ -94,11 +88,6 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 
 	// Set optional fields
 	setOptionalFields(doc, faDoc)
-
-	// Add DbLinks if present
-	if len(doc.Attributes.Dblinks) > 0 {
-		faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, toDbLink)
-	}
 
 	// Insert document into collection
 	meta, err := fann.feature.CreateDocument(context.Background(), faDoc)
