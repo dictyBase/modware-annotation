@@ -41,7 +41,6 @@ type FeatureAnnotationDoc struct {
 	DbLinks      []DbLinkDoc      `json:"dblinks,omitempty"`
 	Properties   []TagPropertyDoc `json:"properties,omitempty"`
 	IsObsolete   bool             `json:"is_obsolete"`
-	Version      int64            `json:"version"`
 	NotFound     bool             `json:"-"`
 }
 
@@ -50,7 +49,7 @@ func FeatureAnnotationSchema() ([]byte, error) {
 	baseSchema := `{
         "type": "object",
         "properties": %s,
-        "required": ["id", "version", "name", "created_at", "created_by"]
+        "required": ["id", "name", "created_at", "created_by"]
     }`
 
 	properties := map[string]interface{}{
@@ -82,7 +81,6 @@ func FeatureAnnotationSchema() ([]byte, error) {
 		"dblinks":     getDbLinksSchema(),
 		"properties":  getPropertiesSchema(),
 		"is_obsolete": map[string]string{"type": "boolean"},
-		"version":     map[string]string{"type": "integer"},
 	}
 
 	// Convert properties to JSON and handle potential error
