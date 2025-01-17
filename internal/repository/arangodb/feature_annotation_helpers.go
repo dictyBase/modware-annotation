@@ -72,7 +72,7 @@ func createFeatureCollection(
 func createIndices(dbh *manager.Database, coll driver.Collection) error {
 	_, _, err := dbh.EnsurePersistentIndex(
 		coll.Name(),
-		[]string{"id", "vesion"},
+		[]string{"id"},
 		&driver.EnsurePersistentIndexOptions{
 			InBackground: true,
 			Unique:       true,
@@ -164,6 +164,9 @@ func setOptionalFields(
 	}
 	if len(doc.Attributes.Pubmed) > 0 {
 		faDoc.Pubmed = doc.Attributes.Pubmed
+	}
+	if len(doc.Attributes.Dblinks) > 0 {
+		faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, toDbLink)
 	}
 	if len(doc.Attributes.Properties) > 0 {
 		faDoc.Properties = collection.Map(
