@@ -88,7 +88,6 @@ func TestAddFeatureAnnotation(t *testing.T) {
 			t.Cleanup(func() { _ = repo.Dbh().Drop() })
 			baseDoc.Attributes = tcs.attrs
 			baseDoc.Id = tcs.id
-			baseDoc.Version = tcs.version
 			doc, err := repo.AddFeatureAnnotation(baseDoc)
 			if tcs.wantErr {
 				asrt.Error(err)
@@ -141,8 +140,7 @@ func getFeatureTestCases() []featureTestCase {
 					},
 				},
 			},
-			id:      "DDB_G0285425",
-			version: 1,
+			id: "DDB_G0285425",
 		},
 		{
 			name: "success with custom version",
@@ -157,8 +155,7 @@ func getFeatureTestCases() []featureTestCase {
 			attrs: &feature.FeatureAnnotationAttributes{
 				Name: "required fields gene",
 			},
-			id:      "DDB_G0285428",
-			version: 1,
+			id: "DDB_G0285428",
 		},
 	}
 }
@@ -171,7 +168,6 @@ func TestAddDuplicateFeatureAnnotation(t *testing.T) {
 	// Create base feature annotation
 	baseDoc := &feature.NewFeatureAnnotation{
 		Id:        "DDB_G0285425",
-		Version:   1,
 		CreatedBy: "mock@email.com",
 		CreatedAt: timestamppb.New(time.Now()),
 		Attributes: &feature.FeatureAnnotationAttributes{
@@ -204,11 +200,6 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 		params.base.Id,
 		params.got.Id,
 		"should have matching IDs",
-	)
-	params.assertions.Equal(
-		params.base.Version,
-		params.got.Version,
-		"should have matching versions",
 	)
 	params.assertions.Equal(
 		params.base.CreatedBy,
