@@ -29,7 +29,7 @@ type TagPropertyDoc struct {
 type FeatureAnnotationDoc struct {
 	driver.DocumentMeta
 	Type         string           `json:"feature_type,omitempty"`
-	Id           string           `json:"id"`
+	AnnoId       string           `json:"feature_id"`
 	CreatedAt    time.Time        `json:"created_at"`
 	UpdatedAt    time.Time        `json:"updated_at"`
 	CreatedBy    string           `json:"created_by"`
@@ -49,12 +49,12 @@ func FeatureAnnotationSchema() ([]byte, error) {
 	baseSchema := `{
         "type": "object",
         "properties": %s,
-        "required": ["id", "name", "created_at", "created_by"]
+        "required": ["feature_id", "name", "created_at", "created_by"]
     }`
 
 	properties := map[string]interface{}{
 		"feature_type": map[string]string{"type": "string"},
-		"id":           map[string]string{"type": "string"},
+		"feature_id":   map[string]string{"type": "string"},
 		"created_at": map[string]string{
 			"type":   "string",
 			"format": "date-time",

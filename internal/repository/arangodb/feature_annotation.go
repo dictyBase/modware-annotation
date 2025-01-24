@@ -79,6 +79,7 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	// Create new feature annotation document
 	faDoc := &model.FeatureAnnotationDoc{
 		Id:         doc.Id,
+		AnnoId:     doc.Id,
 		Name:       doc.Attributes.Name,
 		CreatedAt:  doc.CreatedAt.AsTime(),
 		UpdatedAt:  doc.CreatedAt.AsTime(), // Initially same as created_at

@@ -72,7 +72,7 @@ func createFeatureCollection(
 func createIndices(dbh *manager.Database, coll driver.Collection) error {
 	_, _, err := dbh.EnsurePersistentIndex(
 		coll.Name(),
-		[]string{"id"},
+		[]string{"feature_id"},
 		&driver.EnsurePersistentIndexOptions{
 			InBackground: true,
 			Unique:       true,
