@@ -34,7 +34,7 @@ type FeatureAnnotationDoc struct {
 	UpdatedAt    time.Time        `json:"updated_at"`
 	CreatedBy    string           `json:"created_by"`
 	UpdatedBy    string           `json:"updated_by"`
-	Name         string           `json:"name,omitempty"`
+	Name         string           `json:"name"`
 	Synonyms     []string         `json:"synonyms,omitempty"`
 	Publications []string         `json:"publications,omitempty"`
 	Pubmed       []string         `json:"pubmed,omitempty"`
