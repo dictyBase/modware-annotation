@@ -45,7 +45,6 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	added, err := repo.AddFeatureAnnotation(baseDoc)
 	asrt.NoError(err, "expected no error adding test feature annotation")
 
-	got, err := repo.GetFeatureAnnotation(added.Id)
 	got, err := repo.GetFeatureAnnotation(added.AnnoId)
 	asrt.NoError(err, "expected no error getting feature annotation")
 	validateFeatureAnnotation(validateFeatureAnnotationParams{
@@ -122,4 +121,48 @@ func TestAddDuplicateFeatureAnnotation(t *testing.T) {
 		"unique constraint violated",
 		"expected duplicate error message",
 	)
+}
+
+func TestRemoveFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		purge   bool
+		wantErr bool
+	}{
+		{
+			name:    "should soft delete feature annotation",
+			purge:   false,
+			wantErr: false,
+		},
+		{
+			name:    "should purge feature annotation",
+			purge:   true,
+			wantErr: false,
+		},
+		{
+			name:    "should return error for non-existent ID",
+			purge:   false,
+			wantErr: true,
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			assert, repo := setUpFeatureTest(t)
+			t.Cleanup(func() { _ = repo.Dbh().Drop() })
+			identifier := getTestIdentifier(testCase.wantErr, repo, assert)
+			err := repo.RemoveFeatureAnnotation(identifier, testCase.purge)
+			if testCase.wantErr {
+				assert.Error(
+					err,
+					"expected error removing non-existent feature annotation",
+				)
+
+				return
+			}
+			assert.NoError(err, "expected no error removing feature annotation")
+			verifyRemoval(identifier, repo, assert)
+		})
+	}
 }
