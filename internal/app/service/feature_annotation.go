@@ -125,7 +125,7 @@ func (srv *FeatureAnnotationService) DeleteFeatureAnnotation(
 	if err := protovalidate.Validate(req); err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	err := srv.repo.RemoveFeatureAnnotation(req.Id)
+	err := srv.repo.RemoveFeatureAnnotation(req.Id, req.Purge)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -160,7 +160,7 @@ func convertToProto(
 
 	return &feature.FeatureAnnotation{
 		Type:       "feature_annotations",
-		Id:         feat.Id,
+		Id:         feat.AnnoId,
 		CreatedBy:  feat.CreatedBy,
 		UpdatedBy:  feat.UpdatedBy,
 		CreatedAt:  timestamppb.New(feat.CreatedAt),
