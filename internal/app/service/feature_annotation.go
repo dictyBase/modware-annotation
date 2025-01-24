@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/dictyBase/aphgrpc"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/message"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type FeatureAnnotationService struct {
@@ -62,15 +64,16 @@ func (srv *FeatureAnnotationService) GetFeatureAnnotation(
 	ctx context.Context,
 	req *feature.FeatureAnnotationId,
 ) (*feature.FeatureAnnotation, error) {
-	if req == nil {
-		return &feature.FeatureAnnotation{}, aphgrpc.HandleInvalidParamError(
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(
 			ctx,
-			fmt.Errorf("feature ID is required"),
+			fmt.Errorf("feature ID is required %s", err),
 		)
 	}
 	feat, err := srv.repo.GetFeatureAnnotation(req.Id)
 	if err != nil {
 		return &feature.FeatureAnnotation{}, aphgrpc.HandleGetError(ctx, err)
+		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 
 	return convertToProto(feat), nil
