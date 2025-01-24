@@ -78,7 +78,6 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 ) (*model.FeatureAnnotationDoc, error) {
 	// Create new feature annotation document
 	faDoc := &model.FeatureAnnotationDoc{
-		Id:         doc.Id,
 		AnnoId:     doc.Id,
 		Name:       doc.Attributes.Name,
 		CreatedAt:  doc.CreatedAt.AsTime(),
@@ -138,44 +137,36 @@ func (fann *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotatio
 	return nil, fmt.Errorf("not implemented")
 }
 
-// RemoveFeatureAnnotation deletes a feature annotation.
-// Remove the whole document if purge is true, otherwise set the obsolete field to true.
 func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
 	fid string,
 	purge bool,
 ) error {
-	if purge {
-		_, err := fann.feature.RemoveDocument(context.Background(), fid)
-		if err != nil {
-			if driver.IsNotFoundGeneral(err) {
-				return &repository.AnnoNotFoundError{Id: fid}
-			}
+	bindVars := map[string]interface{}{
+		"@collection": fann.feature.Name(),
+		"id":          fid,
+	}
 
-			return fmt.Errorf(
-				"error in removing feature annotation %s: %s",
-				fid,
-				err,
-			)
+	// Check if document exists
+	existRes, err := fann.database.GetRow(featureExistQ, bindVars)
+	if err != nil {
+		return fmt.Errorf("error checking document existence: %w", err)
+	}
+	if existRes.IsEmpty() {
+		return &repository.AnnoNotFoundError{Id: fid}
+	}
+
+	if purge {
+		err := fann.database.Do(featurePurgeQ, bindVars)
+		if err != nil {
+			return fmt.Errorf("error executing purge query: %w", err)
 		}
 
 		return nil
 	}
 
-	_, err := fann.feature.UpdateDocument(
-		context.Background(),
-		fid,
-		map[string]interface{}{"is_obsolete": true},
-	)
+	err = fann.database.Do(featureObsoleteQ, bindVars)
 	if err != nil {
-		if driver.IsNotFoundGeneral(err) {
-			return &repository.AnnoNotFoundError{Id: fid}
-		}
-
-		return fmt.Errorf(
-			"error in obsoleting feature annotation %s: %s",
-			fid,
-			err,
-		)
+		return fmt.Errorf("error executing obsolete query: %w", err)
 	}
 
 	return nil

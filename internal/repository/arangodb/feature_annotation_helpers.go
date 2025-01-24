@@ -2,13 +2,17 @@ package arangodb
 
 import (
 	"fmt"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
+	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func validateParams(collP *FeatureCollectionParams) error {
@@ -199,4 +203,39 @@ func toDbLink(link *feature.DbLink) model.DbLinkDoc {
 	}
 
 	return dbLink
+}
+
+func verifyRemoval(
+	identifier string,
+	repo repository.FeatureAnnotationRepository,
+	assert *require.Assertions,
+) {
+	_, err := repo.GetFeatureAnnotation(identifier)
+	assert.Error(err, "expected error getting removed feature annotation")
+	assert.True(
+		repository.IsAnnotationNotFound(err),
+		"should be annotation not found error",
+	)
+}
+
+func getTestIdentifier(
+	wantErr bool,
+	repo repository.FeatureAnnotationRepository,
+	assert *require.Assertions,
+) string {
+	if wantErr {
+		return "non_existent_id"
+	}
+	baseDoc := &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285425",
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: "test gene",
+		},
+	}
+	doc, err := repo.AddFeatureAnnotation(baseDoc)
+	assert.NoError(err, "expected no error adding test feature annotation")
+
+	return doc.AnnoId
 }
