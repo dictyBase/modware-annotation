@@ -20,7 +20,7 @@ type FeatureAnnotationRepository interface {
 		doc *feature.FeatureAnnotationUpdate,
 	) (*model.FeatureAnnotationDoc, error)
 	// RemoveFeatureAnnotation deletes a feature annotation
-	RemoveFeatureAnnotation(id string) error
+	RemoveFeatureAnnotation(id string, purge bool) error
 	// ClearFeatureAnnotations removes all feature annotations
 	ClearFeatureAnnotations() error
 	// Dbh returns the underlying database handler

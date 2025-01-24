@@ -138,15 +138,40 @@ func (fann *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotatio
 }
 
 // RemoveFeatureAnnotation deletes a feature annotation.
-func (fann *featureAnnoRepo) RemoveFeatureAnnotation(fid string) error {
-	_, err := fann.feature.RemoveDocument(context.Background(), fid)
+// Remove the whole document if purge is true, otherwise set the obsolete field to true.
+func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
+	fid string,
+	purge bool,
+) error {
+	if purge {
+		_, err := fann.feature.RemoveDocument(context.Background(), fid)
+		if err != nil {
+			if driver.IsNotFoundGeneral(err) {
+				return &repository.AnnoNotFoundError{Id: fid}
+			}
+
+			return fmt.Errorf(
+				"error in removing feature annotation %s: %s",
+				fid,
+				err,
+			)
+		}
+
+		return nil
+	}
+
+	_, err := fann.feature.UpdateDocument(
+		context.Background(),
+		fid,
+		map[string]interface{}{"is_obsolete": true},
+	)
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
 			return &repository.AnnoNotFoundError{Id: fid}
 		}
 
 		return fmt.Errorf(
-			"error in removing feature annotation %s: %s",
+			"error in obsoleting feature annotation %s: %s",
 			fid,
 			err,
 		)
