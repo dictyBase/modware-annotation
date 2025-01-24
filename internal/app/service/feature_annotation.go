@@ -65,10 +65,7 @@ func (srv *FeatureAnnotationService) GetFeatureAnnotation(
 	req *feature.FeatureAnnotationId,
 ) (*feature.FeatureAnnotation, error) {
 	if err := protovalidate.Validate(req); err != nil {
-		return nil, aphgrpc.HandleInvalidParamError(
-			ctx,
-			fmt.Errorf("feature ID is required %s", err),
-		)
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	feat, err := srv.repo.GetFeatureAnnotation(req.Id)
 	if err != nil {
@@ -86,11 +83,8 @@ func (srv *FeatureAnnotationService) CreateFeatureAnnotation(
 	ctx context.Context,
 	req *feature.NewFeatureAnnotation,
 ) (*feature.FeatureAnnotation, error) {
-	if err := req.Validate(); err != nil {
-		return &feature.FeatureAnnotation{}, aphgrpc.HandleInvalidParamError(
-			ctx,
-			err,
-		)
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	feat, err := srv.repo.AddFeatureAnnotation(req)
 	if err != nil {
@@ -108,11 +102,8 @@ func (srv *FeatureAnnotationService) UpdateFeatureAnnotation(
 	ctx context.Context,
 	req *feature.FeatureAnnotationUpdate,
 ) (*feature.FeatureAnnotation, error) {
-	if err := req.Validate(); err != nil {
-		return &feature.FeatureAnnotation{}, aphgrpc.HandleInvalidParamError(
-			ctx,
-			err,
-		)
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	feat, err := srv.repo.EditFeatureAnnotation(req)
 	if err != nil {
