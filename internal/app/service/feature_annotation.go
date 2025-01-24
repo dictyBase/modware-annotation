@@ -72,6 +72,10 @@ func (srv *FeatureAnnotationService) GetFeatureAnnotation(
 	}
 	feat, err := srv.repo.GetFeatureAnnotation(req.Id)
 	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+
 		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 
