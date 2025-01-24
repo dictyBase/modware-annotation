@@ -1,9 +1,14 @@
 package arangodb
 
 const (
-	featureGetByIdQ = `FOR f IN @@collection FILTER f.id == @id LIMIT 1 RETURN f`
+	featureGetByIdQ = `FOR f IN @@collection 
+    		FILTER f.id == @id 
+    		FILTER f.is_obsolete == false 
+    		LIMIT 1 
+    		RETURN f`
+
 	orgListQ = `FOR org IN @@collection RETURN org`
-	tagGetQ = `
+	tagGetQ  = `
 		FOR cv IN @@cv_collection
 			FOR cvt IN @@cvterm_collection
 				FILTER cv.metadata.namespace == @ontology
