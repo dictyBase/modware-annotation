@@ -11,6 +11,7 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -115,6 +116,25 @@ func (srv *FeatureAnnotationService) UpdateFeatureAnnotation(
 	}
 
 	return featProto, nil
+}
+
+func (srv *FeatureAnnotationService) DeleteFeatureAnnotation(
+	ctx context.Context,
+	req *feature.DeleteFeatureAnnotationRequest,
+) (*emptypb.Empty, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	err := srv.repo.RemoveFeatureAnnotation(req.Id)
+	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+
+		return nil, aphgrpc.HandleDeleteError(ctx, err)
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func convertToProto(
