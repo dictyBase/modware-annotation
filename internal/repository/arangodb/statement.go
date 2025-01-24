@@ -1,8 +1,13 @@
 package arangodb
 
 const (
+	featureExistQ = `
+		FOR f IN @@collection
+			FILTER f.feature_id == @id
+			LIMIT 1
+			RETURN f._key
 	featureGetByIdQ = `FOR f IN @@collection 
-    		FILTER f.id == @id 
+    		FILTER f.feature_id == @id 
     		FILTER f.is_obsolete == false 
     		LIMIT 1 
     		RETURN f`

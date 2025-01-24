@@ -46,6 +46,7 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	asrt.NoError(err, "expected no error adding test feature annotation")
 
 	got, err := repo.GetFeatureAnnotation(added.Id)
+	got, err := repo.GetFeatureAnnotation(added.AnnoId)
 	asrt.NoError(err, "expected no error getting feature annotation")
 	validateFeatureAnnotation(validateFeatureAnnotationParams{
 		t:          t,

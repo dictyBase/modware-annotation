@@ -148,7 +148,7 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 	)
 	params.assertions.Equal(
 		params.base.Id,
-		params.got.Id,
+		params.got.AnnoId,
 		"should have matching IDs",
 	)
 	params.assertions.Equal(
