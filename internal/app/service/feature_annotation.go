@@ -72,7 +72,6 @@ func (srv *FeatureAnnotationService) GetFeatureAnnotation(
 	}
 	feat, err := srv.repo.GetFeatureAnnotation(req.Id)
 	if err != nil {
-		return &feature.FeatureAnnotation{}, aphgrpc.HandleGetError(ctx, err)
 		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 
@@ -126,15 +125,33 @@ func (srv *FeatureAnnotationService) UpdateFeatureAnnotation(
 func convertToProto(
 	feat *model.FeatureAnnotationDoc,
 ) *feature.FeatureAnnotation {
+	attrs := &feature.FeatureAnnotationAttributes{Name: feat.Name}
+	// Handle optional attributes
+	if len(feat.Synonyms) > 0 {
+		attrs.Synonyms = feat.Synonyms
+	}
+	if len(feat.Publications) > 0 {
+		attrs.Publications = feat.Publications
+	}
+	if len(feat.Pubmed) > 0 {
+		attrs.Pubmed = feat.Pubmed
+	}
+	if len(feat.DbLinks) > 0 {
+		attrs.Dblinks = convertDbLinks(feat.DbLinks)
+	}
+	if len(feat.Properties) > 0 {
+		attrs.Properties = convertProperties(feat.Properties)
+	}
+
 	return &feature.FeatureAnnotation{
-		Type: "feature_annotations",
-		Id:   feat.Id,
-		Attributes: &feature.FeatureAnnotationAttributes{
-			Name:       feat.Name,
-			Synonyms:   feat.Synonyms,
-			Dblinks:    convertDbLinks(feat.DbLinks),
-			Properties: convertProperties(feat.Properties),
-		},
+		Type:       "feature_annotations",
+		Id:         feat.Id,
+		CreatedBy:  feat.CreatedBy,
+		UpdatedBy:  feat.UpdatedBy,
+		CreatedAt:  timestamppb.New(feat.CreatedAt),
+		UpdatedAt:  timestamppb.New(feat.UpdatedAt),
+		IsObsolete: feat.IsObsolete,
+		Attributes: attrs,
 	}
 }
 
