@@ -2,6 +2,7 @@ module github.com/dictyBase/modware-annotation
 
 require (
 	github.com/arangodb/go-driver v1.6.5
+	github.com/bufbuild/protovalidate-go v0.8.2
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.4.0
 	github.com/dictyBase/go-genproto v0.0.0-20250117183845-ba0105105187
@@ -22,7 +23,6 @@ require (
 	cel.dev/expr v0.18.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e // indirect
-	github.com/bufbuild/protovalidate-go v0.8.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
