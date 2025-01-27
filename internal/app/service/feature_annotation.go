@@ -7,6 +7,7 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/dictyBase/aphgrpc"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/message"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
@@ -141,22 +142,13 @@ func convertToProto(
 	feat *model.FeatureAnnotationDoc,
 ) *feature.FeatureAnnotation {
 	attrs := &feature.FeatureAnnotationAttributes{Name: feat.Name}
-	// Handle optional attributes
-	if len(feat.Synonyms) > 0 {
-		attrs.Synonyms = feat.Synonyms
-	}
-	if len(feat.Publications) > 0 {
-		attrs.Publications = feat.Publications
-	}
-	if len(feat.Pubmed) > 0 {
-		attrs.Pubmed = feat.Pubmed
-	}
-	if len(feat.DbLinks) > 0 {
-		attrs.Dblinks = convertDbLinks(feat.DbLinks)
-	}
-	if len(feat.Properties) > 0 {
-		attrs.Properties = convertProperties(feat.Properties)
-	}
+
+	// Handle optional attributes using functional constructs
+	attrs.Synonyms = feat.Synonyms
+	attrs.Publications = feat.Publications
+	attrs.Pubmed = feat.Pubmed
+	attrs.Dblinks = collection.Map(feat.DbLinks, convertDbLink)
+	attrs.Properties = collection.Map(feat.Properties, convertProperty)
 
 	return &feature.FeatureAnnotation{
 		Type:       "feature_annotations",
@@ -170,38 +162,20 @@ func convertToProto(
 	}
 }
 
-func convertDbLinks(links []model.DbLinkDoc) []*feature.DbLink {
-	dblinks := make([]*feature.DbLink, 0)
-	for _, link := range links {
-		dblink := &feature.DbLink{
-			Database:  link.Database,
-			PrimaryId: link.PrimaryId,
-			Version:   link.Version,
-		}
-		// Only include optional fields if they have values
-		if link.LinkType != "" {
-			dblink.Linktype = link.LinkType
-		}
-		if link.URL != "" {
-			dblink.Url = link.URL
-		}
-		if link.Label != "" {
-			dblink.Label = link.Label
-		}
-		dblinks = append(dblinks, dblink)
+func convertDbLink(link model.DbLinkDoc) *feature.DbLink {
+	return &feature.DbLink{
+		Database:  link.Database,
+		PrimaryId: link.PrimaryId,
+		Version:   link.Version,
+		Linktype:  link.LinkType,
+		Url:       link.URL,
+		Label:     link.Label,
 	}
-
-	return dblinks
 }
 
-func convertProperties(props []model.TagPropertyDoc) []*feature.TagProperty {
-	properties := make([]*feature.TagProperty, 0)
-	for _, prop := range props {
-		properties = append(properties, &feature.TagProperty{
-			Tag:   prop.Tag,
-			Value: prop.Value,
-		})
+func convertProperty(prop model.TagPropertyDoc) *feature.TagProperty {
+	return &feature.TagProperty{
+		Tag:   prop.Tag,
+		Value: prop.Value,
 	}
-
-	return properties
 }
