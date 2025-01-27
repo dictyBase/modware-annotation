@@ -39,7 +39,8 @@ type CollectionParams struct {
 	AnnoIndexes []string `validate:"required"`
 }
 
-// FeatureCollectionParams contains the parameters for feature annotation collections
+// FeatureCollectionParams contains the parameters for feature annotation
+// collections.
 type FeatureCollectionParams struct {
 	// Feature is the collection for storing feature annotations
 	Feature string `validate:"required"`
