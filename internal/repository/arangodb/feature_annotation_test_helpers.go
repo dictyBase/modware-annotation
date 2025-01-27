@@ -73,7 +73,7 @@ func setUpFeatureTest(
 	}
 	assert := require.New(t)
 	repo, err := NewFeatureAnnoRepo(
-		getConnectParamsFromDb(tra),
+		GetConnectParamsFromDB(tra),
 		&FeatureCollectionParams{
 			Feature: "feature_test",
 		},

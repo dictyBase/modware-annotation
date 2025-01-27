@@ -195,7 +195,7 @@ func setUpOrganismTest(
 	require.NoError(t, err, "unable to construct new TestArango instance")
 	assert := require.New(t)
 	repo, err := NewOrganismRepo(
-		getConnectParamsFromDb(tra),
+		GetConnectParamsFromDB(tra),
 		&OrganismCollectionParams{Organism: "organism"},
 	)
 	assert.NoErrorf(
@@ -236,7 +236,8 @@ func getTestOrganisms() []*organism.NewOrganism {
 	}
 }
 
-func getConnectParamsFromDb(tra *testarango.TestArango) *manager.ConnectParams {
+// GetConnectParamsFromDB extracts connection parameters from TestArango instance
+func GetConnectParamsFromDB(tra *testarango.TestArango) *manager.ConnectParams {
 	return &manager.ConnectParams{
 		User:     tra.User,
 		Pass:     tra.Pass,
