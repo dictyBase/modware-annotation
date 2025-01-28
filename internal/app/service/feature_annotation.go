@@ -27,7 +27,7 @@ type FeatureAnnotationService struct {
 type FeatureParams struct {
 	Repository repository.FeatureAnnotationRepository `validate:"required"`
 	Publisher  message.FeatureAnnotationPublisher     `validate:"required"`
-	Options    []aphgrpc.Option                       `validate:"required"`
+	Options    []aphgrpc.Option
 }
 
 func featureAnnoDefaultOptions() *aphgrpc.ServiceOptions {
