@@ -121,7 +121,7 @@ func (fann *featureAnnoRepo) EditFeatureAnnotation(
 
 	meta, err := fann.feature.UpdateDocument(
 		context.Background(),
-		doc.Id,
+		faDoc.Key,
 		faDoc,
 	)
 	if err != nil {
