@@ -173,3 +173,81 @@ func testCreateDuplicateFeature(params *testParams) {
 		params.assert.Equal(codes.AlreadyExists, st.Code())
 	})
 }
+
+func TestGetFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testGetExistingFeature(params)
+	testGetNonExistentFeature(params)
+	testGetFeatureWithInvalidID(params)
+}
+
+func testGetExistingFeature(params *testParams) {
+	params.t.Helper()
+	params.t.Run("GetExistingFeatureAnnotation", func(t *testing.T) {
+		t.Parallel()
+		// First create a feature
+		createReq := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G0285426",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:     "Test Feature",
+				Synonyms: []string{"test1", "test2"},
+			},
+		}
+		_, err := params.client.CreateFeatureAnnotation(params.ctx, createReq)
+		params.assert.NoError(err)
+
+		// Then retrieve it
+		getReq := &feature.FeatureAnnotationId{
+			Id: "DDB_G0285426",
+		}
+		resp, err := params.client.GetFeatureAnnotation(params.ctx, getReq)
+		params.assert.NoError(err)
+		params.assert.Equal(createReq.Id, resp.Id)
+		params.assert.Equal(createReq.CreatedBy, resp.CreatedBy)
+		params.assert.Equal(createReq.Attributes.Name, resp.Attributes.Name)
+		params.assert.Equal(
+			createReq.Attributes.Synonyms,
+			resp.Attributes.Synonyms,
+		)
+	})
+}
+
+func testGetNonExistentFeature(params *testParams) {
+	params.t.Helper()
+	params.t.Run("GetNonExistentFeatureAnnotation", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.FeatureAnnotationId{
+			Id: "DDB_G0000000",
+		}
+		_, err := params.client.GetFeatureAnnotation(params.ctx, req)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.NotFound, st.Code())
+	})
+}
+
+func testGetFeatureWithInvalidID(params *testParams) {
+	params.t.Helper()
+	params.t.Run("GetFeatureAnnotationWithInvalidID", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.FeatureAnnotationId{
+			Id: "", // Empty ID
+		}
+		_, err := params.client.GetFeatureAnnotation(params.ctx, req)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.InvalidArgument, st.Code())
+	})
+}
