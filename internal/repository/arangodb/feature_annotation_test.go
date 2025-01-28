@@ -166,3 +166,32 @@ func TestRemoveFeatureAnnotation(t *testing.T) {
 		})
 	}
 }
+
+func TestEditFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	baseDoc := getBaseFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(baseDoc)
+	asrt.NoError(err, "expected no error adding initial feature annotation")
+
+	for _, tcs := range getEditFeatureTestCases(added.AnnoId) {
+		t.Run(tcs.name, func(t *testing.T) {
+			t.Parallel()
+			doc, err := repo.EditFeatureAnnotation(tcs.update)
+			if tcs.wantErr {
+				verifyEditError(t, asrt, err)
+
+				return
+			}
+			verifyEditSuccess(verifyEditSuccessParams{
+				t:       t,
+				asrt:    asrt,
+				tce:     tcs,
+				doc:     doc,
+				baseDoc: baseDoc,
+				added:   added,
+			})
+		})
+	}
+}

@@ -1,14 +1,23 @@
 package arangodb
 
 import (
+	"slices"
 	"testing"
+	"time"
 
 	"github.com/dictyBase/arangomanager/testarango"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+type editFeatureTestCase struct {
+	name    string
+	update  *feature.FeatureAnnotationUpdate
+	wantErr bool
+}
 
 type validateFeatureAnnotationParams struct {
 	t          *testing.T
@@ -188,4 +197,92 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 		params.got.Properties,
 		params.base.Attributes.Properties,
 	)
+}
+
+func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
+	return &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285425",
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name:     "original name",
+			Synonyms: []string{"syn1", "syn2"},
+		},
+	}
+}
+
+func getEditFeatureTestCases(id string) []editFeatureTestCase {
+	return []editFeatureTestCase{
+		{
+			name: "should update existing feature annotation",
+			update: &feature.FeatureAnnotationUpdate{
+				Id:        id,
+				UpdatedBy: "updater@email.com",
+				Attributes: &feature.FeatureAnnotationAttributes{
+					Name:     "updated name",
+					Synonyms: []string{"new_syn1", "new_syn2"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should fail with non-existent ID",
+			update: &feature.FeatureAnnotationUpdate{
+				Id:        "non_existent_id",
+				UpdatedBy: "updater@email.com",
+				Attributes: &feature.FeatureAnnotationAttributes{
+					Name: "will not update",
+				},
+			},
+			wantErr: true,
+		},
+	}
+}
+
+func verifyEditError(t *testing.T, asrt *require.Assertions, err error) {
+	t.Helper()
+	asrt.Error(err, "expected error editing feature annotation")
+	asrt.True(
+		repository.IsAnnotationNotFound(err),
+		"should be annotation not found error",
+	)
+}
+
+type verifyEditSuccessParams struct {
+	t       *testing.T
+	asrt    *require.Assertions
+	tce     editFeatureTestCase
+	doc     *model.FeatureAnnotationDoc
+	baseDoc *feature.NewFeatureAnnotation
+	added   *model.FeatureAnnotationDoc
+}
+
+func verifyEditSuccess(params verifyEditSuccessParams) {
+	params.t.Helper()
+	params.asrt.Equal(
+		params.tce.update.Id,
+		params.doc.AnnoId,
+		"IDs should match",
+	)
+	params.asrt.Equal(
+		params.tce.update.UpdatedBy,
+		params.doc.UpdatedBy,
+		"updater should match",
+	)
+	params.asrt.Equal(
+		params.tce.update.Attributes.Name,
+		params.doc.Name,
+		"names should match",
+	)
+	params.asrt.ElementsMatch(
+		slices.Concat(
+			params.added.Synonyms,
+			params.tce.update.Attributes.Synonyms,
+		),
+		params.doc.Synonyms,
+		"synonyms should match",
+	)
+	// Original fields should be preserved
+	params.asrt.Equal(params.baseDoc.CreatedBy, params.doc.CreatedBy)
+	params.asrt.Equal(params.added.Key, params.doc.Key)
 }
