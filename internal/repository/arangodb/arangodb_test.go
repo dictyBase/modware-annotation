@@ -255,7 +255,7 @@ func setUp(
 	}
 	assert := require.New(t)
 	repo, err := NewTaggedAnnotationRepo(
-		getConnectParamsFromDb(tra),
+		GetConnectParamsFromDB(tra),
 		getCollectionParams(),
 		getOntoParams(),
 	)
