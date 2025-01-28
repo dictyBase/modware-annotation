@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/dictyBase/aphgrpc"
@@ -90,7 +91,11 @@ func (srv *FeatureAnnotationService) CreateFeatureAnnotation(
 	}
 	feat, err := srv.repo.AddFeatureAnnotation(req)
 	if err != nil {
-		return &feature.FeatureAnnotation{}, aphgrpc.HandleInsertError(ctx, err)
+		if strings.Contains(err.Error(), "unique constraint violated") {
+			return nil, aphgrpc.HandleExistError(ctx, err)
+		}
+
+		return nil, aphgrpc.HandleInsertError(ctx, err)
 	}
 	featProto := convertToProto(feat)
 	if err := srv.publisher.Publish(srv.Topics["featureAnnotationCreate"], featProto); err != nil {
