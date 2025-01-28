@@ -11,10 +11,20 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+type testParams struct {
+	t      *testing.T
+	ctx    context.Context
+	client feature.FeatureAnnotationServiceClient
+	assert *require.Assertions
+}
 
 type MockMessage struct{}
 
@@ -86,4 +96,80 @@ func setup(
 	})
 
 	return feature.NewFeatureAnnotationServiceClient(conn), assert
+}
+
+func TestCreateFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testCreateValidFeature(params)
+	testCreateMissingFields(params)
+	testCreateDuplicateFeature(params)
+}
+
+func testCreateValidFeature(params *testParams) {
+	params.t.Helper()
+	params.t.Run("CreateValidFeatureAnnotation", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G0285425",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:     "Test Feature",
+				Synonyms: []string{"test1", "test2"},
+			},
+		}
+		resp, err := params.client.CreateFeatureAnnotation(params.ctx, req)
+		params.assert.NoError(err)
+		params.assert.Equal(req.Id, resp.Id)
+		params.assert.Equal(req.CreatedBy, resp.CreatedBy)
+		params.assert.Equal(req.Attributes.Name, resp.Attributes.Name)
+		params.assert.Equal(req.Attributes.Synonyms, resp.Attributes.Synonyms)
+	})
+}
+
+func testCreateMissingFields(params *testParams) {
+	params.t.Helper()
+	params.t.Run("CreateFailsMissingRequiredFields", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.NewFeatureAnnotation{
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name: "Invalid Feature",
+			},
+		}
+		_, err := params.client.CreateFeatureAnnotation(params.ctx, req)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.InvalidArgument, st.Code())
+	})
+}
+
+func testCreateDuplicateFeature(params *testParams) {
+	params.t.Helper()
+	params.t.Run("CreateFailsDuplicateFeatureId", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G02854297",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name: "Duplicate Feature",
+			},
+		}
+		_, firstErr := params.client.CreateFeatureAnnotation(params.ctx, req)
+		params.assert.NoError(firstErr)
+		_, dupErr := params.client.CreateFeatureAnnotation(params.ctx, req)
+		params.assert.Error(dupErr)
+		st, ok := status.FromError(dupErr)
+		params.assert.True(ok)
+		params.assert.Equal(codes.AlreadyExists, st.Code())
+	})
 }
