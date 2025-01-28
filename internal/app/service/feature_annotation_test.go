@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/dictyBase/arangomanager/testarango"
@@ -245,6 +246,104 @@ func testGetFeatureWithInvalidID(params *testParams) {
 			Id: "", // Empty ID
 		}
 		_, err := params.client.GetFeatureAnnotation(params.ctx, req)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.InvalidArgument, st.Code())
+	})
+}
+
+func TestUpdateFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testUpdateExistingFeature(params)
+	testUpdateNonExistentFeature(params)
+	testUpdateWithInvalidData(params)
+}
+
+func testUpdateExistingFeature(params *testParams) {
+	params.t.Helper()
+	params.t.Run("UpdateExistingFeatureAnnotation", func(t *testing.T) {
+		t.Parallel()
+		// First create a feature
+		createReq := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G0285427",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:     "Original Feature",
+				Synonyms: []string{"orig1", "orig2"},
+			},
+		}
+		_, err := params.client.CreateFeatureAnnotation(params.ctx, createReq)
+		params.assert.NoError(err)
+
+		// Then update it
+		updateReq := &feature.FeatureAnnotationUpdate{
+			Id:        "DDB_G0285427",
+			UpdatedBy: "anotheruser@dictybase.org",
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:     "Updated Feature",
+				Synonyms: []string{"new1", "new2"},
+			},
+		}
+		resp, err := params.client.UpdateFeatureAnnotation(
+			params.ctx,
+			updateReq,
+		)
+		params.assert.NoError(err)
+		params.assert.Equal(updateReq.Id, resp.Id)
+		params.assert.Equal(updateReq.UpdatedBy, resp.UpdatedBy)
+		params.assert.Equal(updateReq.Attributes.Name, resp.Attributes.Name)
+		params.assert.ElementsMatch(
+			slices.Concat(
+				createReq.Attributes.Synonyms,
+				updateReq.Attributes.Synonyms,
+			),
+			resp.Attributes.Synonyms,
+		)
+		params.assert.Equal(createReq.CreatedBy, resp.CreatedBy)
+	})
+}
+
+func testUpdateNonExistentFeature(params *testParams) {
+	params.t.Helper()
+	params.t.Run("UpdateNonExistentFeatureAnnotation", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.FeatureAnnotationUpdate{
+			Id:        "DDB_G0000000",
+			UpdatedBy: "testuser@dictybase.org",
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name: "Non-existent Feature",
+			},
+		}
+		_, err := params.client.UpdateFeatureAnnotation(params.ctx, req)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		t.Log(st.Code().String())
+		params.assert.Equal(codes.Internal, st.Code())
+	})
+}
+
+func testUpdateWithInvalidData(params *testParams) {
+	params.t.Helper()
+	params.t.Run("UpdateFeatureAnnotationWithInvalidData", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.FeatureAnnotationUpdate{
+			Id: "", // Empty ID
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name: "Invalid Feature",
+			},
+		}
+		_, err := params.client.UpdateFeatureAnnotation(params.ctx, req)
 		params.assert.Error(err)
 		st, ok := status.FromError(err)
 		params.assert.True(ok)
