@@ -46,6 +46,12 @@ func main() {
 			Before: obovalidate.OntologyArgs,
 			Flags:  oboflag.OntologyFlags(),
 		},
+		{
+			Name:   "start-feature-server",
+			Usage:  "starts the feature annotation grpc server",
+			Action: server.RunFeatureServer,
+			Flags:  getFeatureServerFlags(),
+		},
 	}
 	if err := app.Run(os.Args); err != nil {
 		log.Fatalf("error in running command %s", err)
@@ -76,6 +82,24 @@ func getServerFlags() []cli.Flag {
 			Value: "organism",
 		},
 	}...)
+
+	return append(flg, apiflag.NatsFlag()...)
+}
+
+func getFeatureServerFlags() []cli.Flag {
+	flg := []cli.Flag{
+		cli.StringFlag{
+			Name:  "feature-port",
+			Usage: "tcp port at which the feature server will be available",
+			Value: "9570",
+		},
+		cli.StringFlag{
+			Name:  "feature-collection",
+			Usage: "arangodb collection for storing feature annotations",
+			Value: "feature",
+		},
+	}
+	flg = append(flg, arangoflag.ArangoFlags()...)
 
 	return append(flg, apiflag.NatsFlag()...)
 }
