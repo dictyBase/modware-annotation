@@ -236,7 +236,8 @@ func getTestOrganisms() []*organism.NewOrganism {
 	}
 }
 
-// GetConnectParamsFromDB extracts connection parameters from TestArango instance
+// GetConnectParamsFromDB extracts connection parameters from TestArango
+// instance.
 func GetConnectParamsFromDB(tra *testarango.TestArango) *manager.ConnectParams {
 	return &manager.ConnectParams{
 		User:     tra.User,
