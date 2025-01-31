@@ -176,10 +176,20 @@ func setOptionalFields(
 		faDoc.Properties = collection.Map(
 			doc.Attributes.Properties,
 			func(prop *feature.TagProperty) model.TagPropertyDoc {
-				return model.TagPropertyDoc{
-					Tag:   prop.Tag,
-					Value: prop.Value,
+				mprop := model.TagPropertyDoc{
+					Tag:       prop.Tag,
+					Value:     prop.Value,
+					CreatedBy: prop.CreatedBy,
+					UpdatedBy: prop.UpdatedBy,
 				}
+				if prop.CreatedAt != nil {
+					mprop.CreatedAt = prop.CreatedAt.AsTime()
+				}
+				if prop.UpdatedAt != nil {
+					mprop.UpdatedAt = prop.UpdatedAt.AsTime()
+				}
+
+				return mprop
 			},
 		)
 	}
