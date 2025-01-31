@@ -20,8 +20,12 @@ type DbLinkDoc struct {
 
 // TagPropertyDoc represents a key-value pair for custom attributes.
 type TagPropertyDoc struct {
-	Tag   string `json:"tag"`
-	Value string `json:"value"`
+	Tag       string    `json:"tag"`
+	Value     string    `json:"value"`
+	CreatedBy string    `json:"created_by"`
+	UpdatedBy string    `json:"updated_by"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // FeatureAnnotationDoc represents a feature annotation document in the
@@ -121,10 +125,14 @@ func getPropertiesSchema() map[string]interface{} {
 		"items": map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
-				"tag":   map[string]string{"type": "string"},
-				"value": map[string]string{"type": "string"},
+				"tag":        map[string]string{"type": "string"},
+				"value":      map[string]string{"type": "string"},
+				"created_by": map[string]string{"type": "string", "format": "email"},
+				"updated_by": map[string]string{"type": "string", "format": "email"},
+				"created_at": map[string]string{"type": "string", "format": "date-time"},
+				"updated_at": map[string]string{"type": "string", "format": "date-time"},
 			},
-			"required": []string{"tag", "value"},
+			"required": []string{"tag", "value", "created_by", "created_at"},
 		},
 	}
 }
