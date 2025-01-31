@@ -86,6 +86,12 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 		UpdatedBy:  doc.CreatedBy, // Initially same as created_by
 		IsObsolete: false,
 	}
+	if doc.UpdatedAt != nil {
+		faDoc.UpdatedAt = doc.UpdatedAt.AsTime()
+	}
+	if len(doc.UpdatedBy) > 0 {
+		faDoc.UpdatedBy = doc.UpdatedBy
+	}
 
 	// Set optional fields
 	setOptionalFields(doc, faDoc)
