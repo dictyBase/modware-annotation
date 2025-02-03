@@ -114,9 +114,7 @@ func updateAttributes(
 	mdoc *model.FeatureAnnotationDoc,
 	attrs *feature.FeatureAnnotationAttributes,
 ) {
-	if len(attrs.Name) > 0 {
-		mdoc.Name = attrs.Name
-	}
+	mdoc.Name = attrs.Name
 	if len(attrs.Synonyms) > 0 {
 		mdoc.Synonyms = append(mdoc.Synonyms, attrs.Synonyms...)
 	}
@@ -150,10 +148,20 @@ func convertDbLink(link *feature.DbLink) model.DbLinkDoc {
 }
 
 func convertProperty(prop *feature.TagProperty) model.TagPropertyDoc {
-	return model.TagPropertyDoc{
-		Tag:   prop.Tag,
-		Value: prop.Value,
+	mprop := model.TagPropertyDoc{
+		Tag:       prop.Tag,
+		Value:     prop.Value,
+		CreatedBy: prop.CreatedBy,
+		UpdatedBy: prop.UpdatedBy,
 	}
+	if prop.CreatedAt != nil {
+		mprop.CreatedAt = prop.CreatedAt.AsTime()
+	}
+	if prop.UpdatedAt != nil {
+		mprop.UpdatedAt = prop.UpdatedAt.AsTime()
+	}
+
+	return mprop
 }
 
 func setOptionalFields(
@@ -175,22 +183,7 @@ func setOptionalFields(
 	if len(doc.Attributes.Properties) > 0 {
 		faDoc.Properties = collection.Map(
 			doc.Attributes.Properties,
-			func(prop *feature.TagProperty) model.TagPropertyDoc {
-				mprop := model.TagPropertyDoc{
-					Tag:       prop.Tag,
-					Value:     prop.Value,
-					CreatedBy: prop.CreatedBy,
-					UpdatedBy: prop.UpdatedBy,
-				}
-				if prop.CreatedAt != nil {
-					mprop.CreatedAt = prop.CreatedAt.AsTime()
-				}
-				if prop.UpdatedAt != nil {
-					mprop.UpdatedAt = prop.UpdatedAt.AsTime()
-				}
-
-				return mprop
-			},
+			convertProperty,
 		)
 	}
 }
