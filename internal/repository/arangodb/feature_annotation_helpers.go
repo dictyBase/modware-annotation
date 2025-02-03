@@ -178,7 +178,7 @@ func setOptionalFields(
 		faDoc.Pubmed = doc.Attributes.Pubmed
 	}
 	if len(doc.Attributes.Dblinks) > 0 {
-		faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, toDbLink)
+		faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, convertDbLink)
 	}
 	if len(doc.Attributes.Properties) > 0 {
 		faDoc.Properties = collection.Map(
@@ -188,25 +188,6 @@ func setOptionalFields(
 	}
 }
 
-func toDbLink(link *feature.DbLink) model.DbLinkDoc {
-	dbLink := model.DbLinkDoc{
-		PrimaryId: link.PrimaryId,
-		Version:   link.Version,
-		Database:  link.Database,
-	}
-
-	if link.Linktype != "" {
-		dbLink.LinkType = link.Linktype
-	}
-	if link.Url != "" {
-		dbLink.URL = link.Url
-	}
-	if link.Label != "" {
-		dbLink.Label = link.Label
-	}
-
-	return dbLink
-}
 
 func verifyRemoval(
 	identifier string,
