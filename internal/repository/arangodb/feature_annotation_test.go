@@ -78,11 +78,11 @@ func TestAddFeatureAnnotation(t *testing.T) {
 			baseDoc.Id = tcs.id
 			doc, err := repo.AddFeatureAnnotation(baseDoc)
 			if tcs.wantErr {
-				asrt.Error(err)
+				asrt.Error(err, "expected error adding feature annotation")
 
 				return
 			}
-			asrt.NoError(err)
+			asrt.NoError(err, "expected no error adding feature annotation")
 			validateFeatureAnnotation(validateFeatureAnnotationParams{
 				t:          t,
 				assertions: asrt,
