@@ -115,25 +115,15 @@ func updateAttributes(
 	attrs *feature.FeatureAnnotationAttributes,
 ) {
 	mdoc.Name = attrs.Name
-	if len(attrs.Synonyms) > 0 {
-		mdoc.Synonyms = append(mdoc.Synonyms, attrs.Synonyms...)
-	}
-	if len(attrs.Publications) > 0 {
-		mdoc.Publications = append(mdoc.Publications, attrs.Publications...)
-	}
-	if len(attrs.Pubmed) > 0 {
-		mdoc.Pubmed = append(mdoc.Pubmed, attrs.Pubmed...)
-	}
-	if len(attrs.Dblinks) > 0 {
-		mdoc.DbLinks = append(
-			mdoc.DbLinks,
-			collection.Map(attrs.Dblinks, convertDbLink)...)
-	}
-	if len(attrs.Properties) > 0 {
-		mdoc.Properties = append(
-			mdoc.Properties,
-			collection.Map(attrs.Properties, convertProperty)...)
-	}
+	mdoc.Synonyms = append(mdoc.Synonyms, attrs.Synonyms...)
+	mdoc.Publications = append(mdoc.Publications, attrs.Publications...)
+	mdoc.Pubmed = append(mdoc.Pubmed, attrs.Pubmed...)
+	mdoc.DbLinks = append(
+		mdoc.DbLinks,
+		collection.Map(attrs.Dblinks, convertDbLink)...)
+	mdoc.Properties = append(
+		mdoc.Properties,
+		collection.Map(attrs.Properties, convertProperty)...)
 }
 
 func convertDbLink(link *feature.DbLink) model.DbLinkDoc {
@@ -171,15 +161,11 @@ func setOptionalFields(
 	faDoc.Synonyms = doc.Attributes.Synonyms
 	faDoc.Publications = doc.Attributes.Publications
 	faDoc.Pubmed = doc.Attributes.Pubmed
-	if len(doc.Attributes.Dblinks) > 0 {
-		faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, convertDbLink)
-	}
-	if len(doc.Attributes.Properties) > 0 {
-		faDoc.Properties = collection.Map(
-			doc.Attributes.Properties,
-			convertProperty,
-		)
-	}
+	faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, convertDbLink)
+	faDoc.Properties = collection.Map(
+		doc.Attributes.Properties,
+		convertProperty,
+	)
 }
 
 func verifyRemoval(
