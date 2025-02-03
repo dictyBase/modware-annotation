@@ -13,6 +13,20 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type validateDbLinksParams struct {
+	t          *testing.T
+	assertions *require.Assertions
+	got        []model.DbLinkDoc
+	expected   []*feature.DbLink
+}
+
+type validatePropertiesParams struct {
+	t          *testing.T
+	assertions *require.Assertions
+	got        []model.TagPropertyDoc
+	expected   []*feature.TagProperty
+}
+
 type editFeatureTestCase struct {
 	name    string
 	update  *feature.FeatureAnnotationUpdate
@@ -131,55 +145,88 @@ func setUpFeatureTest(
 	return assert, repo
 }
 
-func validateProperties(
-	t *testing.T,
-	asrt *require.Assertions,
-	got []model.TagPropertyDoc,
-	expected []*feature.TagProperty,
-) {
-	t.Helper()
-	asrt.Equal(
-		len(expected),
-		len(got),
+func validateProperties(params validatePropertiesParams) {
+	params.t.Helper()
+	params.assertions.Equal(
+		len(params.expected),
+		len(params.got),
 		"should have same number of properties",
 	)
-	for i, prop := range expected {
-		asrt.Equal(prop.Tag, got[i].Tag, "should have matching tag")
-		asrt.Equal(prop.Value, got[i].Value, "should have matching value")
+	for idx, prop := range params.expected {
+		params.assertions.Equal(
+			prop.Tag,
+			params.got[idx].Tag,
+			"should have matching tag",
+		)
+		params.assertions.Equal(
+			prop.Value,
+			params.got[idx].Value,
+			"should have matching value",
+		)
+		params.assertions.Equal(
+			prop.CreatedBy,
+			params.got[idx].CreatedBy,
+			"should have matching creator",
+		)
+		if prop.UpdatedBy != "" {
+			params.assertions.Equal(
+				prop.UpdatedBy,
+				params.got[idx].UpdatedBy,
+				"should have matching updater",
+			)
+		}
+		// Verify timestamps exist
+		params.assertions.False(
+			params.got[idx].CreatedAt.IsZero(),
+			"should have non-zero created_at timestamp",
+		)
+		if prop.UpdatedBy != "" {
+			params.assertions.False(
+				params.got[idx].UpdatedAt.IsZero(),
+				"should have non-zero updated_at timestamp when updater exists",
+			)
+		}
 	}
 }
 
-func validateDbLinks(
-	t *testing.T,
-	asrt *require.Assertions,
-	got []model.DbLinkDoc,
-	expected []*feature.DbLink,
-) {
-	t.Helper()
-	asrt.Equal(len(expected), len(got), "should have same number of dblinks")
-	for idx, link := range expected {
-		asrt.Equal(
+func validateDbLinks(params validateDbLinksParams) {
+	params.t.Helper()
+	params.assertions.Equal(
+		len(params.expected),
+		len(params.got),
+		"should have same number of dblinks",
+	)
+	for idx, link := range params.expected {
+		params.assertions.Equal(
 			link.PrimaryId,
-			got[idx].PrimaryId,
+			params.got[idx].PrimaryId,
 			"should have matching primary ID",
 		)
-		asrt.Equal(
+		params.assertions.Equal(
 			link.Database,
-			got[idx].Database,
+			params.got[idx].Database,
 			"should have matching database",
 		)
-		asrt.Equal(
+		params.assertions.Equal(
 			link.Version,
-			got[idx].Version,
+			params.got[idx].Version,
 			"should have matching version",
 		)
-		asrt.Equal(
+		params.assertions.Equal(
 			link.Linktype,
-			got[idx].LinkType,
+			params.got[idx].LinkType,
 			"should have matching link type",
 		)
-		asrt.Equal(link.Url, got[idx].URL, "should have matching URL")
-		asrt.Equal(link.Label, got[idx].Label, "should have matching label")
+		params.assertions.Equal(
+			link.Url,
+			params.got[idx].URL,
+			"should have matching URL",
+		)
+		params.assertions.Equal(
+			link.Label,
+			params.got[idx].Label,
+			"should have matching label",
+		)
 	}
 }
 
@@ -220,18 +267,18 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 		params.got.Pubmed,
 		"should have matching pubmed IDs",
 	)
-	validateDbLinks(
-		params.t,
-		params.assertions,
-		params.got.DbLinks,
-		params.base.Attributes.Dblinks,
-	)
-	validateProperties(
-		params.t,
-		params.assertions,
-		params.got.Properties,
-		params.base.Attributes.Properties,
-	)
+	validateDbLinks(validateDbLinksParams{
+		t:          params.t,
+		assertions: params.assertions,
+		got:        params.got.DbLinks,
+		expected:   params.base.Attributes.Dblinks,
+	})
+	validateProperties(validatePropertiesParams{
+		t:          params.t,
+		assertions: params.assertions,
+		got:        params.got.Properties,
+		expected:   params.base.Attributes.Properties,
+	})
 }
 
 func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
