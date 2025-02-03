@@ -13,6 +13,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type verifyEditSuccessParams struct {
+	t       *testing.T
+	asrt    *require.Assertions
+	tce     editFeatureTestCase
+	doc     *model.FeatureAnnotationDoc
+	baseDoc *feature.NewFeatureAnnotation
+	added   *model.FeatureAnnotationDoc
+}
+
 type validateDbLinksParams struct {
 	t          *testing.T
 	assertions *require.Assertions
@@ -42,14 +51,30 @@ type validateFeatureAnnotationParams struct {
 }
 
 type featureTestCase struct {
-	name    string
-	attrs   *feature.FeatureAnnotationAttributes
-	id      string
-	wantErr bool
+	name      string
+	attrs     *feature.FeatureAnnotationAttributes
+	id        string
+	wantErr   bool
+	updatedBy string
 }
 
 func getFeatureTestCases() []featureTestCase {
 	return []featureTestCase{
+		{
+			name: "success with explicit updater",
+			attrs: &feature.FeatureAnnotationAttributes{
+				Name: "explicit updater gene",
+			},
+			id:        "DDB_G0285427",
+			updatedBy: "updater@email.com",
+		},
+		{
+			name: "success with implicit updater (same as creator)",
+			attrs: &feature.FeatureAnnotationAttributes{
+				Name: "implicit updater gene",
+			},
+			id: "DDB_G0285432",
+		},
 		{
 			name: "success with all fields",
 			attrs: &feature.FeatureAnnotationAttributes{
@@ -73,6 +98,8 @@ func getFeatureTestCases() []featureTestCase {
 						Value:     "test gene",
 						CreatedBy: "tester@email.com",
 						UpdatedBy: "updater@email.com",
+						CreatedAt: timestamppb.New(time.Now()),
+						UpdatedAt: timestamppb.New(time.Now()),
 					},
 				},
 			},
@@ -87,17 +114,21 @@ func getFeatureTestCases() []featureTestCase {
 						Tag:       "description",
 						Value:     "test description",
 						CreatedBy: "creator1@email.com",
+						CreatedAt: timestamppb.New(time.Now()),
 					},
 					{
 						Tag:       "note",
 						Value:     "test note",
 						CreatedBy: "creator2@email.com",
+						CreatedAt: timestamppb.New(time.Now()),
 					},
 					{
 						Tag:       "status",
 						Value:     "active",
 						CreatedBy: "creator3@email.com",
 						UpdatedBy: "updater@email.com",
+						CreatedAt: timestamppb.New(time.Now()),
+						UpdatedAt: timestamppb.New(time.Now()),
 					},
 				},
 			},
@@ -116,7 +147,7 @@ func getFeatureTestCases() []featureTestCase {
 				Name:       "no properties gene",
 				Properties: []*feature.TagProperty{},
 			},
-			id: "DDB_G0285429",
+			id: "DDB_G0285425",
 		},
 	}
 }
@@ -267,6 +298,20 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 		params.got.Pubmed,
 		"should have matching pubmed IDs",
 	)
+	// Validate UpdatedBy field
+	if len(params.base.UpdatedBy) > 0 {
+		params.assertions.Equal(
+			params.base.UpdatedBy,
+			params.got.UpdatedBy,
+			"should have matching updater when explicitly set",
+		)
+	} else {
+		params.assertions.Equal(
+			params.base.CreatedBy,
+			params.got.UpdatedBy,
+			"should have updater same as creator when not explicitly set",
+		)
+	}
 	validateDbLinks(validateDbLinksParams{
 		t:          params.t,
 		assertions: params.assertions,
@@ -328,15 +373,6 @@ func verifyEditError(t *testing.T, asrt *require.Assertions, err error) {
 		repository.IsAnnotationNotFound(err),
 		"should be annotation not found error",
 	)
-}
-
-type verifyEditSuccessParams struct {
-	t       *testing.T
-	asrt    *require.Assertions
-	tce     editFeatureTestCase
-	doc     *model.FeatureAnnotationDoc
-	baseDoc *feature.NewFeatureAnnotation
-	added   *model.FeatureAnnotationDoc
 }
 
 func verifyEditSuccess(params verifyEditSuccessParams) {

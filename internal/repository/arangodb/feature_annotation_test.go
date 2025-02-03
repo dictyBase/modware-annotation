@@ -76,6 +76,9 @@ func TestAddFeatureAnnotation(t *testing.T) {
 			t.Cleanup(func() { _ = repo.Dbh().Drop() })
 			baseDoc.Attributes = tcs.attrs
 			baseDoc.Id = tcs.id
+			if tcs.updatedBy != "" {
+				baseDoc.UpdatedBy = tcs.updatedBy
+			}
 			doc, err := repo.AddFeatureAnnotation(baseDoc)
 			if tcs.wantErr {
 				asrt.Error(err, "expected error adding feature annotation")
