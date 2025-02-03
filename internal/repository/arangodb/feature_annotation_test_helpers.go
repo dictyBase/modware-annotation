@@ -285,7 +285,7 @@ func validateDbLinks(params validateDbLinksParams) {
 	}
 }
 
-func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
+func validateBasicFields(params validateFeatureAnnotationParams) {
 	params.t.Helper()
 	params.assertions.Equal(
 		params.key,
@@ -307,6 +307,10 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 		params.got.Name,
 		"should have matching name",
 	)
+}
+
+func validateArrayFields(params validateFeatureAnnotationParams) {
+	params.t.Helper()
 	params.assertions.ElementsMatch(
 		params.base.Attributes.Synonyms,
 		params.got.Synonyms,
@@ -322,7 +326,10 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 		params.got.Pubmed,
 		"should have matching pubmed IDs",
 	)
-	// Validate UpdatedBy field
+}
+
+func validateUpdater(params validateFeatureAnnotationParams) {
+	params.t.Helper()
 	if len(params.base.UpdatedBy) > 0 {
 		params.assertions.Equal(
 			params.base.UpdatedBy,
@@ -336,6 +343,18 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 			"should have updater same as creator when not explicitly set",
 		)
 	}
+}
+
+func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
+	params.t.Helper()
+	for _, validate := range []func(validateFeatureAnnotationParams){
+		validateBasicFields,
+		validateArrayFields,
+		validateUpdater,
+	} {
+		validate(params)
+	}
+
 	validateDbLinks(validateDbLinksParams{
 		t:          params.t,
 		assertions: params.assertions,
