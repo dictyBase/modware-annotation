@@ -55,12 +55,39 @@ func getFeatureTestCases() []featureTestCase {
 				},
 				Properties: []*feature.TagProperty{
 					{
-						Tag:   "description",
-						Value: "test gene",
+						Tag:       "description",
+						Value:     "test gene",
+						CreatedBy: "tester@email.com",
+						UpdatedBy: "updater@email.com",
 					},
 				},
 			},
 			id: "DDB_G0285425",
+		},
+		{
+			name: "success with multiple tag properties",
+			attrs: &feature.FeatureAnnotationAttributes{
+				Name: "multi-property gene",
+				Properties: []*feature.TagProperty{
+					{
+						Tag:       "description",
+						Value:     "test description",
+						CreatedBy: "creator1@email.com",
+					},
+					{
+						Tag:       "note",
+						Value:     "test note",
+						CreatedBy: "creator2@email.com",
+					},
+					{
+						Tag:       "status",
+						Value:     "active",
+						CreatedBy: "creator3@email.com",
+						UpdatedBy: "updater@email.com",
+					},
+				},
+			},
+			id: "DDB_G0285426",
 		},
 		{
 			name: "success with only required fields",
@@ -68,6 +95,14 @@ func getFeatureTestCases() []featureTestCase {
 				Name: "required fields gene",
 			},
 			id: "DDB_G0285428",
+		},
+		{
+			name: "success with empty properties array",
+			attrs: &feature.FeatureAnnotationAttributes{
+				Name:       "no properties gene",
+				Properties: []*feature.TagProperty{},
+			},
+			id: "DDB_G0285429",
 		},
 	}
 }
