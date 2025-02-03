@@ -59,6 +59,15 @@ type featureTestCase struct {
 }
 
 func getFeatureTestCases() []featureTestCase {
+	return slices.Concat(
+		getFullFeatureTestCase(),
+		getUpdaterTestCases(),
+		getMultiPropertyTestCase(),
+		getBasicTestCases(),
+	)
+}
+
+func getUpdaterTestCases() []featureTestCase {
 	return []featureTestCase{
 		{
 			name: "success with explicit updater",
@@ -75,65 +84,80 @@ func getFeatureTestCases() []featureTestCase {
 			},
 			id: "DDB_G0285432",
 		},
-		{
-			name: "success with all fields",
-			attrs: &feature.FeatureAnnotationAttributes{
-				Name:         "gene name",
-				Synonyms:     []string{"synonym1", "synonym2"},
-				Publications: []string{"pub1", "pub2"},
-				Pubmed:       []string{"123", "456"},
-				Dblinks: []*feature.DbLink{
-					{
-						PrimaryId: "DDB_G0285425",
-						Database:  "dictyBase",
-						Version:   1,
-						Linktype:  "gene",
-						Url:       "http://dictybase.org/gene/DDB_G0285425",
-						Label:     "gene page",
-					},
-				},
-				Properties: []*feature.TagProperty{
-					{
-						Tag:       "description",
-						Value:     "test gene",
-						CreatedBy: "tester@email.com",
-						UpdatedBy: "updater@email.com",
-						CreatedAt: timestamppb.New(time.Now()),
-						UpdatedAt: timestamppb.New(time.Now()),
-					},
+	}
+}
+
+func getFullFeatureTestCase() []featureTestCase {
+	ftc := make([]featureTestCase, 0)
+
+	return append(ftc, featureTestCase{
+		name: "success with all fields",
+		attrs: &feature.FeatureAnnotationAttributes{
+			Name:         "gene name",
+			Synonyms:     []string{"synonym1", "synonym2"},
+			Publications: []string{"pub1", "pub2"},
+			Pubmed:       []string{"123", "456"},
+			Dblinks: []*feature.DbLink{
+				{
+					PrimaryId: "DDB_G0285425",
+					Database:  "dictyBase",
+					Version:   1,
+					Linktype:  "gene",
+					Url:       "http://dictybase.org/gene/DDB_G0285425",
+					Label:     "gene page",
 				},
 			},
-			id: "DDB_G0285425",
-		},
-		{
-			name: "success with multiple tag properties",
-			attrs: &feature.FeatureAnnotationAttributes{
-				Name: "multi-property gene",
-				Properties: []*feature.TagProperty{
-					{
-						Tag:       "description",
-						Value:     "test description",
-						CreatedBy: "creator1@email.com",
-						CreatedAt: timestamppb.New(time.Now()),
-					},
-					{
-						Tag:       "note",
-						Value:     "test note",
-						CreatedBy: "creator2@email.com",
-						CreatedAt: timestamppb.New(time.Now()),
-					},
-					{
-						Tag:       "status",
-						Value:     "active",
-						CreatedBy: "creator3@email.com",
-						UpdatedBy: "updater@email.com",
-						CreatedAt: timestamppb.New(time.Now()),
-						UpdatedAt: timestamppb.New(time.Now()),
-					},
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "description",
+					Value:     "test gene",
+					CreatedBy: "tester@email.com",
+					UpdatedBy: "updater@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+					UpdatedAt: timestamppb.New(time.Now()),
 				},
 			},
-			id: "DDB_G0285426",
 		},
+		id: "DDB_G0285425",
+	})
+}
+
+func getMultiPropertyTestCase() []featureTestCase {
+	mtcs := make([]featureTestCase, 0)
+
+	return append(mtcs, featureTestCase{
+		name: "success with multiple tag properties",
+		attrs: &feature.FeatureAnnotationAttributes{
+			Name: "multi-property gene",
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "description",
+					Value:     "test description",
+					CreatedBy: "creator1@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+				},
+				{
+					Tag:       "note",
+					Value:     "test note",
+					CreatedBy: "creator2@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+				},
+				{
+					Tag:       "status",
+					Value:     "active",
+					CreatedBy: "creator3@email.com",
+					UpdatedBy: "updater@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+					UpdatedAt: timestamppb.New(time.Now()),
+				},
+			},
+		},
+		id: "DDB_G0285426",
+	})
+}
+
+func getBasicTestCases() []featureTestCase {
+	return []featureTestCase{
 		{
 			name: "success with only required fields",
 			attrs: &feature.FeatureAnnotationAttributes{
