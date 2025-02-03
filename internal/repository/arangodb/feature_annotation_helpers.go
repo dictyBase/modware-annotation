@@ -168,15 +168,9 @@ func setOptionalFields(
 	doc *feature.NewFeatureAnnotation,
 	faDoc *model.FeatureAnnotationDoc,
 ) {
-	if len(doc.Attributes.Synonyms) > 0 {
-		faDoc.Synonyms = doc.Attributes.Synonyms
-	}
-	if len(doc.Attributes.Publications) > 0 {
-		faDoc.Publications = doc.Attributes.Publications
-	}
-	if len(doc.Attributes.Pubmed) > 0 {
-		faDoc.Pubmed = doc.Attributes.Pubmed
-	}
+	faDoc.Synonyms = doc.Attributes.Synonyms
+	faDoc.Publications = doc.Attributes.Publications
+	faDoc.Pubmed = doc.Attributes.Pubmed
 	if len(doc.Attributes.Dblinks) > 0 {
 		faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, convertDbLink)
 	}
@@ -187,7 +181,6 @@ func setOptionalFields(
 		)
 	}
 }
-
 
 func verifyRemoval(
 	identifier string,
