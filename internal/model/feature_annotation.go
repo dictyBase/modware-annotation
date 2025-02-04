@@ -53,7 +53,8 @@ func FeatureAnnotationSchema() ([]byte, error) {
 	baseSchema := `{
         "type": "object",
         "properties": %s,
-        "required": ["feature_id", "name", "created_at", "created_by"]
+        "required": ["feature_id", "name", "created_at", "created_by", "updated_at", "updated_by"],
+        "additionalProperties": true
     }`
 
 	properties := map[string]interface{}{
@@ -79,8 +80,9 @@ func FeatureAnnotationSchema() ([]byte, error) {
 			"items": map[string]string{"type": "string"},
 		},
 		"pubmed": map[string]interface{}{
-			"type":  "array",
-			"items": map[string]string{"type": "string"},
+			"type":          "array",
+			"minProperties": 0,
+			"items":         map[string]string{"type": "string"},
 		},
 		"dblinks":     getDbLinksSchema(),
 		"properties":  getPropertiesSchema(),
@@ -125,14 +127,33 @@ func getPropertiesSchema() map[string]interface{} {
 		"items": map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
-				"tag":        map[string]string{"type": "string"},
-				"value":      map[string]string{"type": "string"},
-				"created_by": map[string]string{"type": "string", "format": "email"},
-				"updated_by": map[string]string{"type": "string", "format": "email"},
-				"created_at": map[string]string{"type": "string", "format": "date-time"},
-				"updated_at": map[string]string{"type": "string", "format": "date-time"},
+				"tag":   map[string]string{"type": "string"},
+				"value": map[string]string{"type": "string"},
+				"created_by": map[string]string{
+					"type":   "string",
+					"format": "email",
+				},
+				"updated_by": map[string]string{
+					"type":   "string",
+					"format": "email",
+				},
+				"created_at": map[string]string{
+					"type":   "string",
+					"format": "date-time",
+				},
+				"updated_at": map[string]string{
+					"type":   "string",
+					"format": "date-time",
+				},
 			},
-			"required": []string{"tag", "value", "created_by", "created_at"},
+			"required": []string{
+				"tag",
+				"value",
+				"created_by",
+				"created_at",
+				"updated_by",
+				"updated_at",
+			},
 		},
 	}
 }
