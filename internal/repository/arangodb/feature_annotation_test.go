@@ -147,7 +147,7 @@ func TestAddDuplicateFeatureAnnotation(t *testing.T) {
 	)
 }
 
-func TestGodaRemoveFeatureAnnotation(t *testing.T) {
+func TestRemoveFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	for _, testCase := range getRemoveTestCases() {
 		t.Run(testCase.name, func(t *testing.T) {
