@@ -15,44 +15,29 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
 
 	// Add test feature annotation first
-	feat := &feature.NewFeatureAnnotation{
-		Id:        "DDB_G0285425",
-		CreatedBy: "mock@email.com",
-		CreatedAt: timestamppb.New(time.Now()),
-		Attributes: &feature.FeatureAnnotationAttributes{
-			Name:         "gene name",
-			Synonyms:     []string{"synonym1", "synonym2"},
-			Publications: []string{"pub1", "pub2"},
-			Pubmed:       []string{"123", "456"},
-			Dblinks: []*feature.DbLink{
-				{
-					PrimaryId: "DDB_G0285425",
-					Database:  "dictyBase",
-					Version:   1,
-					Linktype:  "gene",
-					Url:       "http://dictybase.org/gene/DDB_G0285425",
-					Label:     "gene page",
-				},
-			},
-			Properties: []*feature.TagProperty{
-				{
-					Tag:   "description",
-					Value: "test gene",
-				},
-			},
-		},
-	}
+	feat := getCompleteFeatureDoc()
 	added, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding test feature annotation")
 
 	got, err := repo.GetFeatureAnnotation(added.AnnoId)
 	asrt.NoError(err, "expected no error getting feature annotation")
-	validateFeatureAnnotation(validateFeatureAnnotationParams{
+	validateBasicFields(validateFeatureAnnotationParams{
 		t:          t,
 		assertions: asrt,
 		got:        got,
 		base:       feat,
-		key:        added.Key,
+	})
+	validateDbLinks(validateDbLinksParams{
+		t:          t,
+		assertions: asrt,
+		got:        got.DbLinks,
+		expected:   feat.Attributes.Dblinks,
+	})
+	validateProperties(validatePropertiesParams{
+		t:          t,
+		assertions: asrt,
+		got:        got.Properties,
+		expected:   feat.Attributes.Properties,
 	})
 
 	_, err = repo.GetFeatureAnnotation("non_existent_id")
@@ -210,7 +195,7 @@ func TestEditFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
-	feat := getBaseFeatureDoc()
+	feat := getFullFeatureDoc()
 	added, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 
@@ -224,12 +209,12 @@ func TestEditFeatureAnnotation(t *testing.T) {
 				return
 			}
 			verifyEditSuccess(verifyEditSuccessParams{
-				t:     t,
-				asrt:  asrt,
-				tce:   tcs,
-				doc:   doc,
-				feat:  feat,
-				added: added,
+				t:       t,
+				asrt:    asrt,
+				tce:     tcs,
+				doc:     doc,
+				baseDoc: feat,
+				added:   added,
 			})
 		})
 	}
