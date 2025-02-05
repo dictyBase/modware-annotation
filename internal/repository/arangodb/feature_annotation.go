@@ -86,7 +86,7 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 		UpdatedBy:  doc.CreatedBy, // Initially same as created_by
 		IsObsolete: false,
 	}
-	if doc.UpdatedAt != nil {
+	if doc.UpdatedAt.IsValid() {
 		faDoc.UpdatedAt = doc.UpdatedAt.AsTime()
 	}
 	if len(doc.UpdatedBy) > 0 {
@@ -94,8 +94,8 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	}
 
 	// Set optional fields
+	// Make sure a new version of faDoc is returned. AI!
 	setOptionalFields(doc, faDoc)
-
 	// Insert document into collection
 	meta, err := fann.feature.CreateDocument(context.Background(), faDoc)
 	if err != nil {
