@@ -159,7 +159,7 @@ func convertProperty(prop *feature.TagProperty) model.TagPropertyDoc {
 func setOptionalFields(
 	doc *feature.NewFeatureAnnotation,
 	faDoc *model.FeatureAnnotationDoc,
-) {
+) *model.FeatureAnnotationDoc {
 	faDoc.Synonyms = doc.Attributes.Synonyms
 	faDoc.Publications = doc.Attributes.Publications
 	faDoc.Pubmed = doc.Attributes.Pubmed
@@ -168,6 +168,7 @@ func setOptionalFields(
 		doc.Attributes.Properties,
 		convertProperty,
 	)
+	return faDoc
 }
 
 func verifyRemoval(
