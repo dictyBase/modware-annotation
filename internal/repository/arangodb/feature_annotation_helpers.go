@@ -142,10 +142,12 @@ func convertProperty(prop *feature.TagProperty) model.TagPropertyDoc {
 		Tag:       prop.Tag,
 		Value:     prop.Value,
 		CreatedBy: prop.CreatedBy,
-		UpdatedBy: prop.UpdatedBy,
+		UpdatedBy: prop.CreatedBy,
+		CreatedAt: prop.CreatedAt.AsTime(),
+		UpdatedAt: prop.CreatedAt.AsTime(),
 	}
-	if prop.CreatedAt != nil {
-		mprop.CreatedAt = prop.CreatedAt.AsTime()
+	if len(prop.UpdatedBy) != 0 {
+		mprop.UpdatedBy = prop.UpdatedBy
 	}
 	if prop.UpdatedAt != nil {
 		mprop.UpdatedAt = prop.UpdatedAt.AsTime()
