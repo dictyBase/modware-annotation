@@ -75,6 +75,7 @@ func getCombinedFeatureDoc(
 	feat := advFn()
 	baseDoc.Attributes = feat.Attributes
 	baseDoc.Id = feat.Id
+
 	return baseDoc
 }
 
@@ -86,6 +87,40 @@ func getFullFeatureDoc() *feature.NewFeatureAnnotation {
 		Attributes: &feature.FeatureAnnotationAttributes{
 			Name:     "original name",
 			Synonyms: []string{"syn1", "syn2"},
+		},
+	}
+}
+
+func getCompleteFeatureDoc() *feature.NewFeatureAnnotation {
+	return &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285425",
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name:         "gene name",
+			Synonyms:     []string{"synonym1", "synonym2"},
+			Publications: []string{"pub1", "pub2"},
+			Pubmed:       []string{"123", "456"},
+			Dblinks: []*feature.DbLink{
+				{
+					PrimaryId: "DDB_G0285425",
+					Database:  "dictyBase",
+					Version:   1,
+					Linktype:  "gene",
+					Url:       "http://dictybase.org/gene/DDB_G0285425",
+					Label:     "gene page",
+				},
+			},
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "description",
+					Value:     "test gene",
+					CreatedBy: "creator3@email.com",
+					UpdatedBy: "updater@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+					UpdatedAt: timestamppb.New(time.Now()),
+				},
+			},
 		},
 	}
 }
