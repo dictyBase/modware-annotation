@@ -42,6 +42,12 @@ type editFeatureTestCase struct {
 	wantErr bool
 }
 
+type removeFeatureTestCase struct {
+	name    string
+	purge   bool
+	wantErr bool
+}
+
 type validateFeatureAnnotationParams struct {
 	t          *testing.T
 	assertions *require.Assertions
@@ -59,6 +65,20 @@ type featureTestCase struct {
 }
 
 type featFn func() *feature.NewFeatureAnnotation
+
+func getTestIdentifier(
+	wantErr bool,
+	repo repository.FeatureAnnotationRepository,
+	assert *require.Assertions,
+) string {
+	if wantErr {
+		return "non_existent_id"
+	}
+	doc, err := repo.AddFeatureAnnotation(getFullFeatureDoc())
+	assert.NoError(err, "expected no error adding test feature annotation")
+
+	return doc.AnnoId
+}
 
 func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
 	return &feature.NewFeatureAnnotation{
@@ -512,4 +532,24 @@ func validateBasicFields(params validateFeatureAnnotationParams) {
 		params.got.UpdatedAt,
 		"should have matching created and updated at",
 	)
+}
+
+func getRemoveTestCases() []removeFeatureTestCase {
+	return []removeFeatureTestCase{
+		{
+			name:    "should soft delete feature annotation",
+			purge:   false,
+			wantErr: false,
+		},
+		{
+			name:    "should purge feature annotation",
+			purge:   true,
+			wantErr: false,
+		},
+		{
+			name:    "should return error for non-existent ID",
+			purge:   false,
+			wantErr: true,
+		},
+	}
 }
