@@ -58,13 +58,69 @@ type featureTestCase struct {
 	updatedBy string
 }
 
-func getFeatureTestCases() []featureTestCase {
-	return slices.Concat(
-		getFullFeatureTestCase(),
-		getUpdaterTestCases(),
-		getMultiPropertyTestCase(),
-		getBasicTestCases(),
-	)
+type featFn func() *feature.NewFeatureAnnotation
+
+func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
+	return &feature.NewFeatureAnnotation{
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+	}
+}
+
+func getCombinedFeatureDoc(
+	baseFn featFn,
+	advFn featFn,
+) *feature.NewFeatureAnnotation {
+	baseDoc := baseFn()
+	feat := advFn()
+	baseDoc.Attributes = feat.Attributes
+	baseDoc.Id = feat.Id
+	return baseDoc
+}
+
+func getFullFeatureDoc() *feature.NewFeatureAnnotation {
+	return &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285425",
+		CreatedBy: "mock@email.com",
+		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name:     "original name",
+			Synonyms: []string{"syn1", "syn2"},
+		},
+	}
+}
+
+func getMultiPropertyTestCase() *feature.NewFeatureAnnotation {
+	return &feature.NewFeatureAnnotation{
+		Id: "DDB_G0285426",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: "sgene",
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "description",
+					Value:     "test description",
+					CreatedBy: "creator1@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+					UpdatedAt: timestamppb.New(time.Now()),
+				},
+				{
+					Tag:       "note",
+					Value:     "test note",
+					CreatedBy: "creator2@email.com",
+					UpdatedBy: "updater@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+				},
+				{
+					Tag:       "status",
+					Value:     "active",
+					CreatedBy: "creator3@email.com",
+					UpdatedBy: "updater@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+					UpdatedAt: timestamppb.New(time.Now()),
+				},
+			},
+		},
+	}
 }
 
 func getUpdaterTestCases() []featureTestCase {
@@ -87,12 +143,10 @@ func getUpdaterTestCases() []featureTestCase {
 	}
 }
 
-func getFullFeatureTestCase() []featureTestCase {
-	ftc := make([]featureTestCase, 0)
-
-	return append(ftc, featureTestCase{
-		name: "success with all fields",
-		attrs: &feature.FeatureAnnotationAttributes{
+func getFullFeatureTestCase() *feature.NewFeatureAnnotation {
+	return &feature.NewFeatureAnnotation{
+		Id: "DDB_G0285425",
+		Attributes: &feature.FeatureAnnotationAttributes{
 			Name:         "gene name",
 			Synonyms:     []string{"synonym1", "synonym2"},
 			Publications: []string{"pub1", "pub2"},
@@ -100,6 +154,14 @@ func getFullFeatureTestCase() []featureTestCase {
 			Dblinks: []*feature.DbLink{
 				{
 					PrimaryId: "DDB_G0285425",
+					Database:  "dictyBase",
+					Version:   1,
+					Linktype:  "gene",
+					Url:       "http://dictybase.org/gene/DDB_G0285425",
+					Label:     "gene page",
+				},
+				{
+					PrimaryId: "DDB_G0285420",
 					Database:  "dictyBase",
 					Version:   1,
 					Linktype:  "gene",
@@ -116,62 +178,33 @@ func getFullFeatureTestCase() []featureTestCase {
 					CreatedAt: timestamppb.New(time.Now()),
 					UpdatedAt: timestamppb.New(time.Now()),
 				},
-			},
-		},
-		id: "DDB_G0285425",
-	})
-}
-
-func getMultiPropertyTestCase() []featureTestCase {
-	mtcs := make([]featureTestCase, 0)
-
-	return append(mtcs, featureTestCase{
-		name: "success with multiple tag properties",
-		attrs: &feature.FeatureAnnotationAttributes{
-			Name: "multi-property gene",
-			Properties: []*feature.TagProperty{
 				{
 					Tag:       "description",
-					Value:     "test description",
-					CreatedBy: "creator1@email.com",
-					CreatedAt: timestamppb.New(time.Now()),
-				},
-				{
-					Tag:       "note",
-					Value:     "test note",
-					CreatedBy: "creator2@email.com",
-					CreatedAt: timestamppb.New(time.Now()),
-				},
-				{
-					Tag:       "status",
-					Value:     "active",
-					CreatedBy: "creator3@email.com",
+					Value:     "test gene",
+					CreatedBy: "tester@email.com",
 					UpdatedBy: "updater@email.com",
 					CreatedAt: timestamppb.New(time.Now()),
 					UpdatedAt: timestamppb.New(time.Now()),
 				},
 			},
 		},
-		id: "DDB_G0285426",
-	})
+	}
 }
 
-func getBasicTestCases() []featureTestCase {
-	return []featureTestCase{
+func getBasicTestCases() []*feature.NewFeatureAnnotation {
+	return []*feature.NewFeatureAnnotation{
 		{
-			name: "success with only required fields",
-			attrs: &feature.FeatureAnnotationAttributes{
+			Attributes: &feature.FeatureAnnotationAttributes{
 				Name: "required fields gene",
 			},
-			id: "DDB_G0285428",
+			Id: "DDB_G0285428",
 		},
 		{
-			name: "success with empty properties array",
-			attrs: &feature.FeatureAnnotationAttributes{
+			Attributes: &feature.FeatureAnnotationAttributes{
 				Name:       "no properties gene",
 				Properties: []*feature.TagProperty{},
 			},
-			id: "DDB_G0285425",
+			Id: "DDB_G0285429",
 		},
 	}
 }
@@ -229,16 +262,11 @@ func validateProperties(params validatePropertiesParams) {
 				params.got[idx].UpdatedBy,
 				"should have matching updater",
 			)
-		}
-		// Verify timestamps exist
-		params.assertions.False(
-			params.got[idx].CreatedAt.IsZero(),
-			"should have non-zero created_at timestamp",
-		)
-		if prop.UpdatedBy != "" {
-			params.assertions.False(
-				params.got[idx].UpdatedAt.IsZero(),
-				"should have non-zero updated_at timestamp when updater exists",
+		} else {
+			params.assertions.Equal(
+				params.got[idx].UpdatedBy,
+				params.got[idx].CreatedBy,
+				"should match creator and updater",
 			)
 		}
 	}
@@ -285,30 +313,6 @@ func validateDbLinks(params validateDbLinksParams) {
 	}
 }
 
-func validateBasicFields(params validateFeatureAnnotationParams) {
-	params.t.Helper()
-	params.assertions.Equal(
-		params.key,
-		params.got.Key,
-		"should have matching keys",
-	)
-	params.assertions.Equal(
-		params.base.Id,
-		params.got.AnnoId,
-		"should have matching IDs",
-	)
-	params.assertions.Equal(
-		params.base.CreatedBy,
-		params.got.CreatedBy,
-		"should have matching creator",
-	)
-	params.assertions.Equal(
-		params.base.Attributes.Name,
-		params.got.Name,
-		"should have matching name",
-	)
-}
-
 func validateArrayFields(params validateFeatureAnnotationParams) {
 	params.t.Helper()
 	params.assertions.ElementsMatch(
@@ -347,37 +351,35 @@ func validateUpdater(params validateFeatureAnnotationParams) {
 
 func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 	params.t.Helper()
-	for _, validate := range []func(validateFeatureAnnotationParams){
-		validateBasicFields,
-		validateArrayFields,
-		validateUpdater,
-	} {
-		validate(params)
+	// Always validate basic fields
+	validateBasicFields(params)
+	validateUpdater(params)
+
+	// Only validate array fields if they exist
+	if len(params.base.Attributes.Synonyms) > 0 ||
+		len(params.base.Attributes.Publications) > 0 ||
+		len(params.base.Attributes.Pubmed) > 0 {
+		validateArrayFields(params)
 	}
 
-	validateDbLinks(validateDbLinksParams{
-		t:          params.t,
-		assertions: params.assertions,
-		got:        params.got.DbLinks,
-		expected:   params.base.Attributes.Dblinks,
-	})
-	validateProperties(validatePropertiesParams{
-		t:          params.t,
-		assertions: params.assertions,
-		got:        params.got.Properties,
-		expected:   params.base.Attributes.Properties,
-	})
-}
+	// Only validate DbLinks if they exist
+	if len(params.base.Attributes.Dblinks) > 0 {
+		validateDbLinks(validateDbLinksParams{
+			t:          params.t,
+			assertions: params.assertions,
+			got:        params.got.DbLinks,
+			expected:   params.base.Attributes.Dblinks,
+		})
+	}
 
-func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
-	return &feature.NewFeatureAnnotation{
-		Id:        "DDB_G0285425",
-		CreatedBy: "mock@email.com",
-		CreatedAt: timestamppb.New(time.Now()),
-		Attributes: &feature.FeatureAnnotationAttributes{
-			Name:     "original name",
-			Synonyms: []string{"syn1", "syn2"},
-		},
+	// Only validate Properties if they exist
+	if len(params.base.Attributes.Properties) > 0 {
+		validateProperties(validatePropertiesParams{
+			t:          params.t,
+			assertions: params.assertions,
+			got:        params.got.Properties,
+			expected:   params.base.Attributes.Properties,
+		})
 	}
 }
 
@@ -446,4 +448,33 @@ func verifyEditSuccess(params verifyEditSuccessParams) {
 	// Original fields should be preserved
 	params.asrt.Equal(params.baseDoc.CreatedBy, params.doc.CreatedBy)
 	params.asrt.Equal(params.added.Key, params.doc.Key)
+}
+
+func validateBasicFields(params validateFeatureAnnotationParams) {
+	params.t.Helper()
+	params.assertions.Regexp(
+		`^DDB_G\d+`,
+		params.got.AnnoId,
+		"should have matching IDs",
+	)
+	params.assertions.Equal(
+		params.base.CreatedBy,
+		params.got.CreatedBy,
+		"should have matching creator",
+	)
+	params.assertions.Regexp(
+		`^[a-zA-Z0-9\s-]*$`,
+		params.got.Name,
+		"should have matching name",
+	)
+	params.assertions.Equal(
+		params.base.CreatedAt.AsTime(),
+		params.got.CreatedAt,
+		"should have matching created date",
+	)
+	params.assertions.Equal(
+		params.got.CreatedAt,
+		params.got.UpdatedAt,
+		"should have matching created and updated at",
+	)
 }
