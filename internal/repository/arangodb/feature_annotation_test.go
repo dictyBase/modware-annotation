@@ -147,35 +147,21 @@ func TestAddDuplicateFeatureAnnotation(t *testing.T) {
 	)
 }
 
-func TestRemoveFeatureAnnotation(t *testing.T) {
+func TestGodaRemoveFeatureAnnotation(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name    string
-		purge   bool
-		wantErr bool
-	}{
-		{
-			name:    "should soft delete feature annotation",
-			purge:   false,
-			wantErr: false,
-		},
-		{
-			name:    "should purge feature annotation",
-			purge:   true,
-			wantErr: false,
-		},
-		{
-			name:    "should return error for non-existent ID",
-			purge:   false,
-			wantErr: true,
-		},
-	}
-	for _, testCase := range tests {
+	for _, testCase := range getRemoveTestCases() {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+			var identifier string
 			assert, repo := setUpFeatureTest(t)
 			t.Cleanup(func() { _ = repo.Dbh().Drop() })
-			identifier := getTestIdentifier(testCase.wantErr, repo, assert)
+			if testCase.wantErr {
+				identifier = "non_existent_id"
+			} else {
+				doc, err := repo.AddFeatureAnnotation(getFullFeatureDoc())
+				assert.NoError(err, "expected no error adding test feature annotation")
+				identifier = doc.AnnoId
+			}
 			err := repo.RemoveFeatureAnnotation(identifier, testCase.purge)
 			if testCase.wantErr {
 				assert.Error(
@@ -186,7 +172,15 @@ func TestRemoveFeatureAnnotation(t *testing.T) {
 				return
 			}
 			assert.NoError(err, "expected no error removing feature annotation")
-			verifyRemoval(identifier, repo, assert)
+			_, err = repo.GetFeatureAnnotation(identifier)
+			assert.Error(
+				err,
+				"expected error getting removed feature annotation",
+			)
+			assert.True(
+				repository.IsAnnotationNotFound(err),
+				"should be annotation not found error",
+			)
 		})
 	}
 }
