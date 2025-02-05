@@ -15,7 +15,7 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
 
 	// Add test feature annotation first
-	baseDoc := &feature.NewFeatureAnnotation{
+	feat := &feature.NewFeatureAnnotation{
 		Id:        "DDB_G0285425",
 		CreatedBy: "mock@email.com",
 		CreatedAt: timestamppb.New(time.Now()),
@@ -42,7 +42,7 @@ func TestGetFeatureAnnotation(t *testing.T) {
 			},
 		},
 	}
-	added, err := repo.AddFeatureAnnotation(baseDoc)
+	added, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding test feature annotation")
 
 	got, err := repo.GetFeatureAnnotation(added.AnnoId)
@@ -51,7 +51,7 @@ func TestGetFeatureAnnotation(t *testing.T) {
 		t:          t,
 		assertions: asrt,
 		got:        got,
-		base:       baseDoc,
+		base:       feat,
 		key:        added.Key,
 	})
 
@@ -63,38 +63,74 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	)
 }
 
-func TestAddFeatureAnnotation(t *testing.T) {
+func TestAddFeatureAnnotationBasic(t *testing.T) {
 	t.Parallel()
-	baseDoc := &feature.NewFeatureAnnotation{
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	baseFeat := &feature.NewFeatureAnnotation{
 		CreatedBy: "mock@email.com",
 		CreatedAt: timestamppb.New(time.Now()),
 	}
-	for _, tcs := range getFeatureTestCases() {
-		t.Run(tcs.name, func(t *testing.T) {
-			t.Parallel()
-			asrt, repo := setUpFeatureTest(t)
-			t.Cleanup(func() { _ = repo.Dbh().Drop() })
-			baseDoc.Attributes = tcs.attrs
-			baseDoc.Id = tcs.id
-			if tcs.updatedBy != "" {
-				baseDoc.UpdatedBy = tcs.updatedBy
-			}
-			doc, err := repo.AddFeatureAnnotation(baseDoc)
-			if tcs.wantErr {
-				asrt.Error(err, "expected error adding feature annotation")
-
-				return
-			}
-			asrt.NoError(err, "expected no error adding feature annotation")
-			validateFeatureAnnotation(validateFeatureAnnotationParams{
-				t:          t,
-				assertions: asrt,
-				got:        doc,
-				base:       baseDoc,
-				key:        doc.Key,
-			})
+	for _, nfeat := range getBasicTestCases() {
+		baseFeat.Attributes = nfeat.Attributes
+		baseFeat.Id = nfeat.Id
+		doc, err := repo.AddFeatureAnnotation(baseFeat)
+		asrt.NoError(err, "expected no error adding feature annotation")
+		validateBasicFields(validateFeatureAnnotationParams{
+			t:          t,
+			assertions: asrt,
+			got:        doc,
+			base:       baseFeat,
 		})
 	}
+}
+
+func TestAddFeatureAnnotationFull(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	feat := getCombinedFeatureDoc(getBaseFeatureDoc, getMultiPropertyTestCase)
+	doc, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "expected no error adding feature annotation")
+	validateBasicFields(validateFeatureAnnotationParams{
+		t:          t,
+		assertions: asrt,
+		got:        doc,
+		base:       feat,
+	})
+	validateDbLinks(validateDbLinksParams{
+		t:          t,
+		assertions: asrt,
+		got:        doc.DbLinks,
+		expected:   feat.Attributes.Dblinks,
+	})
+	validateProperties(validatePropertiesParams{
+		t:          t,
+		assertions: asrt,
+		got:        doc.Properties,
+		expected:   feat.Attributes.Properties,
+	})
+}
+
+func TestAddFeatureAnnotationMultiProperty(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	feat := getCombinedFeatureDoc(getBaseFeatureDoc, getMultiPropertyTestCase)
+	doc, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "expected no error adding feature annotation")
+	validateBasicFields(validateFeatureAnnotationParams{
+		t:          t,
+		assertions: asrt,
+		got:        doc,
+		base:       feat,
+	})
+	validateProperties(validatePropertiesParams{
+		t:          t,
+		assertions: asrt,
+		got:        doc.Properties,
+		expected:   feat.Attributes.Properties,
+	})
 }
 
 func TestAddDuplicateFeatureAnnotation(t *testing.T) {
@@ -103,7 +139,7 @@ func TestAddDuplicateFeatureAnnotation(t *testing.T) {
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
 
 	// Create base feature annotation
-	baseDoc := &feature.NewFeatureAnnotation{
+	feat := &feature.NewFeatureAnnotation{
 		Id:        "DDB_G0285425",
 		CreatedBy: "mock@email.com",
 		CreatedAt: timestamppb.New(time.Now()),
@@ -113,11 +149,11 @@ func TestAddDuplicateFeatureAnnotation(t *testing.T) {
 	}
 
 	// Add first feature annotation
-	_, err := repo.AddFeatureAnnotation(baseDoc)
+	_, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding first feature annotation")
 
 	// Attempt to add duplicate feature annotation
-	_, err = repo.AddFeatureAnnotation(baseDoc)
+	_, err = repo.AddFeatureAnnotation(feat)
 	asrt.Error(err, "expected error when adding duplicate feature annotation")
 	asrt.Contains(
 		err.Error(),
@@ -174,8 +210,8 @@ func TestEditFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
-	baseDoc := getBaseFeatureDoc()
-	added, err := repo.AddFeatureAnnotation(baseDoc)
+	feat := getBaseFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 
 	for _, tcs := range getEditFeatureTestCases(added.AnnoId) {
@@ -188,12 +224,12 @@ func TestEditFeatureAnnotation(t *testing.T) {
 				return
 			}
 			verifyEditSuccess(verifyEditSuccessParams{
-				t:       t,
-				asrt:    asrt,
-				tce:     tcs,
-				doc:     doc,
-				baseDoc: baseDoc,
-				added:   added,
+				t:     t,
+				asrt:  asrt,
+				tce:   tcs,
+				doc:   doc,
+				feat:  feat,
+				added: added,
 			})
 		})
 	}
