@@ -3,6 +3,7 @@ package arangodb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
@@ -190,6 +191,38 @@ func (fann *featureAnnoRepo) ClearFeatureAnnotations() error {
 	return nil
 }
 
+func (fann *featureAnnoRepo) AddTag(
+	req *feature.AddTagRequest,
+) (*model.FeatureAnnotationDoc, error) {
+	// Get existing document
+	doc, err := fann.GetFeatureAnnotation(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Append new tag
+	newTags := doc.Properties
+	newTags = append(newTags, model.TagPropertyDoc{
+		Tag:       req.Tag.Tag,
+		Value:     req.Tag.Value,
+		CreatedBy: req.Tag.CreatedBy,
+		CreatedAt: time.Now(),
+		UpdatedBy: req.Tag.CreatedBy,
+		UpdatedAt: time.Now(),
+	})
+	newDoc := &model.FeatureAnnotationDoc{}
+	ctx := driver.WithReturnNew(context.Background(), newDoc)
+	meta, err := fann.feature.UpdateDocument(
+		ctx,
+		doc.Key,
+		map[string]interface{}{"properties": newTags},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error adding tag: %w", err)
+	}
+	newDoc.DocumentMeta = meta
+	return newDoc, nil
+}
 // Dbh returns the underlying database handler.
 
 func (fann *featureAnnoRepo) Dbh() *manager.Database {
