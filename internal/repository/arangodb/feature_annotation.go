@@ -96,13 +96,12 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	}
 
 	// Set optional fields
-	// Make sure a new version of faDoc is returned. AI!
 	setOptionalFields(doc, faDoc)
-	
+
 	// Create context to return new document
 	newDoc := &model.FeatureAnnotationDoc{}
 	ctx := driver.WithReturnNew(context.Background(), newDoc)
-	
+
 	// Insert document and get updated version
 	meta, err := fann.feature.CreateDocument(ctx, faDoc)
 	if err != nil {
@@ -225,6 +224,7 @@ func (fann *featureAnnoRepo) AddTag(
 		return nil, fmt.Errorf("error adding tag: %w", err)
 	}
 	newDoc.DocumentMeta = meta
+
 	return newDoc, nil
 }
 
@@ -271,6 +271,42 @@ func (fann *featureAnnoRepo) UpdateTag(
 
 	return newDoc, nil
 }
+
+func (fann *featureAnnoRepo) RemoveTag(
+	req *feature.RemoveTagRequest,
+) (*model.FeatureAnnotationDoc, error) {
+	doc, err := fann.GetFeatureAnnotation(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find tag index using IndexFunc
+	idx := slices.IndexFunc(doc.Properties, func(p model.TagPropertyDoc) bool {
+		return p.Tag == req.Tag
+	})
+	if idx == -1 {
+		return nil, fmt.Errorf("tag %s not found", req.Tag)
+	}
+
+	// Create updated properties using Delete
+	newProps := slices.Delete(doc.Properties, idx, idx+1)
+
+	// Perform partial update and return new document
+	newDoc := &model.FeatureAnnotationDoc{}
+	ctx := driver.WithReturnNew(context.Background(), newDoc)
+	meta, err := fann.feature.UpdateDocument(
+		ctx,
+		doc.Key,
+		map[string]interface{}{"properties": newProps},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error removing tag: %w", err)
+	}
+	newDoc.DocumentMeta = meta
+
+	return newDoc, nil
+}
+
 // Dbh returns the underlying database handler.
 
 func (fann *featureAnnoRepo) Dbh() *manager.Database {
