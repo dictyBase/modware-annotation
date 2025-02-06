@@ -189,8 +189,7 @@ func TestEditFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
-	feat := getFullFeatureDoc()
-	added, err := repo.AddFeatureAnnotation(feat)
+	added, err := repo.AddFeatureAnnotation(getCompleteFeatureDoc())
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 
 	for _, tcs := range getEditFeatureTestCases(added.AnnoId) {
@@ -203,12 +202,11 @@ func TestEditFeatureAnnotation(t *testing.T) {
 				return
 			}
 			verifyEditSuccess(verifyEditSuccessParams{
-				t:       t,
-				asrt:    asrt,
-				tce:     tcs,
-				doc:     doc,
-				baseDoc: feat,
-				added:   added,
+				t:        t,
+				asrt:     asrt,
+				tce:      tcs,
+				initial:  added,
+				modified: doc,
 			})
 		})
 	}
