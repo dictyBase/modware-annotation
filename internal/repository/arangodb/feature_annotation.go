@@ -98,19 +98,22 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	// Set optional fields
 	// Make sure a new version of faDoc is returned. AI!
 	setOptionalFields(doc, faDoc)
-	// Insert document into collection
-	meta, err := fann.feature.CreateDocument(context.Background(), faDoc)
+	
+	// Create context to return new document
+	newDoc := &model.FeatureAnnotationDoc{}
+	ctx := driver.WithReturnNew(context.Background(), newDoc)
+	
+	// Insert document and get updated version
+	meta, err := fann.feature.CreateDocument(ctx, faDoc)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"error creating feature annotation document: %w",
 			err,
 		)
 	}
+	newDoc.DocumentMeta = meta
 
-	// Add document metadata
-	faDoc.DocumentMeta = meta
-
-	return faDoc, nil
+	return newDoc, nil
 }
 
 // EditFeatureAnnotation updates an existing feature annotation.
