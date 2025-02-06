@@ -288,3 +288,84 @@ func TestAddTagToNonExistentFeature(t *testing.T) {
 	asrt.Error(err, "should return error for non-existent feature")
 	asrt.True(repository.IsAnnotationNotFound(err), "should be not found error")
 }
+
+func TestUpdateExistingTag(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Setup initial feature with tag
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should create test feature")
+
+	tagReq := &feature.AddTagRequest{
+		Id: added.AnnoId,
+		Tag: &feature.TagPropertyCreate{
+			Tag:       "update_test",
+			Value:     "initial",
+			CreatedBy: "tester@example.org",
+		},
+	}
+	tagged, err := repo.AddTag(tagReq)
+	asrt.NoError(err, "should add initial tag")
+
+	// Update request
+	updateReq := &feature.UpdateTagRequest{
+		Id: added.AnnoId,
+		Tag: &feature.TagPropertyUpdate{
+			Tag:       "update_test",
+			Value:     "updated",
+			UpdatedBy: "updater@example.org",
+		},
+	}
+
+	// Execute update
+	updated, err := repo.UpdateTag(updateReq)
+	asrt.NoError(err, "should successfully update tag")
+
+	// Verify changes
+	var found bool
+	for _, prop := range updated.Properties {
+		if prop.Tag == "update_test" {
+			found = true
+			asrt.Equal("updated", prop.Value, "should update value")
+			asrt.Equal(
+				"updater@example.org",
+				prop.UpdatedBy,
+				"should update modifier",
+			)
+			asrt.Equal(
+				"tester@example.org",
+				prop.CreatedBy,
+				"should preserve creator",
+			)
+			asrt.False(prop.UpdatedAt.IsZero(), "should set update timestamp")
+		}
+	}
+	asrt.True(found, "should find updated tag")
+	asrt.Equal(tagged.Name, updated.Name, "should preserve feature name")
+}
+
+func TestUpdateNonExistentTag(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Create feature without tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should create test feature")
+
+	// Attempt to update missing tag
+	_, err = repo.UpdateTag(&feature.UpdateTagRequest{
+		Id: added.AnnoId,
+		Tag: &feature.TagPropertyUpdate{
+			Tag:       "ghost_tag",
+			Value:     "new_value",
+			UpdatedBy: "tester@example.org",
+		},
+	})
+
+	asrt.Error(err, "should return error for missing tag")
+}
