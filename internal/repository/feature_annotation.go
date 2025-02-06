@@ -25,4 +25,12 @@ type FeatureAnnotationRepository interface {
 	ClearFeatureAnnotations() error
 	// Dbh returns the underlying database handler
 	Dbh() *manager.Database
+	// Tag management methods
+	AddTag(req *feature.AddTagRequest) (*model.FeatureAnnotationDoc, error)
+	UpdateTag(
+		req *feature.UpdateTagRequest,
+	) (*model.FeatureAnnotationDoc, error)
+	RemoveTag(
+		req *feature.RemoveTagRequest,
+	) (*model.FeatureAnnotationDoc, error)
 }
