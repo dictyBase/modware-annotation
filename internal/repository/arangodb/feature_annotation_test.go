@@ -211,3 +211,61 @@ func TestEditFeatureAnnotation(t *testing.T) {
 		})
 	}
 }
+
+func TestAddTagToExistingFeature(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Create base feature
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+
+	// Create tag request
+	tagReq := &feature.AddTagRequest{
+		Id: added.AnnoId,
+		Tag: &feature.TagPropertyCreate{
+			Tag:       "test_tag",
+			Value:     "test_value",
+			CreatedBy: "tester@example.org",
+		},
+	}
+
+	// Add tag
+	updated, err := repo.AddTag(tagReq)
+	asrt.NoError(err, "should successfully add tag")
+	asrt.Len(
+		updated.Properties,
+		len(feat.Attributes.Properties)+1,
+		"should have one more tag",
+	)
+
+	// Verify added tag
+	found := false
+	for _, prop := range updated.Properties {
+		if prop.Tag == tagReq.Tag.Tag {
+			found = true
+			asrt.Equal(tagReq.Tag.Value, prop.Value, "should match tag value")
+			asrt.Equal(
+				tagReq.Tag.CreatedBy,
+				prop.CreatedBy,
+				"should match created by",
+			)
+			asrt.False(
+				prop.CreatedAt.IsZero(),
+				"should have creation timestamp",
+			)
+			asrt.False(prop.UpdatedAt.IsZero(), "should have update timestamp")
+		}
+	}
+	asrt.True(found, "should find added tag")
+
+	// Verify other fields remain unchanged
+	asrt.Equal(added.Name, updated.Name, "name should remain unchanged")
+	asrt.Equal(
+		added.CreatedBy,
+		updated.CreatedBy,
+		"created_by should remain unchanged",
+	)
+}
