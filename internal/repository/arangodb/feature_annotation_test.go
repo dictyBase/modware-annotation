@@ -269,3 +269,22 @@ func TestAddTagToExistingFeature(t *testing.T) {
 		"created_by should remain unchanged",
 	)
 }
+
+func TestAddTagToNonExistentFeature(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Attempt to add tag to non-existent feature
+	_, err := repo.AddTag(&feature.AddTagRequest{
+		Id: "DDB_G0000000",
+		Tag: &feature.TagPropertyCreate{
+			Tag:       "test_tag",
+			Value:     "test_value",
+			CreatedBy: "tester@example.org",
+		},
+	})
+
+	asrt.Error(err, "should return error for non-existent feature")
+	asrt.True(repository.IsAnnotationNotFound(err), "should be not found error")
+}
