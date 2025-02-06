@@ -3,6 +3,7 @@ package arangodb
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
@@ -221,6 +222,50 @@ func (fann *featureAnnoRepo) AddTag(
 		return nil, fmt.Errorf("error adding tag: %w", err)
 	}
 	newDoc.DocumentMeta = meta
+	return newDoc, nil
+}
+
+func (fann *featureAnnoRepo) UpdateTag(
+	req *feature.UpdateTagRequest,
+) (*model.FeatureAnnotationDoc, error) {
+	doc, err := fann.GetFeatureAnnotation(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find tag index using IndexFunc
+	idx := slices.IndexFunc(doc.Properties, func(p model.TagPropertyDoc) bool {
+		return p.Tag == req.Tag.Tag
+	})
+	if idx == -1 {
+		return nil, fmt.Errorf("tag %s not found", req.Tag.Tag)
+	}
+
+	// Create updated properties slice
+	newProps := make([]model.TagPropertyDoc, len(doc.Properties))
+	copy(newProps, doc.Properties)
+	newProps[idx] = model.TagPropertyDoc{
+		Tag:       req.Tag.Tag,
+		Value:     req.Tag.Value,
+		CreatedBy: doc.Properties[idx].CreatedBy, // Preserve original creator
+		CreatedAt: doc.Properties[idx].CreatedAt, // Preserve creation time
+		UpdatedBy: req.Tag.UpdatedBy,
+		UpdatedAt: time.Now(),
+	}
+
+	// Perform partial update and return new document
+	newDoc := &model.FeatureAnnotationDoc{}
+	ctx := driver.WithReturnNew(context.Background(), newDoc)
+	meta, err := fann.feature.UpdateDocument(
+		ctx,
+		doc.Key,
+		map[string]interface{}{"properties": newProps},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error updating tag: %w", err)
+	}
+	newDoc.DocumentMeta = meta
+
 	return newDoc, nil
 }
 // Dbh returns the underlying database handler.
