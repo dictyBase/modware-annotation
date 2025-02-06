@@ -2,11 +2,13 @@ package arangodb
 
 import (
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/dictyBase/arangomanager/testarango"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/require"
@@ -14,12 +16,11 @@ import (
 )
 
 type verifyEditSuccessParams struct {
-	t       *testing.T
-	asrt    *require.Assertions
-	tce     editFeatureTestCase
-	doc     *model.FeatureAnnotationDoc
-	baseDoc *feature.NewFeatureAnnotation
-	added   *model.FeatureAnnotationDoc
+	t        *testing.T
+	asrt     *require.Assertions
+	tce      editFeatureTestCase
+	initial  *model.FeatureAnnotationDoc
+	modified *model.FeatureAnnotationDoc
 }
 
 type validateDbLinksParams struct {
@@ -74,10 +75,10 @@ func getTestIdentifier(
 	if wantErr {
 		return "non_existent_id"
 	}
-	doc, err := repo.AddFeatureAnnotation(getFullFeatureDoc())
+	initial, err := repo.AddFeatureAnnotation(getFullFeatureDoc())
 	assert.NoError(err, "expected no error adding test feature annotation")
 
-	return doc.AnnoId
+	return initial.AnnoId
 }
 
 func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
@@ -327,6 +328,15 @@ func validateProperties(params validatePropertiesParams) {
 	}
 }
 
+// compareTagProperties implements sorting for TagPropertyDoc slices by tag and
+// value using case-insensitive comparison.
+func compareTagProperties(first, second model.TagPropertyDoc) int {
+	return strings.Compare(
+		strings.ToLower(first.Tag),
+		strings.ToLower(second.Tag),
+	)
+}
+
 func validateDbLinks(params validateDbLinksParams) {
 	params.t.Helper()
 	params.assertions.Equal(
@@ -438,12 +448,12 @@ func validateFeatureAnnotation(params validateFeatureAnnotationParams) {
 	}
 }
 
-func getEditFeatureTestCases(id string) []editFeatureTestCase {
+func getEditFeatureTestCases(identifier string) []editFeatureTestCase {
 	return []editFeatureTestCase{
 		{
 			name: "should update existing feature annotation",
 			update: &feature.FeatureAnnotationUpdate{
-				Id:        id,
+				Id:        identifier,
 				UpdatedBy: "updater@email.com",
 				Attributes: &feature.FeatureAnnotationAttributes{
 					Name:     "updated name",
@@ -463,6 +473,34 @@ func getEditFeatureTestCases(id string) []editFeatureTestCase {
 			},
 			wantErr: true,
 		},
+		{
+			name: "should add new property to existing feature annotation",
+			update: &feature.FeatureAnnotationUpdate{
+				Id:        identifier,
+				UpdatedBy: "updater@email.com",
+				Attributes: &feature.FeatureAnnotationAttributes{
+					Properties: []*feature.TagProperty{
+						{
+							Tag:       "description",
+							Value:     "updated description",
+							CreatedBy: "creator3@email.com",
+							UpdatedBy: "updater@email.com",
+							CreatedAt: timestamppb.New(time.Now()),
+							UpdatedAt: timestamppb.New(time.Now()),
+						},
+						{
+							Tag:       "note",
+							Value:     "test note",
+							CreatedBy: "creator@email.com",
+							UpdatedBy: "updater@email.com",
+							CreatedAt: timestamppb.New(time.Now()),
+							UpdatedAt: timestamppb.New(time.Now()),
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 }
 
@@ -478,31 +516,53 @@ func verifyEditError(t *testing.T, asrt *require.Assertions, err error) {
 func verifyEditSuccess(params verifyEditSuccessParams) {
 	params.t.Helper()
 	params.asrt.Equal(
-		params.tce.update.Id,
-		params.doc.AnnoId,
+		params.modified.AnnoId,
+		params.initial.AnnoId,
 		"IDs should match",
 	)
 	params.asrt.Equal(
+		params.modified.UpdatedBy,
 		params.tce.update.UpdatedBy,
-		params.doc.UpdatedBy,
 		"updater should match",
 	)
 	params.asrt.Equal(
+		params.modified.Name,
 		params.tce.update.Attributes.Name,
-		params.doc.Name,
 		"names should match",
 	)
-	params.asrt.ElementsMatch(
-		slices.Concat(
-			params.added.Synonyms,
-			params.tce.update.Attributes.Synonyms,
-		),
-		params.doc.Synonyms,
-		"synonyms should match",
-	)
 	// Original fields should be preserved
-	params.asrt.Equal(params.baseDoc.CreatedBy, params.doc.CreatedBy)
-	params.asrt.Equal(params.added.Key, params.doc.Key)
+	params.asrt.Equal(params.modified.Key, params.initial.Key)
+
+	if len(params.initial.Synonyms) > 0 {
+		modsym := slices.Concat(
+			params.initial.Synonyms,
+			params.tce.update.Attributes.Synonyms,
+		)
+		slices.Sort(modsym)
+		slices.Sort(params.modified.Synonyms)
+		params.asrt.ElementsMatch(
+			modsym,
+			params.modified.Synonyms,
+			"synonyms should match",
+		)
+	}
+	// Validate properties if updated
+	if params.tce.update.Attributes.Properties != nil {
+		modprops := slices.Concat(
+			params.initial.Properties,
+			collection.Map(
+				params.tce.update.Attributes.Properties,
+				convertProperty,
+			),
+		)
+		slices.SortFunc(modprops, compareTagProperties)
+		slices.SortFunc(params.modified.Properties, compareTagProperties)
+		params.asrt.ElementsMatch(
+			modprops,
+			params.modified.Properties,
+			"properties should match after update",
+		)
+	}
 }
 
 func validateBasicFields(params validateFeatureAnnotationParams) {
