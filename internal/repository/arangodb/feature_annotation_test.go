@@ -423,3 +423,21 @@ func TestRemoveTag(t *testing.T) {
 	asrt.Equal(added.Name, updated.Name, "should preserve feature name")
 	asrt.Equal(added.CreatedBy, updated.CreatedBy, "should preserve created_by")
 }
+
+func TestRemoveNonExistentTag(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Create feature without tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should create test feature")
+
+	// Attempt to remove tag
+	err = repo.RemoveTag(&feature.RemoveTagRequest{
+		Id:  added.AnnoId,
+		Tag: "ghost_tag",
+	})
+	asrt.Error(err, "should return error for missing tag")
+}
