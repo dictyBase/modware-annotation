@@ -32,5 +32,5 @@ type FeatureAnnotationRepository interface {
 	) (*model.FeatureAnnotationDoc, error)
 	RemoveTag(
 		req *feature.RemoveTagRequest,
-	) (*model.FeatureAnnotationDoc, error)
+	) error
 }
