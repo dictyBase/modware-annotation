@@ -274,10 +274,10 @@ func (fann *featureAnnoRepo) UpdateTag(
 
 func (fann *featureAnnoRepo) RemoveTag(
 	req *feature.RemoveTagRequest,
-) (*model.FeatureAnnotationDoc, error) {
+) error {
 	doc, err := fann.GetFeatureAnnotation(req.Id)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Find tag index using IndexFunc
@@ -285,26 +285,22 @@ func (fann *featureAnnoRepo) RemoveTag(
 		return p.Tag == req.Tag
 	})
 	if idx == -1 {
-		return nil, fmt.Errorf("tag %s not found", req.Tag)
+		return fmt.Errorf("tag %s not found", req.Tag)
 	}
 
 	// Create updated properties using Delete
 	newProps := slices.Delete(doc.Properties, idx, idx+1)
 
-	// Perform partial update and return new document
-	newDoc := &model.FeatureAnnotationDoc{}
-	ctx := driver.WithReturnNew(context.Background(), newDoc)
-	meta, err := fann.feature.UpdateDocument(
-		ctx,
+	_, err = fann.feature.UpdateDocument(
+		context.Background(),
 		doc.Key,
 		map[string]interface{}{"properties": newProps},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error removing tag: %w", err)
+		return fmt.Errorf("error removing tag: %w", err)
 	}
-	newDoc.DocumentMeta = meta
 
-	return newDoc, nil
+	return nil
 }
 
 // Dbh returns the underlying database handler.
