@@ -369,3 +369,57 @@ func TestUpdateNonExistentTag(t *testing.T) {
 
 	asrt.Error(err, "should return error for missing tag")
 }
+
+func TestRemoveTag(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+
+	// Create feature with tag
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should create base feature")
+
+	// Add test tag
+	tagReq := &feature.AddTagRequest{
+		Id: added.AnnoId,
+		Tag: &feature.TagPropertyCreate{
+			Tag:       "remove_me",
+			Value:     "temp_value",
+			CreatedBy: "tester@example.org",
+		},
+	}
+	tagged, err := repo.AddTag(tagReq)
+	asrt.NoError(err, "should add test tag")
+	asrt.Len(
+		tagged.Properties,
+		len(feat.Attributes.Properties)+1,
+		"should have initial tag",
+	)
+
+	// Remove tag
+	err = repo.RemoveTag(&feature.RemoveTagRequest{
+		Id:  added.AnnoId,
+		Tag: "remove_me",
+	})
+	asrt.NoError(err, "should successfully remove tag")
+
+	// Verify removal by fetching updated document
+	updated, err := repo.GetFeatureAnnotation(added.AnnoId)
+	asrt.NoError(err, "should fetch updated document")
+	// Check tag removal
+	var found bool
+	for _, prop := range updated.Properties {
+		if prop.Tag == "remove_me" {
+			found = true
+		}
+	}
+	asrt.False(found, "removed tag should not exist in properties")
+	asrt.Len(
+		updated.Properties,
+		len(tagged.Properties)-1,
+		"should reduce properties count by 1",
+	)
+	asrt.Equal(added.Name, updated.Name, "should preserve feature name")
+	asrt.Equal(added.CreatedBy, updated.CreatedBy, "should preserve created_by")
+}
