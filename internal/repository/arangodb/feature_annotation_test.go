@@ -207,7 +207,10 @@ func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	asrt.Equal(update.UpdatedBy, doc.UpdatedBy)
 	asrt.Equal("updated name", doc.Name)
 	// Combined synonyms check
-	expectedSynonyms := append(added.Synonyms, update.Attributes.Synonyms...)
+	expectedSynonyms := slices.Concat(
+		added.Synonyms,
+		update.Attributes.Synonyms,
+	)
 	slices.Sort(expectedSynonyms)
 	slices.Sort(doc.Synonyms)
 	asrt.ElementsMatch(
