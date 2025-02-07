@@ -613,3 +613,9 @@ func getRemoveTestCases() []removeFeatureTestCase {
 		},
 	}
 }
+
+func cleanupDB(repo repository.FeatureAnnotationRepository) func() {
+	return func() {
+		_ = repo.Dbh().Drop()
+	}
+}
