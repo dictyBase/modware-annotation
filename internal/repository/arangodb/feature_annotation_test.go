@@ -6,6 +6,7 @@ import (
 	"time"
 
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -219,7 +220,65 @@ func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 		"should have combined synonyms",
 	)
 }
+
+func TestUpdateNonExistentFeatureAnnotation(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	update := &feature.FeatureAnnotationUpdate{
+		Id:        "non_existent_id",
+		UpdatedBy: "updater@email.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: "will not update",
+		},
 	}
+
+	_, err := repo.EditFeatureAnnotation(update)
+	asrt.Error(err)
+	asrt.True(repository.IsAnnotationNotFound(err))
+}
+
+func TestAddPropertiesToExistingFeature(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	added, err := repo.AddFeatureAnnotation(getCompleteFeatureDoc())
+	asrt.NoError(err, "expected no error adding initial feature annotation")
+
+	update := &feature.FeatureAnnotationUpdate{
+		Id:        added.AnnoId,
+		UpdatedBy: "updater@email.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "description",
+					Value:     "updated description",
+					CreatedBy: "creator3@email.com",
+					UpdatedBy: "updater@email.com",
+					CreatedAt: timestamppb.New(time.Now()),
+					UpdatedAt: timestamppb.New(time.Now()),
+				},
+			},
+		},
+	}
+
+	doc, err := repo.EditFeatureAnnotation(update)
+	asrt.NoError(err)
+	asrt.Len(doc.Properties, 2)
+
+	// Create expected properties by combining original + new
+	expectedProperties := slices.Concat(
+		added.Properties,
+		collection.Map(update.Attributes.Properties, convertProperty),
+	)
+	slices.SortFunc(expectedProperties, sortTagProperties)
+	slices.SortFunc(doc.Properties, sortTagProperties)
+	asrt.ElementsMatch(
+		expectedProperties,
+		doc.Properties,
+		"should have combined properties",
+	)
 }
 
 func TestAddTagToExistingFeature(t *testing.T) {
