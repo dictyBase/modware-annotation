@@ -13,7 +13,7 @@ import (
 func TestGetFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Add test feature annotation first
 	feat := getCompleteFeatureDoc()
@@ -52,7 +52,7 @@ func TestGetFeatureAnnotation(t *testing.T) {
 func TestAddFeatureAnnotationBasic(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 	baseFeat := &feature.NewFeatureAnnotation{
 		CreatedBy: "mock@email.com",
 		CreatedAt: timestamppb.New(time.Now()),
@@ -74,7 +74,7 @@ func TestAddFeatureAnnotationBasic(t *testing.T) {
 func TestAddFeatureAnnotationFull(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 	feat := getCombinedFeatureDoc(getBaseFeatureDoc, getMultiPropertyTestCase)
 	doc, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding feature annotation")
@@ -101,7 +101,7 @@ func TestAddFeatureAnnotationFull(t *testing.T) {
 func TestAddFeatureAnnotationMultiProperty(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 	feat := getCombinedFeatureDoc(getBaseFeatureDoc, getMultiPropertyTestCase)
 	doc, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding feature annotation")
@@ -122,7 +122,7 @@ func TestAddFeatureAnnotationMultiProperty(t *testing.T) {
 func TestAddDuplicateFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Create base feature annotation
 	feat := &feature.NewFeatureAnnotation{
@@ -189,7 +189,7 @@ func TestRemoveFeatureAnnotation(t *testing.T) {
 func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 	added, err := repo.AddFeatureAnnotation(getCompleteFeatureDoc())
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 
@@ -225,7 +225,7 @@ func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 func TestAddTagToExistingFeature(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Create base feature
 	feat := getCompleteFeatureDoc()
@@ -283,7 +283,7 @@ func TestAddTagToExistingFeature(t *testing.T) {
 func TestAddTagToNonExistentFeature(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Attempt to add tag to non-existent feature
 	_, err := repo.AddTag(&feature.AddTagRequest{
@@ -302,7 +302,7 @@ func TestAddTagToNonExistentFeature(t *testing.T) {
 func TestUpdateExistingTag(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Setup initial feature with tag
 	feat := getCompleteFeatureDoc()
@@ -360,7 +360,7 @@ func TestUpdateExistingTag(t *testing.T) {
 func TestUpdateNonExistentTag(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Create feature without tags
 	feat := getCompleteFeatureDoc()
@@ -383,7 +383,7 @@ func TestUpdateNonExistentTag(t *testing.T) {
 func TestRemoveTag(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Create feature with tag
 	feat := getCompleteFeatureDoc()
@@ -437,7 +437,7 @@ func TestRemoveTag(t *testing.T) {
 func TestRemoveNonExistentTag(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(func() { _ = repo.Dbh().Drop() })
+	t.Cleanup(cleanupDB(repo))
 
 	// Create feature without tags
 	feat := getCompleteFeatureDoc()
