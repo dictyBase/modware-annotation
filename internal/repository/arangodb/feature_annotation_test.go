@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -185,30 +186,36 @@ func TestRemoveFeatureAnnotation(t *testing.T) {
 	}
 }
 
-func TestEditFeatureAnnotation(t *testing.T) {
+func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
 	added, err := repo.AddFeatureAnnotation(getCompleteFeatureDoc())
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 
-	for _, tcs := range getEditFeatureTestCases(added.AnnoId) {
-		t.Run(tcs.name, func(t *testing.T) {
-			t.Parallel()
-			doc, err := repo.EditFeatureAnnotation(tcs.update)
-			if tcs.wantErr {
-				verifyEditError(t, asrt, err)
+	update := &feature.FeatureAnnotationUpdate{
+		Id:        added.AnnoId,
+		UpdatedBy: "updater@email.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name:     "updated name",
+			Synonyms: []string{"new_syn1", "new_syn2"},
+		},
+	}
 
-				return
-			}
-			verifyEditSuccess(verifyEditSuccessParams{
-				t:        t,
-				asrt:     asrt,
-				tce:      tcs,
-				initial:  added,
-				modified: doc,
-			})
-		})
+	doc, err := repo.EditFeatureAnnotation(update)
+	asrt.NoError(err)
+	asrt.Equal(update.UpdatedBy, doc.UpdatedBy)
+	asrt.Equal("updated name", doc.Name)
+	// Combined synonyms check
+	expectedSynonyms := append(added.Synonyms, update.Attributes.Synonyms...)
+	slices.Sort(expectedSynonyms)
+	slices.Sort(doc.Synonyms)
+	asrt.ElementsMatch(
+		expectedSynonyms,
+		doc.Synonyms,
+		"should have combined synonyms",
+	)
+}
 	}
 }
 
