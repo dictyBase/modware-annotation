@@ -1,7 +1,6 @@
 package arangodb
 
 import (
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -330,12 +329,6 @@ func validateProperties(params validatePropertiesParams) {
 
 // compareTagProperties implements sorting for TagPropertyDoc slices by tag and
 // value using case-insensitive comparison.
-func compareTagProperties(first, second model.TagPropertyDoc) int {
-	return strings.Compare(
-		strings.ToLower(first.Tag),
-		strings.ToLower(second.Tag),
-	)
-}
 
 func validateDbLinks(params validateDbLinksParams) {
 	params.t.Helper()
@@ -591,6 +584,13 @@ func validateBasicFields(params validateFeatureAnnotationParams) {
 		params.got.CreatedAt,
 		params.got.UpdatedAt,
 		"should have matching created and updated at",
+	)
+}
+
+func sortTagProperties(a, b model.TagPropertyDoc) int {
+	return strings.Compare(
+		strings.ToLower(a.Tag),
+		strings.ToLower(b.Tag),
 	)
 }
 
