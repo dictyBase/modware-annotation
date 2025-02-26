@@ -2,6 +2,7 @@ package collection
 
 import (
 	"cmp"
+	"iter"
 	"slices"
 )
 
@@ -51,4 +52,17 @@ func Filter[T any](slice []T, predicate func(T) bool) []T {
 	}
 
 	return result
+}
+
+// MapSeq transforms an iter.Seq to another iter.Seq by applying the given
+// function to each element in the sequence.
+// Write unit tests. AI!
+func MapSeq[T1, T2 any](seq iter.Seq[T1], fn func(T1) T2) iter.Seq[T2] {
+	return func(yield func(T2) bool) {
+		for v := range seq {
+			if !yield(fn(v)) {
+				return
+			}
+		}
+	}
 }
