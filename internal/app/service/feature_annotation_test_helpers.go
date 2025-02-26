@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/dictyBase/arangomanager/testarango"
@@ -128,6 +129,19 @@ func testCreateValidFeature(params *testParams) {
 			Attributes: &feature.FeatureAnnotationAttributes{
 				Name:     "Test Feature",
 				Synonyms: []string{"test1", "test2"},
+				// Add properties
+				Properties: []*feature.TagProperty{
+					{
+						Tag:       "description",
+						Value:     "Test description",
+						CreatedBy: "testuser@dictybase.org",
+					},
+					{
+						Tag:       "note",
+						Value:     "Test note",
+						CreatedBy: "testuser@dictybase.org",
+					},
+				},
 			},
 		}
 		resp, err := params.client.CreateFeatureAnnotation(params.ctx, req)
@@ -136,6 +150,16 @@ func testCreateValidFeature(params *testParams) {
 		params.assert.Equal(req.CreatedBy, resp.CreatedBy)
 		params.assert.Equal(req.Attributes.Name, resp.Attributes.Name)
 		params.assert.Equal(req.Attributes.Synonyms, resp.Attributes.Synonyms)
+
+		// Validate properties
+		params.assert.Len(resp.Attributes.Properties, 2)
+		slices.SortFunc(req.Attributes.Properties, sortTagPropertiesByTag)
+		slices.SortFunc(resp.Attributes.Properties, sortTagPropertiesByTag)
+		params.assert.ElementsMatch(
+			collection.Map(req.Attributes.Properties, extractTagAndValue),
+			collection.Map(resp.Attributes.Properties, extractTagAndValue),
+			"should have matching properties",
+		)
 	})
 }
 
