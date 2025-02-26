@@ -180,7 +180,11 @@ func convertDbLink(link model.DbLinkDoc) *feature.DbLink {
 
 func convertProperty(prop model.TagPropertyDoc) *feature.TagProperty {
 	return &feature.TagProperty{
-		Tag:   prop.Tag,
-		Value: prop.Value,
+		Tag:       prop.Tag,
+		Value:     prop.Value,
+		CreatedBy: prop.CreatedBy,
+		UpdatedBy: prop.UpdatedBy,
+		CreatedAt: timestamppb.New(prop.CreatedAt),
+		UpdatedAt: timestamppb.New(prop.UpdatedAt),
 	}
 }
