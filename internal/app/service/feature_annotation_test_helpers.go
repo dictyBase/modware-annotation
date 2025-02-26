@@ -9,6 +9,7 @@ import (
 
 	"github.com/dictyBase/arangomanager/testarango"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/repository/arangodb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -38,6 +39,23 @@ func (msn *MockMessage) Publish(
 
 func (msn *MockMessage) Close() error {
 	return nil
+}
+
+// sortTagPropertiesByTag sorts TagProperty objects by their tag name
+// (case-insensitive).
+func sortTagPropertiesByTag(a, b *feature.TagProperty) int {
+	return strings.Compare(
+		strings.ToLower(a.Tag),
+		strings.ToLower(b.Tag),
+	)
+}
+
+// extractTagAndValue returns a new TagProperty with only Tag and Value fields.
+func extractTagAndValue(prop *feature.TagProperty) *feature.TagProperty {
+	return &feature.TagProperty{
+		Tag:   prop.Tag,
+		Value: prop.Value,
+	}
 }
 
 func setup(
