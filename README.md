@@ -3,7 +3,6 @@
 [![License](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](LICENSE)  
 ![GitHub action](https://github.com/dictyBase/modware-annotation/workflows/Continuous%20integration/badge.svg)
 [![codecov](https://codecov.io/gh/dictyBase/modware-annotation/branch/develop/graph/badge.svg)](https://codecov.io/gh/dictyBase/modware-annotation)
-[![Maintainability](https://api.codeclimate.com/v1/badges/30e9b0421a28b8e0d941/maintainability)](https://codeclimate.com/github/dictyBase/modware-annotation/maintainability)  
 ![Last commit](https://badgen.net/github/last-commit/dictyBase/modware-annotation/develop)
 [![Funding](https://badgen.net/badge/Funding/Rex%20L%20Chisholm,dictyBase,DCR/yellow?list=|)](https://projectreporter.nih.gov/project_info_description.cfm?aid=10024726&icde=0)
 
