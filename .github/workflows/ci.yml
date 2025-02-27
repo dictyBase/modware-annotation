@@ -48,3 +48,17 @@ jobs:
       docker_image: modware-annotation
       cluster: ${{ vars.DEV_STAGING_CLUSTER }}
       cluster_state_storage: ${{ vars.DEV_STAGING_KOPS_STATE_STORAGE }}
+  call-buildless-deploy:
+    needs: call-build-deploy
+    uses: dictyBase/workflows/.github/workflows/deploy-buildless-backend.yaml@develop
+    secrets: inherit
+    with:
+      app: annotation-feature
+      project: modware-annotation-feature
+      stack: experiments
+      repository: ${{ github.repository }}
+      ref: ${{ github.ref_name }}
+      dockerfile: build/package/Dockerfile
+      docker_image: modware-annotation
+      cluster: ${{ vars.DEV_STAGING_CLUSTER }}
+      cluster_state_storage: ${{ vars.DEV_STAGING_KOPS_STATE_STORAGE }}
