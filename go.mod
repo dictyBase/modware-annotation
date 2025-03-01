@@ -1,7 +1,7 @@
 module github.com/dictyBase/modware-annotation
 
 require (
-	github.com/arangodb/go-driver v1.6.5
+	github.com/arangodb/go-driver v1.6.6
 	github.com/bufbuild/protovalidate-go v0.9.2
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.4.0
