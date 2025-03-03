@@ -21,7 +21,6 @@ The protocol buffer definitions and service apis are documented
 ![Open PRS](https://badgen.net/github/open-prs/dictyBase/modware-annotation)
 ![Commits](https://badgen.net/github/commits/dictyBase/modware-annotation/develop)
 ![Branches](https://badgen.net/github/branches/dictyBase/modware-annotation)
-![Tags](https://badgen.net/github/tags/dictyBase/modware-annotation/?color=cyan)  
 ![GitHub repo size](https://img.shields.io/github/repo-size/dictyBase/modware-annotation?style=plastic)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/dictyBase/modware-annotation?style=plastic)
 [![Lines of Code](https://badgen.net/codeclimate/loc/dictyBase/modware-annotation)](https://codeclimate.com/github/dictyBase/modware-annotation/code)  
