@@ -17,12 +17,8 @@ The protocol buffer definitions and service apis are documented
 [here](https://github.com/dictyBase/dictybaseapis/blob/master/dictybase/annotation/annotation.proto).
 
 # Misc badges
-![Issues](https://badgen.net/github/issues/dictyBase/modware-annotation)
 ![Open Issues](https://badgen.net/github/open-issues/dictyBase/modware-annotation)
-![Total PRS](https://badgen.net/github/prs/dictyBase/modware-annotation)
 ![Open PRS](https://badgen.net/github/open-prs/dictyBase/modware-annotation)
-![Closed PRS](https://badgen.net/github/closed-prs/dictyBase/modware-annotation)
-![Merged PRS](https://badgen.net/github/merged-prs/dictyBase/modware-annotation)  
 ![Commits](https://badgen.net/github/commits/dictyBase/modware-annotation/develop)
 ![Branches](https://badgen.net/github/branches/dictyBase/modware-annotation)
 ![Tags](https://badgen.net/github/tags/dictyBase/modware-annotation/?color=cyan)  
