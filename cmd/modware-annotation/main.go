@@ -94,6 +94,12 @@ func getFeatureServerFlags() []cli.Flag {
 			Value: "9570",
 		},
 		cli.StringFlag{
+			Name:   "arangodb-database, db",
+			EnvVar: "ARANGODB_DATABASE",
+			Usage:  "arangodb database name",
+			Value:  "annofeature",
+		},
+		cli.StringFlag{
 			Name:  "feature-collection",
 			Usage: "arangodb collection for storing feature annotations",
 			Value: "feature",
