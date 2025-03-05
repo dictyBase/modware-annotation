@@ -89,7 +89,7 @@ func getServerFlags() []cli.Flag {
 func getFeatureServerFlags() []cli.Flag {
 	flg := []cli.Flag{
 		cli.StringFlag{
-			Name:  "feature-port",
+			Name:  "port",
 			Usage: "tcp port at which the feature server will be available",
 			Value: "9570",
 		},
