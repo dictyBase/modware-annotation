@@ -19,5 +19,4 @@ The protocol buffer definitions and service apis are documented
 # Misc badges
 ![Open Issues](https://badgen.net/github/open-issues/dictyBase/modware-annotation)
 ![Open PRS](https://badgen.net/github/open-prs/dictyBase/modware-annotation)
-![Commits](https://badgen.net/github/commits/dictyBase/modware-annotation/develop)
 
