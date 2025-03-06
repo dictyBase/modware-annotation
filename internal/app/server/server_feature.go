@@ -51,7 +51,7 @@ func RunFeatureServer(clt *cli.Context) error {
 	feature_annotation.RegisterFeatureAnnotationServiceServer(grpcS, srv)
 	reflection.Register(grpcS)
 
-	endP := fmt.Sprintf(":%s", clt.String("feature-port"))
+	endP := fmt.Sprintf(":%s", clt.String("port"))
 	lis, err := net.Listen("tcp", endP)
 	if err != nil {
 		return cli.NewExitError(
