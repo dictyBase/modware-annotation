@@ -56,7 +56,6 @@ func Filter[T any](slice []T, predicate func(T) bool) []T {
 
 // MapSeq transforms an iter.Seq to another iter.Seq by applying the given
 // function to each element in the sequence.
-// Write unit tests. AI!
 func MapSeq[T1, T2 any](seq iter.Seq[T1], fn func(T1) T2) iter.Seq[T2] {
 	return func(yield func(T2) bool) {
 		for v := range seq {
@@ -65,4 +64,22 @@ func MapSeq[T1, T2 any](seq iter.Seq[T1], fn func(T1) T2) iter.Seq[T2] {
 			}
 		}
 	}
+}
+
+// Partition splits a slice into two slices based on a predicate function. The
+// first returned slice contains all elements for which the predicate returns
+// true, and the second contains all elements for which the predicate returns
+// false.
+func Partition[T any](slice []T, predicate func(T) bool) ([]T, []T) {
+	trueSlice := make([]T, 0)
+	falseSlice := make([]T, 0)
+	for _, item := range slice {
+		if predicate(item) {
+			trueSlice = append(trueSlice, item)
+		} else {
+			falseSlice = append(falseSlice, item)
+		}
+	}
+
+	return trueSlice, falseSlice
 }
