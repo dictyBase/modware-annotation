@@ -75,6 +75,38 @@ func MapSeq[T1, T2 any](seq iter.Seq[T1], fn func(T1) T2) iter.Seq[T2] {
 	}
 }
 
+// PartitionTuple2 splits a slice into two parts based on a predicate function and
+// returns them as a Tuple2. The First field contains all elements for which the
+// predicate returns true, and the Second field contains all elements for which
+// the predicate returns false.
+func PartitionTuple2[T any](
+	slice []T,
+	predicate func(T) bool,
+) Tuple2[[]T, []T] {
+	trueSlice := make([]T, 0)
+	falseSlice := make([]T, 0)
+	for _, item := range slice {
+		if predicate(item) {
+			trueSlice = append(trueSlice, item)
+		} else {
+			falseSlice = append(falseSlice, item)
+		}
+	}
+
+	return NewTuple2(trueSlice, falseSlice)
+}
+
+// CurriedPartitionTuple2 returns a function that, when given a slice, partitions it
+// based on the provided predicate and returns the result as a Tuple2. This is a
+// curried version of the PartitionTuple2 function.
+func CurriedPartitionTuple2[T any](
+	predicate func(T) bool,
+) func([]T) Tuple2[[]T, []T] {
+	return func(slice []T) Tuple2[[]T, []T] {
+		return PartitionTuple2(slice, predicate)
+	}
+}
+
 // Partition splits a slice into two slices based on a predicate function. The
 // first returned slice contains all elements for which the predicate returns
 // true, and the second contains all elements for which the predicate returns
@@ -111,7 +143,7 @@ func Pipe2[T1, T2, T3 any](tup T1, f1 func(T1) T2, f2 func(T2) T3) T3 {
 }
 
 // Pipe3 creates a functional pipeline by taking an initial value and applying
-// four functions in succession. The output of each function becomes the input
+// three functions in succession. The output of each function becomes the input
 // to the next function. The final return value is the result of the last
 // function application.
 func Pipe3[T1, T2, T3, T4 any](
