@@ -59,6 +59,7 @@ const (
 		INSERT { _from: n[0]._id, _to: @to } IN @@anno_cv_collection
 		RETURN n[0]
 	`
+
 	annListQ = `
 		FOR cvt IN @@cvt_collection
 			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
@@ -73,20 +74,67 @@ const (
 							  ontology: cv.metadata.namespace 
 							})
 	`
-	annListFilterQ = `
-		FOR cvt IN @@cvt_collection
-			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
-				FOR cv IN @@cv_collection
-					FILTER ann.is_obsolete == false
-					FILTER cvt.graph_id == cv._id
-					%s
-					SORT ann.created_at DESC
-					LIMIT @limit
-						RETURN MERGE(
-							ann,
-							{ tag: cvt.label, 
-							  ontology: cv.metadata.namespace 
-							})
+
+	cvtExclusiveListFilterQ = `
+		LET cvtlist = (
+		    FOR cvt IN @@cvterm_collection
+			FOR cv IN @@cv_collection
+		        	FILTER cvt.graph_id == cv._id
+				FILTER cvt.deprecated == false
+				%s
+				RETURN { cv: cv, cvterm: cvt }
+		)
+		
+		FOR row IN cvtlist
+		    FOR entry IN 1..1 INBOUND row.cvterm GRAPH @anno_cvterm_graph
+			    FILTER entry.is_obsolete == false
+		            LIMIT @limit
+		            RETURN MERGE(entry, { 
+				tag: row.cvterm.label,
+				ontology: row.cv.metadata.namespace
+			    })
+	`
+
+	annExclusiveListFilterQ = `
+		LET annentries = (
+		    FOR ann IN @anno_collection
+			%s
+		        FILTER ann.is_obsolete == false
+			SORT ann.created_at DESC
+		        RETURN ann
+		)
+		
+		FOR entry IN annentries
+		    FOR cvt IN 1..1 OUTBOUND entry GRAPH @anno_cvterm_graph
+		        FOR cv IN @@cv_collection
+		            FILTER cvt.graph_id == cv._id
+			    FILTER cvt.deprecated == false
+		            LIMIT @limit
+		            RETURN MERGE(entry, { 
+				tag: cvt.label, 
+				ontology: cv.metadata.namespace
+			    })
+	`
+	annCvtListFilterQ = `
+		LET annentries = (
+		    FOR ann IN @anno_collection
+			%s
+		        FILTER ann.is_obsolete == false
+			SORT ann.created_at DESC
+		        RETURN ann
+		)
+		
+		FOR entry IN annentries
+		    FOR cvt IN 1..1 OUTBOUND entry GRAPH @anno_cvterm_graph
+		        FOR cv IN @@cv_collection
+		            FILTER cvt.graph_id == cv._id
+			    FILTER cvt.deprecated == false
+			    %s
+		            LIMIT @limit
+		            RETURN MERGE(entry, { 
+				tag: cvt.label, 
+				ontology: cv.metadata.namespace
+			    })
 	`
 	annListWithCursorQ = `
 		FOR cvt IN @@cvt_collection
