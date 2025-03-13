@@ -110,6 +110,19 @@ func Pipe2[T1, T2, T3 any](tup T1, f1 func(T1) T2, f2 func(T2) T3) T3 {
 	return f2(f1(tup))
 }
 
+// Pipe3 creates a functional pipeline by taking an initial value and applying
+// four functions in succession. The output of each function becomes the input
+// to the next function. The final return value is the result of the last
+// function application.
+func Pipe3[T1, T2, T3, T4 any](
+	initial T1,
+	f1 func(T1) T2,
+	f2 func(T2) T3,
+	f3 func(T3) T4,
+) T4 {
+	return f3(f2(f1(initial)))
+}
+
 // Tuple2 represents a pair of values with independent types.
 // It's useful for functions that need to return two values of different types.
 type Tuple2[T1, T2 any] struct {
