@@ -17,6 +17,15 @@ func Map[T1, T2 any](slc []T1, fnc func(T1) T2) []T2 {
 	return ret
 }
 
+// CurriedMap returns a function that, when given a slice, applies the provided
+// function to each element of the slice. This is a curried version of the Map
+// function.
+func CurriedMap[T1, T2 any](fnc func(T1) T2) func([]T1) []T2 {
+	return func(slc []T1) []T2 {
+		return Map(slc, fnc)
+	}
+}
+
 // Include determines whether the given element is present in the slice.
 // The slice is sorted before searching.
 func Include[T cmp.Ordered](slice []T, element T) bool {
@@ -82,6 +91,15 @@ func Partition[T any](slice []T, predicate func(T) bool) ([]T, []T) {
 	}
 
 	return trueSlice, falseSlice
+}
+
+// CurriedPartition returns a function that, when given a slice, partitions it
+// based on the provided predicate. This is a curried version of the Partition
+// function.
+func CurriedPartition[T any](predicate func(T) bool) func([]T) ([]T, []T) {
+	return func(slice []T) ([]T, []T) {
+		return Partition(slice, predicate)
+	}
 }
 
 // Pipe2 creates a functional pipeline by taking an initial value and applying
