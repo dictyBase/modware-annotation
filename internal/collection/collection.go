@@ -106,8 +106,8 @@ func CurriedPartition[T any](predicate func(T) bool) func([]T) ([]T, []T) {
 // two functions in succession. The output of the first function becomes the
 // input to the second function. The final return value is the result of the
 // last function application.
-func Pipe2[T1, T2, T3 any](initial T1, f1 func(T1) T2, f2 func(T2) T3) T3 {
-	return f2(f1(initial))
+func Pipe2[T1, T2, T3 any](tup T1, f1 func(T1) T2, f2 func(T2) T3) T3 {
+	return f2(f1(tup))
 }
 
 // Tuple2 represents a pair of values with independent types.
@@ -143,4 +143,24 @@ func SliceToTuple2[T1, T2 any](slice []any) Tuple2[T1, T2] {
 	}
 
 	return NewTuple2(first, second)
+}
+
+// Fold applies a folding function to each element of a slice along with an accumulator value,
+// returning a result of type R as determined by the folder function.
+// The accumulator is passed as part of a Tuple2 structure.
+func TFold[A, B, R any](
+	tup Tuple2[A, B],
+	folder func(Tuple2[A, B]) R,
+) R {
+	return folder(tup)
+}
+
+// CurriedFold returns a function that applies the folder function to a Tuple2,
+// returning a result of type R. This is a curried version of Fold.
+func CurriedTFold[A, B, R any](
+	folder func(Tuple2[A, B]) R,
+) func(Tuple2[A, B]) R {
+	return func(tup Tuple2[A, B]) R {
+		return TFold(tup, folder)
+	}
 }
