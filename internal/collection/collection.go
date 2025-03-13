@@ -124,3 +124,23 @@ func NewTuple2[T1, T2 any](first T1, second T2) Tuple2[T1, T2] {
 		Second: second,
 	}
 }
+
+// SliceToTuple2 converts the first two elements of a slice to a Tuple2. If the
+// slice has fewer than two elements, it uses zero values for the missing
+// elements.
+func SliceToTuple2[T1, T2 any](slice []any) Tuple2[T1, T2] {
+	var first T1
+	var second T2
+	if len(slice) > 0 {
+		if val, ok := slice[0].(T1); ok {
+			first = val
+		}
+	}
+	if len(slice) > 1 {
+		if val, ok := slice[1].(T2); ok {
+			second = val
+		}
+	}
+
+	return NewTuple2(first, second)
+}
