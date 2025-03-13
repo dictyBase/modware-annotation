@@ -83,3 +83,26 @@ func Partition[T any](slice []T, predicate func(T) bool) ([]T, []T) {
 
 	return trueSlice, falseSlice
 }
+
+// Pipe2 creates a functional pipeline by taking an initial value and applying
+// two functions in succession. The output of the first function becomes the
+// input to the second function. The final return value is the result of the
+// last function application.
+func Pipe2[T1, T2, T3 any](initial T1, f1 func(T1) T2, f2 func(T2) T3) T3 {
+	return f2(f1(initial))
+}
+
+// Tuple2 represents a pair of values with independent types.
+// It's useful for functions that need to return two values of different types.
+type Tuple2[T1, T2 any] struct {
+	First  T1
+	Second T2
+}
+
+// NewTuple2 creates a new Tuple2 with the given values.
+func NewTuple2[T1, T2 any](first T1, second T2) Tuple2[T1, T2] {
+	return Tuple2[T1, T2]{
+		First:  first,
+		Second: second,
+	}
+}
