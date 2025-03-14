@@ -63,6 +63,14 @@ func Filter[T any](slice []T, predicate func(T) bool) []T {
 	return result
 }
 
+// CurriedFilter returns a function that, when given a slice, filters it based on
+// the provided predicate. This is a curried version of the Filter function.
+func CurriedFilter[T any](predicate func(T) bool) func([]T) []T {
+	return func(slice []T) []T {
+		return Filter(slice, predicate)
+	}
+}
+
 // MapSeq transforms an iter.Seq to another iter.Seq by applying the given
 // function to each element in the sequence.
 func MapSeq[T1, T2 any](seq iter.Seq[T1], fn func(T1) T2) iter.Seq[T2] {
@@ -208,4 +216,10 @@ func CurriedTFold[A, B, R any](
 	return func(tup Tuple2[A, B]) R {
 		return TFold(tup, folder)
 	}
+}
+
+// IsEmpty checks if a slice is empty (has zero elements). Returns true if the
+// slice is nil or has no elements, false otherwise.
+func IsEmpty[T any](slice []T) bool {
+	return len(slice) == 0
 }
