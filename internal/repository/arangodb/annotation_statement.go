@@ -1,3 +1,5 @@
+package arangodb
+
 import (
 	"fmt"
 	"strings"
@@ -14,6 +16,25 @@ type PickStatementResult struct {
 	Statement string
 	Err       error
 }
+
+// getListAnnoStatement returns the appropriate AQL statement based on filter
+// string and cursor.
+func getListAnnoStatement(fstr string, cursor int64) PickStatementResult {
+	var result PickStatementResult
+	switch {
+	case len(fstr) > 0 && cursor == 0:
+		result = makeAQLStatement(fstr)
+	case len(fstr) > 0 && cursor != 0:
+		result.Statement = fmt.Sprintf(annListFilterWithCursorQ, fstr)
+	case len(fstr) == 0 && cursor == 0:
+		result.Statement = annListQ
+	case len(fstr) == 0 && cursor != 0:
+		result.Statement = annListWithCursorQ
+	}
+
+	return result
+}
+
 func makeAQLStatement(fstr string) PickStatementResult {
 	var result PickStatementResult
 	pfs, err := query.ParseFilterString(fstr)
@@ -64,9 +85,8 @@ func pickStatement[A, B []*query.Filter](
 
 // generateStatementForBothFilters creates a statement when both filter sets are
 // non-empty.
-func generateStatementForBothFilters[A, B []*query.Filter](
-	first A,
-	second B,
+func generateStatementForBothFilters(
+	first, second []*query.Filter,
 ) PickStatementResult {
 	var result PickStatementResult
 	fmap := FilterMap()
@@ -91,8 +111,8 @@ func generateStatementForBothFilters[A, B []*query.Filter](
 
 // generateStatementForFirstFilter creates a statement when only first filter
 // set is non-empty.
-func generateStatementForFirstFilter[A []*query.Filter](
-	first A,
+func generateStatementForFirstFilter(
+	first []*query.Filter,
 ) PickStatementResult {
 	var result PickStatementResult
 	fmap := FilterMap()
@@ -111,8 +131,8 @@ func generateStatementForFirstFilter[A []*query.Filter](
 
 // generateStatementForSecondFilter creates a statement when only second filter
 // set is non-empty.
-func generateStatementForSecondFilter[B []*query.Filter](
-	second B,
+func generateStatementForSecondFilter(
+	second []*query.Filter,
 ) PickStatementResult {
 	var result PickStatementResult
 	fmap := FilterMap()
