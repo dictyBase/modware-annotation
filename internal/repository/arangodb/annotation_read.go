@@ -73,7 +73,7 @@ func (ar *arangorepository) GetAnnotationByEntry(
 func (ar *arangorepository) ListAnnotations(
 	cursor int64,
 	limit int64,
-	filter string,
+	fstr string,
 ) ([]*model.AnnoDoc, error) {
 	annoModel := make([]*model.AnnoDoc, 0)
 	bindVars := map[string]interface{}{
@@ -85,8 +85,11 @@ func (ar *arangorepository) ListAnnotations(
 	if cursor != 0 {
 		bindVars["cursor"] = cursor
 	}
-	stmt := getListAnnoStatement(filter, cursor)
-	res, err := ar.database.SearchRows(stmt, bindVars)
+	result := getListAnnoStatement(fstr, cursor)
+	if result.Err != nil {
+		return nil, result.Err
+	}
+	res, err := ar.database.SearchRows(result.Statement, bindVars)
 	if err != nil {
 		return annoModel, fmt.Errorf("error in searching rows %s", err)
 	}
@@ -138,22 +141,22 @@ func (ar *arangorepository) GetAnnotationGroup(
 // with optional filtering.
 func (ar *arangorepository) ListAnnotationGroup(
 	cursor, limit int64,
-	filter string,
+	fstr string,
 ) ([]*model.AnnoGroup, error) {
 	var agrp []*model.AnnoGroup
 	var stmt string
-	if len(filter) > 0 { // filter
+	if len(fstr) > 0 { // filter
 		// no cursor
 		stmt = fmt.Sprintf(annGroupListFilterQ,
 			ar.anno.annot.Name(), ar.anno.annotg.Name(), ar.onto.Cv.Name(),
-			filter, ar.anno.annog.Name(), ar.anno.annot.Name(),
+			fstr, ar.anno.annog.Name(), ar.anno.annot.Name(),
 			ar.anno.annotg.Name(), ar.onto.Cv.Name(),
 			limit,
 		)
 		if cursor != 0 { // with cursor
 			stmt = fmt.Sprintf(annGroupListFilterWithCursorQ,
 				ar.anno.annot.Name(), ar.anno.annotg.Name(),
-				ar.onto.Cv.Name(), filter,
+				ar.onto.Cv.Name(), fstr,
 				ar.anno.annog.Name(), ar.anno.annot.Name(),
 				ar.anno.annotg.Name(), ar.onto.Cv.Name(),
 				cursor, limit,
@@ -303,20 +306,4 @@ func (ar *arangorepository) getAllAnnotations(
 	}
 
 	return annoModel, nil
-}
-
-func getListAnnoStatement(filter string, cursor int64) string {
-	var stmt string
-	switch {
-	case len(filter) > 0 && cursor == 0:
-		stmt = fmt.Sprintf(annListFilterQ, filter)
-	case len(filter) > 0 && cursor != 0:
-		stmt = fmt.Sprintf(annListFilterWithCursorQ, filter)
-	case len(filter) == 0 && cursor == 0:
-		stmt = annListQ
-	case len(filter) == 0 && cursor != 0:
-		stmt = annListWithCursorQ
-	}
-
-	return stmt
 }
