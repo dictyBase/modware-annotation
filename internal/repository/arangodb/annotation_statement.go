@@ -1,9 +1,67 @@
+import (
+	"fmt"
+	"strings"
+
+	"github.com/dictyBase/arangomanager/query"
+	"github.com/dictyBase/modware-annotation/internal/collection"
+)
+
+type filterCallback func(*query.Filter) bool
+
 // PickStatementResult is a struct that holds the result of pickStatement
 // function.
 type PickStatementResult struct {
 	Statement string
 	Err       error
 }
+func makeAQLStatement(fstr string) PickStatementResult {
+	var result PickStatementResult
+	pfs, err := query.ParseFilterString(fstr)
+	if err != nil {
+		result.Err = fmt.Errorf("error in parsing filter string")
+
+		return result
+	}
+
+	return collection.Pipe3(
+		pfs,
+		collection.CurriedFilter(filterFn()),
+		collection.CurriedPartitionTuple2(partFn),
+		collection.CurriedTFold(pickStatement),
+	)
+}
+
+func filterFn() filterCallback {
+	fmap := FilterMap()
+
+	return func(qfilter *query.Filter) bool {
+		_, ok := fmap[qfilter.Field]
+
+		return ok
+	}
+}
+
+func partFn(qfilter *query.Filter) bool {
+	return strings.HasPrefix(qfilter.Field, "ann.")
+}
+
+// pickStatement generates an AQL statement based on filter conditions.
+func pickStatement[A, B []*query.Filter](
+	tup collection.Tuple2[A, B],
+) PickStatementResult {
+	var result PickStatementResult
+	switch {
+	case !collection.IsEmpty(tup.First) && !collection.IsEmpty(tup.Second):
+		return generateStatementForBothFilters(tup.First, tup.Second)
+	case !collection.IsEmpty(tup.First) && collection.IsEmpty(tup.Second):
+		return generateStatementForFirstFilter(tup.First)
+	case collection.IsEmpty(tup.First) && !collection.IsEmpty(tup.Second):
+		return generateStatementForSecondFilter(tup.Second)
+	}
+
+	return result
+}
+
 // generateStatementForBothFilters creates a statement when both filter sets are
 // non-empty.
 func generateStatementForBothFilters[A, B []*query.Filter](
