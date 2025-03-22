@@ -37,6 +37,8 @@ github.com/dictyBase/arangomanager v0.4.0 h1:+HgmadUY0qXFMLfZocktynbERkX/FgWzC3v
 github.com/dictyBase/arangomanager v0.4.0/go.mod h1:SmElsQJN3EbTjfYCkjS7/uyUkNVwaO2qJB9Mqrs0ND8=
 github.com/dictyBase/go-genproto v0.0.0-20250226001723-7ab397300b72 h1:J+gr9X4oOOdu7MotyqYNqq6aevHGdpCIX9pvuDVEApc=
 github.com/dictyBase/go-genproto v0.0.0-20250226001723-7ab397300b72/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
+github.com/dictyBase/go-genproto v0.0.0-20250322103257-0f58eec92bd9 h1:7FqFPIsWC7su42vYD44yrjJ38sadeBQIWwa9K8/0Hqs=
+github.com/dictyBase/go-genproto v0.0.0-20250322103257-0f58eec92bd9/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-obograph v1.6.0 h1:otuiEadRCJ25o6X/5tWhDjiiAbK0R8LBLQpBxVREotc=
 github.com/dictyBase/go-obograph v1.6.0/go.mod h1:osNZ7PRqai1OTnrLy8SoDavKIMaDp7Sw8CFh52ddBkY=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
