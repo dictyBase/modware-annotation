@@ -144,11 +144,7 @@ func (srv *AnnotationService) ListAnnotations(
 	if ral.Limit > 0 {
 		limit = ral.Limit
 	}
-	astmt, err := filterStrToQuery(ral.Filter)
-	if err != nil {
-		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
-	}
-	mlc, err := srv.repo.ListAnnotations(ral.Cursor, limit, astmt)
+	mlc, err := srv.repo.ListAnnotations(ral.Cursor, limit, ral.Filter)
 	if err != nil {
 		if repository.IsAnnotationListNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
