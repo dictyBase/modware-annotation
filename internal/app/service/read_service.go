@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/dictyBase/aphgrpc"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
@@ -11,28 +12,24 @@ import (
 
 const limit = 10
 
-type Validatable interface {
-	Validate() error
-}
-
 func (srv *AnnotationService) GetAnnotation(
 	ctx context.Context,
 	req *annotation.AnnotationId,
 ) (*annotation.TaggedAnnotation, error) {
-	tna, err := srv.initializeTaggedAnnotation(ctx, req)
-	if err != nil {
-		return tna, err
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
+	tna := &annotation.TaggedAnnotation{}
 	mid, err := srv.repo.GetAnnotationByID(req.Id)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
-			return tna, aphgrpc.HandleNotFoundError(ctx, err)
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
 		}
 
-		return tna, aphgrpc.HandleGetError(ctx, err)
+		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 	if mid.NotFound {
-		return tna, aphgrpc.HandleNotFoundError(ctx, err)
+		return nil, aphgrpc.HandleNotFoundError(ctx, err)
 	}
 	tna.Data = srv.getAnnoData(mid)
 
@@ -42,17 +39,17 @@ func (srv *AnnotationService) GetAnnotation(
 func (srv *AnnotationService) GetEntryAnnotation(
 	ctx context.Context, rea *annotation.EntryAnnotationRequest,
 ) (*annotation.TaggedAnnotation, error) {
-	tna, err := srv.initializeTaggedAnnotation(ctx, rea)
-	if err != nil {
-		return tna, err
+	if err := protovalidate.Validate(rea); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
+	tna := &annotation.TaggedAnnotation{}
 	mne, err := srv.repo.GetAnnotationByEntry(rea)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
-			return tna, aphgrpc.HandleNotFoundError(ctx, err)
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
 		}
 
-		return tna, aphgrpc.HandleGetError(ctx, err)
+		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 	tna.Data = srv.getAnnoData(mne)
 
@@ -62,17 +59,16 @@ func (srv *AnnotationService) GetEntryAnnotation(
 func (srv *AnnotationService) GetAnnotationGroup(
 	ctx context.Context, rid *annotation.GroupEntryId,
 ) (*annotation.TaggedAnnotationGroup, error) {
-	gta, err := srv.initializeTaggedAnnotationGroup(ctx, rid)
-	if err != nil {
-		return gta, err
+	if err := protovalidate.Validate(rid); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	mga, err := srv.repo.GetAnnotationGroup(rid.GroupId)
 	if err != nil {
 		if repository.IsGroupNotFound(err) {
-			return gta, aphgrpc.HandleNotFoundError(ctx, err)
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
 		}
 
-		return gta, aphgrpc.HandleGetError(ctx, err)
+		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 
 	return srv.getGroup(mga), nil
@@ -81,7 +77,9 @@ func (srv *AnnotationService) GetAnnotationGroup(
 func (srv *AnnotationService) ListAnnotationGroups(
 	ctx context.Context, rgp *annotation.ListGroupParameters,
 ) (*annotation.TaggedAnnotationGroupCollection, error) {
-	gac := &annotation.TaggedAnnotationGroupCollection{}
+	if err := protovalidate.Validate(rgp); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
 	// default value of limit
 	limit := int64(limit)
 	if rgp.Limit > 0 {
@@ -89,15 +87,15 @@ func (srv *AnnotationService) ListAnnotationGroups(
 	}
 	astmt, err := filterStrToQuery(rgp.Filter)
 	if err != nil {
-		return gac, aphgrpc.HandleInvalidParamError(ctx, err)
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	mgc, err := srv.repo.ListAnnotationGroup(rgp.Cursor, limit, astmt)
 	if err != nil {
 		if repository.IsAnnotationGroupListNotFound(err) {
-			return gac, aphgrpc.HandleNotFoundError(ctx, err)
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
 		}
 
-		return gac, aphgrpc.HandleGetError(ctx, err)
+		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 	gcdata := make([]*annotation.TaggedAnnotationGroupCollection_Data, 0)
 	for _, mgs := range mgc {
@@ -137,6 +135,9 @@ func (srv *AnnotationService) ListAnnotationGroups(
 func (srv *AnnotationService) ListAnnotations(
 	ctx context.Context, ral *annotation.ListParameters,
 ) (*annotation.TaggedAnnotationCollection, error) {
+	if err := protovalidate.Validate(ral); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
 	tac := &annotation.TaggedAnnotationCollection{}
 	// default value of limit
 	limit := int64(limit)
@@ -145,15 +146,15 @@ func (srv *AnnotationService) ListAnnotations(
 	}
 	astmt, err := filterStrToQuery(ral.Filter)
 	if err != nil {
-		return tac, aphgrpc.HandleInvalidParamError(ctx, err)
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	mlc, err := srv.repo.ListAnnotations(ral.Cursor, limit, astmt)
 	if err != nil {
 		if repository.IsAnnotationListNotFound(err) {
-			return tac, aphgrpc.HandleNotFoundError(ctx, err)
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
 		}
 
-		return tac, aphgrpc.HandleGetError(ctx, err)
+		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 	tcdata := make([]*annotation.TaggedAnnotationCollection_Data, 0)
 	for _, m := range mlc {
@@ -181,17 +182,17 @@ func (srv *AnnotationService) ListAnnotations(
 func (srv *AnnotationService) GetAnnotationTag(
 	ctx context.Context, rta *annotation.TagRequest,
 ) (*annotation.AnnotationTag, error) {
-	tag := &annotation.AnnotationTag{}
-	if err := rta.Validate(); err != nil {
-		return tag, aphgrpc.HandleInvalidParamError(ctx, err)
+	if err := protovalidate.Validate(rta); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
+	tag := &annotation.AnnotationTag{}
 	mta, err := srv.repo.GetAnnotationTag(rta.Name, rta.Ontology)
 	if err != nil {
 		if repository.IsAnnoTagNotFound(err) {
-			return tag, aphgrpc.HandleNotFoundError(ctx, err)
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
 		}
 
-		return tag, aphgrpc.HandleGetError(ctx, err)
+		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
 	tag.Id = mta.ID
 	tag.Name = mta.Name
@@ -231,30 +232,6 @@ func (srv *AnnotationService) getAnnoData(
 		Id:         m.Key,
 		Attributes: getAnnoAttributes(m),
 	}
-}
-
-func (srv *AnnotationService) initializeTaggedAnnotation(
-	ctx context.Context,
-	req Validatable,
-) (*annotation.TaggedAnnotation, error) {
-	tna := &annotation.TaggedAnnotation{}
-	if err := req.Validate(); err != nil {
-		return tna, aphgrpc.HandleInvalidParamError(ctx, err)
-	}
-
-	return tna, nil
-}
-
-func (srv *AnnotationService) initializeTaggedAnnotationGroup(
-	ctx context.Context,
-	rid *annotation.GroupEntryId,
-) (*annotation.TaggedAnnotationGroup, error) {
-	gta := &annotation.TaggedAnnotationGroup{}
-	if err := rid.Validate(); err != nil {
-		return gta, aphgrpc.HandleInvalidParamError(ctx, err)
-	}
-
-	return gta, nil
 }
 
 func (srv *AnnotationService) getGroupData(
