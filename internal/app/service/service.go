@@ -39,7 +39,10 @@ func (oh *oboStreamHandler) Write() error {
 			return fmt.Errorf("error in handling stream %s", err)
 		}
 		if _, err := oh.writer.Write(req.Content); err != nil {
-			return fmt.Errorf("error in writing the content from request %s", err)
+			return fmt.Errorf(
+				"error in writing the content from request %s",
+				err,
+			)
 		}
 	}
 
@@ -71,7 +74,10 @@ func defaultOptions() *aphgrpc.ServiceOptions {
 // NewAnnotationService is the constructor for creating a new instance of AnnotationService.
 func NewAnnotationService(srvP *Params) (*AnnotationService, error) {
 	if err := validator.New().Struct(srvP); err != nil {
-		return &AnnotationService{}, fmt.Errorf("error in validating struct %s", err)
+		return &AnnotationService{}, fmt.Errorf(
+			"error in validating struct %s",
+			err,
+		)
 	}
 	so := defaultOptions()
 	for _, optfn := range srvP.Options {
@@ -93,7 +99,9 @@ func (s *AnnotationService) GetGroupResourceName() string {
 }
 
 // OboJSONFileUpload uploads a obojson formatted file to the server.
-func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotationService_OboJSONFileUploadServer) error {
+func (s *AnnotationService) OboJSONFileUpload(
+	stream annotation.TaggedAnnotationService_OboJSONFileUploadServer,
+) error {
 	in, out := io.Pipe()
 	grp := new(errgroup.Group)
 	defer in.Close()
@@ -101,10 +109,16 @@ func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotation
 	grp.Go(oh.Write)
 	info, err := s.repo.LoadOboJSON(in)
 	if err != nil {
-		return aphgrpc.HandleGenericError(context.Background(), fmt.Errorf("error with loading obo %s", err))
+		return aphgrpc.HandleGenericError(
+			context.Background(),
+			fmt.Errorf("error with loading obo %s", err),
+		)
 	}
 	if err := grp.Wait(); err != nil {
-		return aphgrpc.HandleGenericError(context.Background(), fmt.Errorf("error in waiting for the write to finish %s", err))
+		return aphgrpc.HandleGenericError(
+			context.Background(),
+			fmt.Errorf("error in waiting for the write to finish %s", err),
+		)
 	}
 
 	err = stream.SendAndClose(&upload.FileUploadResponse{
@@ -118,7 +132,9 @@ func (s *AnnotationService) OboJSONFileUpload(stream annotation.TaggedAnnotation
 	return nil
 }
 
-func uploadResponse(info *storage.UploadInformation) upload.FileUploadResponse_Status {
+func uploadResponse(
+	info *storage.UploadInformation,
+) upload.FileUploadResponse_Status {
 	if info.IsCreated {
 		return upload.FileUploadResponse_CREATED
 	}
@@ -132,7 +148,9 @@ func genNextCursorVal(t time.Time) int64 {
 	return t.UnixNano() / dividerVal
 }
 
-func getAnnoAttributes(annom *model.AnnoDoc) *annotation.TaggedAnnotationAttributes {
+func getAnnoAttributes(
+	annom *model.AnnoDoc,
+) *annotation.TaggedAnnotationAttributes {
 	return &annotation.TaggedAnnotationAttributes{
 		Value:         annom.Value,
 		EditableValue: annom.EditableValue,
