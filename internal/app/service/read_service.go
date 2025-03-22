@@ -10,7 +10,7 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
-const limit = 10
+var LIMIT int64 = 10
 
 func (srv *AnnotationService) GetAnnotation(
 	ctx context.Context,
@@ -81,15 +81,15 @@ func (srv *AnnotationService) ListAnnotationGroups(
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	// default value of limit
-	limit := int64(limit)
+	searchLimit := int64(LIMIT)
 	if rgp.Limit > 0 {
-		limit = rgp.Limit
+		searchLimit = rgp.Limit
 	}
 	astmt, err := filterStrToQuery(rgp.Filter)
 	if err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mgc, err := srv.repo.ListAnnotationGroup(rgp.Cursor, limit, astmt)
+	mgc, err := srv.repo.ListAnnotationGroup(rgp.Cursor, searchLimit, astmt)
 	if err != nil {
 		if repository.IsAnnotationGroupListNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -116,7 +116,7 @@ func (srv *AnnotationService) ListAnnotationGroups(
 			},
 		)
 	}
-	if len(gcdata) < int(limit)-2 {
+	if len(gcdata) < int(searchLimit)-2 {
 		return &annotation.TaggedAnnotationGroupCollection{
 			Data: gcdata,
 			Meta: &annotation.Meta{Limit: rgp.Limit},
@@ -126,7 +126,7 @@ func (srv *AnnotationService) ListAnnotationGroups(
 	return &annotation.TaggedAnnotationGroupCollection{
 		Data: gcdata[:len(gcdata)-1],
 		Meta: &annotation.Meta{
-			Limit:      limit,
+			Limit:      searchLimit,
 			NextCursor: genNextCursorVal(mgc[len(mgc)-1].CreatedAt),
 		},
 	}, nil
@@ -140,11 +140,11 @@ func (srv *AnnotationService) ListAnnotations(
 	}
 	tac := &annotation.TaggedAnnotationCollection{}
 	// default value of limit
-	limit := int64(limit)
+	searchLimit := LIMIT
 	if ral.Limit > 0 {
-		limit = ral.Limit
+		searchLimit = ral.Limit
 	}
-	mlc, err := srv.repo.ListAnnotations(ral.Cursor, limit, ral.Filter)
+	mlc, err := srv.repo.ListAnnotations(ral.Cursor, searchLimit, ral.Filter)
 	if err != nil {
 		if repository.IsAnnotationListNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -160,7 +160,7 @@ func (srv *AnnotationService) ListAnnotations(
 			Attributes: getAnnoAttributes(m),
 		})
 	}
-	if len(tcdata) < int(limit)-2 { // fewer result than limit
+	if len(tcdata) < int(searchLimit)-2 { // fewer result than limit
 		tac.Data = tcdata
 		tac.Meta = &annotation.Meta{Limit: ral.Limit}
 
@@ -168,7 +168,7 @@ func (srv *AnnotationService) ListAnnotations(
 	}
 	tac.Data = tcdata[:len(tcdata)-1]
 	tac.Meta = &annotation.Meta{
-		Limit:      limit,
+		Limit:      searchLimit,
 		NextCursor: genNextCursorVal(mlc[len(mlc)-1].CreatedAt),
 	}
 
