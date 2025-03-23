@@ -3,3 +3,4 @@ vendor/
 .env
 loader
 repomix-output.md
+.mcp.json
