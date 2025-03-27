@@ -56,10 +56,10 @@ func formatKey(statementType StatementType, hasCursor bool) string {
 }
 
 // statementTemplate maps configuration to the appropriate AQL template.
-func statementTemplate(ctx FilterContext) string {
-	key := formatKey(ctx.Type, ctx.HasCursor)
+func statementTemplate(ctx FilterContext) (string, bool) {
+	val, ok := templateMap[formatKey(ctx.Type, ctx.HasCursor)]
 
-	return templateMap[key]
+	return val, ok
 }
 
 // buildAQLStatement is the core function that builds AQL statements based on
@@ -70,8 +70,8 @@ func buildAQLStatement(ctx FilterContext) PickStatementResult {
 	}
 
 	var result PickStatementResult
-	template := statementTemplate(ctx)
-	if template == "" {
+	template, ok := statementTemplate(ctx)
+	if !ok {
 		result.Err = fmt.Errorf(
 			"no matching template found for statement type %s with cursor=%v",
 			ctx.Type,
