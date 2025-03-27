@@ -84,24 +84,29 @@ func buildAQLStatement(ctx FilterContext) PickStatementResult {
 	switch ctx.Type {
 	case BothFilters:
 		return buildBothFiltersStatement(
+		result = buildBothFiltersStatement(
 			template,
 			ctx.FilterMap,
 			ctx.FirstSet,
 			ctx.SecondSet,
 		)
 	case FirstFilter:
-		return buildFirstFilterStatement(template, ctx.FilterMap, ctx.FirstSet)
+		result = buildFirstFilterStatement(
+			template,
+			ctx.FilterMap,
+			ctx.FirstSet,
+		)
 	case SecondFilter:
-		return buildSecondFilterStatement(
+		result = buildSecondFilterStatement(
 			template,
 			ctx.FilterMap,
 			ctx.SecondSet,
 		)
 	default:
 		result.Err = errors.New("unsupported statement type")
-
-		return result
 	}
+
+	return result
 }
 
 // genFilterStatement is a helper that generates a qualified AQL filter statement
