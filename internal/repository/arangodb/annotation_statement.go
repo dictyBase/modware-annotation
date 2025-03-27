@@ -9,6 +9,18 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/collection"
 )
 
+const (
+	// BothFilters indicates both annotation and cvterm filters are present.
+	BothFilters StatementType = "both"
+	// FirstFilter indicates only annotation filters are present.
+	FirstFilter StatementType = "first"
+	// SecondFilter indicates only cvterm filters are present.
+	SecondFilter StatementType = "second"
+)
+
+// StatementType represents the type of AQL statement to be generated.
+type StatementType string
+
 // PickStatementResult is a struct that holds the result of pickStatement
 // function.
 type PickStatementResult struct {
@@ -23,34 +35,9 @@ type FilterContext struct {
 	Filters      []*query.Filter
 	FirstSet     []*query.Filter
 	SecondSet    []*query.Filter
+	FilterMap    map[string]string
+	Type         StatementType
 	Err          error
-}
-
-// StatementConfig configures the AQL statement generation.
-type StatementConfig struct {
-	Type      StatementType
-	HasCursor bool
-	FilterMap map[string]string
-	FirstSet  []*query.Filter
-	SecondSet []*query.Filter
-	Err       error
-}
-
-// StatementType represents the type of AQL statement to be generated.
-type StatementType string
-
-const (
-	// BothFilters indicates both annotation and cvterm filters are present.
-	BothFilters StatementType = "both"
-	// FirstFilter indicates only annotation filters are present.
-	FirstFilter StatementType = "first"
-	// SecondFilter indicates only cvterm filters are present.
-	SecondFilter StatementType = "second"
-)
-
-// formatKey creates a template map key from statement type and cursor flag.
-func formatKey(statementType StatementType, hasCursor bool) string {
-	return fmt.Sprintf("%s%v", string(statementType), hasCursor)
 }
 
 // templateMap maps statement types and cursor flags to appropriate templates.
@@ -63,48 +50,52 @@ var templateMap = map[string]string{
 	formatKey(SecondFilter, false): cvtExclusiveListFilterQ,
 }
 
+// formatKey creates a template map key from statement type and cursor flag.
+func formatKey(statementType StatementType, hasCursor bool) string {
+	return fmt.Sprintf("%s%v", string(statementType), hasCursor)
+}
+
 // statementTemplate maps configuration to the appropriate AQL template.
-func statementTemplate(cfg *StatementConfig) string {
-	key := formatKey(cfg.Type, cfg.HasCursor)
+func statementTemplate(ctx FilterContext) string {
+	key := formatKey(ctx.Type, ctx.HasCursor)
 
 	return templateMap[key]
 }
 
 // buildAQLStatement is the core function that builds AQL statements based on
 // configuration.
-func buildAQLStatement(cfg *StatementConfig) PickStatementResult {
-	if cfg.Err != nil {
-		return PickStatementResult{Err: cfg.Err}
+func buildAQLStatement(ctx FilterContext) PickStatementResult {
+	if ctx.Err != nil {
+		return PickStatementResult{Err: ctx.Err}
 	}
 
 	var result PickStatementResult
-
-	template := statementTemplate(cfg)
+	template := statementTemplate(ctx)
 	if template == "" {
 		result.Err = fmt.Errorf(
 			"no matching template found for statement type %s with cursor=%v",
-			cfg.Type,
-			cfg.HasCursor,
+			ctx.Type,
+			ctx.HasCursor,
 		)
 
 		return result
 	}
 
-	switch cfg.Type {
+	switch ctx.Type {
 	case BothFilters:
 		return buildBothFiltersStatement(
 			template,
-			cfg.FilterMap,
-			cfg.FirstSet,
-			cfg.SecondSet,
+			ctx.FilterMap,
+			ctx.FirstSet,
+			ctx.SecondSet,
 		)
 	case FirstFilter:
-		return buildFirstFilterStatement(template, cfg.FilterMap, cfg.FirstSet)
+		return buildFirstFilterStatement(template, ctx.FilterMap, ctx.FirstSet)
 	case SecondFilter:
 		return buildSecondFilterStatement(
 			template,
-			cfg.FilterMap,
-			cfg.SecondSet,
+			ctx.FilterMap,
+			ctx.SecondSet,
 		)
 	default:
 		result.Err = errors.New("unsupported statement type")
@@ -221,160 +212,91 @@ func getListAnnoStatement(fstr string, cursor int64) PickStatementResult {
 			Err: errors.New("empty filter string"),
 		}
 	}
-	// Create initial filter context
-	ctx := FilterContext{
-		FilterString: fstr,
-		HasCursor:    cursor != 0,
-	}
-
 	// Create a pipeline to process filters and generate statements
-	return collection.Pipe3(
-		ctx,
-		parseFiltersFunc(),
-		filterAndPartitionFunc(),
-		generateStatementFunc(),
+	return collection.Pipe4(
+		FilterContext{
+			FilterString: fstr,
+			HasCursor:    cursor != 0,
+			FilterMap:    FilterMap(),
+		},
+		parseFiltersFunc,
+		filterAndPartitionFunc,
+		determineStatementTypeFunc,
+		buildAQLStatement,
 	)
 }
 
 // parseFiltersFunc returns a function for parsing filter strings in a pipeline.
-func parseFiltersFunc() func(FilterContext) FilterContext {
-	return func(ctx FilterContext) FilterContext {
-		if ctx.Err != nil {
-			return ctx
-		}
+func parseFiltersFunc(ctx FilterContext) FilterContext {
+	filters, err := query.ParseFilterString(ctx.FilterString)
+	if err != nil {
+		ctx.Err = fmt.Errorf(
+			"error parsing filter string %q: %w",
+			ctx.FilterString,
+			err,
+		)
 
-		filters, err := query.ParseFilterString(ctx.FilterString)
-		if err != nil {
-			return FilterContext{
-				FilterString: ctx.FilterString,
-				HasCursor:    ctx.HasCursor,
-				Err: fmt.Errorf(
-					"error parsing filter string %q: %w",
-					ctx.FilterString,
-					err,
-				),
-			}
-		}
-
-		return FilterContext{
-			FilterString: ctx.FilterString,
-			HasCursor:    ctx.HasCursor,
-			Filters:      filters,
-		}
+		return ctx
 	}
+	ctx.Filters = filters
+
+	return ctx
 }
 
 // filterAndPartitionFunc returns a function for filtering and partitioning in a pipeline.
-func filterAndPartitionFunc() func(FilterContext) FilterContext {
-	return func(ctx FilterContext) FilterContext {
-		if ctx.Err != nil {
-			return ctx
-		}
+func filterAndPartitionFunc(ctx FilterContext) FilterContext {
+	if ctx.Err != nil {
+		return ctx
+	}
+	var validFilters []*query.Filter
+	var firstSet []*query.Filter
+	var secondSet []*query.Filter
 
-		fmap := FilterMap()
-		var validFilters []*query.Filter
-		var firstSet []*query.Filter
-		var secondSet []*query.Filter
-
-		for _, qfl := range ctx.Filters {
-			if _, ok := fmap[qfl.Field]; ok {
-				validFilters = append(validFilters, qfl)
-				if strings.HasPrefix(qfl.Field, "ann.") {
-					firstSet = append(firstSet, qfl)
-				} else {
-					secondSet = append(secondSet, qfl)
-				}
+	for _, qfl := range ctx.Filters {
+		if _, ok := ctx.FilterMap[qfl.Field]; ok {
+			validFilters = append(validFilters, qfl)
+			if strings.HasPrefix(qfl.Field, "ann.") {
+				firstSet = append(firstSet, qfl)
+			} else {
+				secondSet = append(secondSet, qfl)
 			}
-		}
-
-		if collection.IsEmpty(validFilters) {
-			return FilterContext{
-				FilterString: ctx.FilterString,
-				HasCursor:    ctx.HasCursor,
-				Err: fmt.Errorf(
-					"no valid filters found in filter string %q",
-					ctx.FilterString,
-				),
-			}
-		}
-
-		return FilterContext{
-			FilterString: ctx.FilterString,
-			HasCursor:    ctx.HasCursor,
-			Filters:      validFilters,
-			FirstSet:     firstSet,
-			SecondSet:    secondSet,
 		}
 	}
-}
 
-// generateStatementFunc returns a function for generating AQL statements in a pipeline.
-func generateStatementFunc() func(FilterContext) PickStatementResult {
-	return func(ctx FilterContext) PickStatementResult {
-		if ctx.Err != nil {
-			return PickStatementResult{Err: ctx.Err}
-		}
-		// Use a functional pipeline to generate the statement
-		return collection.Pipe3(
-			ctx,
-			determineStatementTypeFunc(),
-			createStatementConfigFunc(),
-			executeStatementFunc(),
+	if collection.IsEmpty(validFilters) {
+		ctx.Err = fmt.Errorf(
+			"no valid filters found in filter string %q",
+			ctx.FilterString,
 		)
+
+		return ctx
 	}
+
+	ctx.Filters = validFilters
+	ctx.FirstSet = firstSet
+	ctx.SecondSet = secondSet
+
+	return ctx
 }
 
 // determineStatementTypeFunc returns a function for determining statement type in a pipeline.
-func determineStatementTypeFunc() func(FilterContext) FilterContext {
-	return func(ctx FilterContext) FilterContext {
-		if ctx.Err != nil {
-			return ctx
-		}
-
-		statementType := determineStatementType(ctx.FirstSet, ctx.SecondSet)
-		if statementType == "" {
-			return FilterContext{
-				FilterString: ctx.FilterString,
-				HasCursor:    ctx.HasCursor,
-				FirstSet:     ctx.FirstSet,
-				SecondSet:    ctx.SecondSet,
-				Err: errors.New(
-					"no valid filters found after parsing",
-				),
-			}
-		}
-
-		// Just add the statement type to the context
-		result := ctx
-		result.Filters = append(
-			result.Filters,
-			&query.Filter{Field: string(statementType)},
+func determineStatementTypeFunc(ctx FilterContext) FilterContext {
+	if ctx.Err != nil {
+		return ctx
+	}
+	statementType := determineStatementType(ctx.FirstSet, ctx.SecondSet)
+	if statementType == "" {
+		ctx.Err = errors.New(
+			"no valid filters found after parsing",
 		)
 
-		return result
+		return ctx
 	}
-}
+	ctx.Type = statementType
+	ctx.Filters = append(
+		ctx.Filters,
+		&query.Filter{Field: (string(statementType))},
+	)
 
-// createStatementConfigFunc returns a function for creating statement config in a pipeline.
-func createStatementConfigFunc() func(FilterContext) *StatementConfig {
-	return func(ctx FilterContext) *StatementConfig {
-		if ctx.Err != nil {
-			return &StatementConfig{Err: ctx.Err}
-		}
-
-		statementType := determineStatementType(ctx.FirstSet, ctx.SecondSet)
-
-		return &StatementConfig{
-			Type:      statementType,
-			HasCursor: ctx.HasCursor,
-			FilterMap: FilterMap(),
-			FirstSet:  ctx.FirstSet,
-			SecondSet: ctx.SecondSet,
-		}
-	}
-}
-
-// executeStatementFunc returns a function that executes the statement building process.
-func executeStatementFunc() func(*StatementConfig) PickStatementResult {
-	return buildAQLStatement
+	return ctx
 }
