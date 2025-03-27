@@ -89,6 +89,21 @@ const (
 							{ tag: cvt.label, ontology: cv.metadata.namespace }
 						)
 	`
+	annListFilterWithCursorQ = `
+		FOR cvt IN @@cvt_collection
+			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
+				FOR cv IN @@cv_collection
+					FILTER ann.is_obsolete == false
+					FILTER cvt.graph_id == cv._id
+					FILTER ann.created_at <= DATE_ISO8601(@cursor)
+					%s
+					SORT ann.created_at DESC
+					LIMIT @limit
+						RETURN MERGE(
+							ann,
+							{ tag: cvt.label, ontology: cv.metadata.namespace }
+						)
+	`
 	annGroupInst = `
 		INSERT {
 				created_at: DATE_ISO8601(DATE_NOW()),
@@ -102,6 +117,40 @@ const (
 					updated_at: DATE_ISO8601(DATE_NOW()),
 					group: @group 
 				 } IN @@anno_group_collection RETURN NEW
+	`
+	annGroupListFilterWithCursorQ = `
+		LET filterannos = (
+			FOR ann IN %s
+				FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+					FOR cv IN %s
+						FILTER ann.is_obsolete == false
+						FILTER cvt.graph_id == cv._id
+						%s
+						RETURN ann._key
+		)
+		FOR ag in %s
+			LET annotations = (
+				FOR aid in ag.group
+					FOR ann IN %s
+						FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+							FOR cv IN %s
+								FILTER aid == ann._key
+								FILTER cvt.graph_id == cv._id
+								RETURN MERGE(
+									ann,
+									{ tag: cvt.label, ontology: cv.metadata.namespace }
+								)
+			)
+			FILTER ag.group ANY IN filterannos
+			FILTER ag.created_at <= DATE_ISO8601(%d)
+			SORT ag.created_at DESC
+			LIMIT %d
+			RETURN {
+				created_at: ag.created_at,
+				updated_at: ag.updated_at,
+				group_id: ag._key,
+				annotations: annotations
+			}
 	`
 	annGroupListQ = `
 		FOR ag IN %s
@@ -209,5 +258,37 @@ const (
 			FILTER org.species == @species
 			LIMIT 1
 			RETURN org
+	`
+	annGroupListFilterQ = `
+      LET filterannos = (
+          FOR ann IN %s
+              FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+                  FOR cv IN %s
+                      FILTER ann.is_obsolete == false
+                      FILTER cvt.graph_id == cv._id
+                      %s
+                      RETURN ann._key
+      )
+      FOR ag in %s
+          LET annotations = (
+              FOR aid in ag.group
+                  FOR ann IN %s
+                      FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+                          FOR cv IN %s
+                              FILTER aid == ann._key
+                              FILTER cvt.graph_id == cv._id
+                              RETURN MERGE(
+                                  ann,
+                                  { tag: cvt.label, ontology: cv.metadata.namespace }
+                              )
+          )
+          FILTER ag.group ANY IN filterannos
+          SORT ag.created_at DESC
+          LIMIT %d
+          RETURN {
+              created_at: ag.created_at,
+              updated_at: ag.updated_at,
+              group_id: ag._key,
+              annotations: annotations
 	`
 )
