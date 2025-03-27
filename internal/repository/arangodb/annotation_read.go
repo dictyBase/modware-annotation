@@ -77,6 +77,7 @@ func (ar *arangorepository) ListAnnotations(
 ) ([]*model.AnnoDoc, error) {
 	annoModel := make([]*model.AnnoDoc, 0)
 	bindVars := map[string]interface{}{
+		"@anno_collection":  ar.anno.annog.Name(),
 		"@cvt_collection":   ar.onto.Term.Name(),
 		"@cv_collection":    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
