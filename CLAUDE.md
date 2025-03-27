@@ -1,8 +1,8 @@
 # Go Coding Conventions
 
 -- **Build, Test, and Lint Commands**
-    - Run all tests: `gotestum --format-hide-empty-pkg --format testdox --format-icons hivis`
-    - Run specific test: `gotestum --format-hide-empty-pkg --format testdox --format-icons hivis -- -run TestFindSimilar ./...`
+    - Run all tests: `gotestsum --format-hide-empty-pkg --format testdox --format-icons hivis`
+    - Run specific test: `gotestsum --format-hide-empty-pkg --format testdox --format-icons hivis -- -run TestFindSimilar ./...`
     - Run tests with verbose output: `gotestum --format-hide-empty-pkg --format standard-verbose --format-icons hivis`
     - Format code: `gofumpt -w .`
 
