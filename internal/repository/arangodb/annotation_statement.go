@@ -9,8 +9,6 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/collection"
 )
 
-type filterCallback func(*query.Filter) bool
-
 // PickStatementResult is a struct that holds the result of pickStatement
 // function.
 type PickStatementResult struct {
@@ -18,249 +16,255 @@ type PickStatementResult struct {
 	Err       error
 }
 
+// StatementType represents the type of AQL statement to be generated.
+type StatementType string
+
+const (
+	// BothFilters indicates both annotation and cvterm filters are present.
+	BothFilters StatementType = "both"
+	// FirstFilter indicates only annotation filters are present.
+	FirstFilter StatementType = "first"
+	// SecondFilter indicates only cvterm filters are present.
+	SecondFilter StatementType = "second"
+)
+
+// StatementConfig configures the AQL statement generation.
+type StatementConfig struct {
+	Type      StatementType
+	HasCursor bool
+	FilterMap map[string]string
+	FirstSet  []*query.Filter
+	SecondSet []*query.Filter
+}
+
+// formatKey creates a template map key from statement type and cursor flag.
+func formatKey(statementType StatementType, hasCursor bool) string {
+	return fmt.Sprintf("%s%v", string(statementType), hasCursor)
+}
+
+// templateMap maps statement types and cursor flags to appropriate templates.
+var templateMap = map[string]string{
+	formatKey(BothFilters, true):   annCvtListFilterWithCursorQ,
+	formatKey(BothFilters, false):  annCvtListFilterQ,
+	formatKey(FirstFilter, true):   annExclusiveListFilterWithCursorQ,
+	formatKey(FirstFilter, false):  annExclusiveListFilterQ,
+	formatKey(SecondFilter, true):  cvtExclusiveListFilterWithCursorQ,
+	formatKey(SecondFilter, false): cvtExclusiveListFilterQ,
+}
+
+// statementTemplate maps configuration to the appropriate AQL template.
+func statementTemplate(cfg *StatementConfig) string {
+	key := formatKey(cfg.Type, cfg.HasCursor)
+
+	return templateMap[key]
+}
+
+// buildAQLStatement is the core function that builds AQL statements based on
+// configuration.
+func buildAQLStatement(cfg *StatementConfig) PickStatementResult {
+	var result PickStatementResult
+
+	template := statementTemplate(cfg)
+	if template == "" {
+		result.Err = fmt.Errorf(
+			"no matching template found for statement type %s with cursor=%v",
+			cfg.Type,
+			cfg.HasCursor,
+		)
+
+		return result
+	}
+
+	switch cfg.Type {
+	case BothFilters:
+		return buildBothFiltersStatement(
+			template,
+			cfg.FilterMap,
+			cfg.FirstSet,
+			cfg.SecondSet,
+		)
+	case FirstFilter:
+		return buildFirstFilterStatement(template, cfg.FilterMap, cfg.FirstSet)
+	case SecondFilter:
+		return buildSecondFilterStatement(
+			template,
+			cfg.FilterMap,
+			cfg.SecondSet,
+		)
+	default:
+		result.Err = errors.New("unsupported statement type")
+
+		return result
+	}
+}
+
+// genFilterStatement is a helper that generates a qualified AQL filter statement
+// and handles error with proper context.
+func genFilterStatement(
+	filterMap map[string]string,
+	filters []*query.Filter,
+	filterType string,
+) (string, error) {
+	filter, err := query.GenQualifiedAQLFilterStatement(filterMap, filters)
+	if err != nil {
+		return "", fmt.Errorf("error generating %s filter: %w", filterType, err)
+	}
+
+	return filter, nil
+}
+
+// buildBothFiltersStatement handles creating a statement when both filter sets
+// are non-empty.
+func buildBothFiltersStatement(
+	template string,
+	filterMap map[string]string,
+	firstSet, secondSet []*query.Filter,
+) PickStatementResult {
+	var result PickStatementResult
+
+	afilter, err := genFilterStatement(filterMap, firstSet, "annotation")
+	if err != nil {
+		result.Err = err
+
+		return result
+	}
+
+	cfilter, err := genFilterStatement(filterMap, secondSet, "cvterm")
+	if err != nil {
+		result.Err = err
+
+		return result
+	}
+
+	result.Statement = fmt.Sprintf(template, afilter, cfilter)
+
+	return result
+}
+
+// buildFirstFilterStatement handles creating a statement when only first filter
+// set is non-empty.
+func buildFirstFilterStatement(
+	template string,
+	filterMap map[string]string,
+	filters []*query.Filter,
+) PickStatementResult {
+	var result PickStatementResult
+
+	afilter, err := genFilterStatement(filterMap, filters, "annotation")
+	if err != nil {
+		result.Err = err
+
+		return result
+	}
+
+	result.Statement = fmt.Sprintf(template, afilter)
+
+	return result
+}
+
+// buildSecondFilterStatement handles creating a statement when only second
+// filter set is non-empty.
+func buildSecondFilterStatement(
+	template string,
+	filterMap map[string]string,
+	filters []*query.Filter,
+) PickStatementResult {
+	var result PickStatementResult
+
+	cfilter, err := genFilterStatement(filterMap, filters, "cvterm")
+	if err != nil {
+		result.Err = err
+
+		return result
+	}
+
+	result.Statement = fmt.Sprintf(template, cfilter)
+
+	return result
+}
+
+// determineStatementType determines the statement type based on filter
+// presence.
+func determineStatementType(first, second []*query.Filter) StatementType {
+	switch {
+	case !collection.IsEmpty(first) && !collection.IsEmpty(second):
+		return BothFilters
+	case !collection.IsEmpty(first) && collection.IsEmpty(second):
+		return FirstFilter
+	case collection.IsEmpty(first) && !collection.IsEmpty(second):
+		return SecondFilter
+	default:
+		return ""
+	}
+}
+
+// generateStatement is a unified function for generating AQL statements
+// that handles both cursor and non-cursor cases.
+func generateStatement(
+	first, second []*query.Filter,
+	hasCursor bool,
+) PickStatementResult {
+	statementType := determineStatementType(first, second)
+	if statementType == "" {
+		return PickStatementResult{
+			Err: errors.New("no valid filters found after parsing"),
+		}
+	}
+
+	return buildAQLStatement(&StatementConfig{
+		Type:      statementType,
+		HasCursor: hasCursor,
+		FilterMap: FilterMap(),
+		FirstSet:  first,
+		SecondSet: second,
+	})
+}
+
 // getListAnnoStatement returns the appropriate AQL statement based on filter
 // string and cursor.
 func getListAnnoStatement(fstr string, cursor int64) PickStatementResult {
-	var result PickStatementResult
-	switch {
-	case len(fstr) > 0 && cursor == 0:
-		result = makeAQLStatement(fstr)
-	case len(fstr) > 0 && cursor != 0:
-		result = makeAQLStatementWithCursor(fstr, cursor)
-	default:
-		result.Err = errors.New("invalid filter string or cursor combination")
+	if len(fstr) == 0 {
+		return PickStatementResult{
+			Err: errors.New("empty filter string"),
+		}
 	}
+	hasCursor := cursor != 0
 
-	return result
+	return processFilters(fstr, hasCursor)
 }
 
-// makeAQLStatementWithCursor creates an AQL statement with cursor support
-func makeAQLStatementWithCursor(fstr string, cursor int64) PickStatementResult {
-	var result PickStatementResult
+// processFilters parses the filter string and processes it to generate an AQL
+// statement.
+func processFilters(fstr string, hasCursor bool) PickStatementResult {
 	pfs, err := query.ParseFilterString(fstr)
 	if err != nil {
-		result.Err = fmt.Errorf("error in parsing filter string")
-		return result
+		return PickStatementResult{
+			Err: fmt.Errorf("error parsing filter string %q: %w", fstr, err),
+		}
 	}
 
-	return collection.Pipe3(
-		pfs,
-		collection.CurriedFilter(filterFn()),
-		collection.CurriedPartitionTuple2(partFn),
-		collection.CurriedTFold(
-			func(tup collection.Tuple2[[]*query.Filter, []*query.Filter]) PickStatementResult {
-				return pickCursorStatement(tup, cursor)
-			},
-		),
-	)
-}
-
-func makeAQLStatement(fstr string) PickStatementResult {
-	var result PickStatementResult
-	pfs, err := query.ParseFilterString(fstr)
-	if err != nil {
-		result.Err = fmt.Errorf("error in parsing filter string")
-
-		return result
-	}
-
-	return collection.Pipe3(
-		pfs,
-		collection.CurriedFilter(filterFn()),
-		collection.CurriedPartitionTuple2(partFn),
-		collection.CurriedTFold(pickStatement),
-	)
-}
-
-func filterFn() filterCallback {
+	// Create a single shared FilterMap to reduce allocations
 	fmap := FilterMap()
-
-	return func(qfilter *query.Filter) bool {
-		_, ok := fmap[qfilter.Field]
-
-		return ok
-	}
-}
-
-func partFn(qfilter *query.Filter) bool {
-	return strings.HasPrefix(qfilter.Field, "ann.")
-}
-
-// pickStatement generates an AQL statement based on filter conditions.
-func pickStatement[A, B []*query.Filter](
-	tup collection.Tuple2[A, B],
-) PickStatementResult {
-	var result PickStatementResult
-	switch {
-	case !collection.IsEmpty(tup.First) && !collection.IsEmpty(tup.Second):
-		return generateStatementForBothFilters(tup.First, tup.Second)
-	case !collection.IsEmpty(tup.First) && collection.IsEmpty(tup.Second):
-		return generateStatementForFirstFilter(tup.First)
-	case collection.IsEmpty(tup.First) && !collection.IsEmpty(tup.Second):
-		return generateStatementForSecondFilter(tup.Second)
+	// Filter and partition in a single step
+	var validFilters []*query.Filter
+	var firstSet []*query.Filter
+	var secondSet []*query.Filter
+	for _, qfl := range pfs {
+		if _, ok := fmap[qfl.Field]; ok {
+			validFilters = append(validFilters, qfl)
+			if strings.HasPrefix(qfl.Field, "ann.") {
+				firstSet = append(firstSet, qfl)
+			} else {
+				secondSet = append(secondSet, qfl)
+			}
+		}
 	}
 
-	return result
-}
-
-// pickCursorStatement generates a cursor-based AQL statement based on filter conditions.
-func pickCursorStatement[A, B []*query.Filter](
-	tup collection.Tuple2[A, B],
-	cursor int64,
-) PickStatementResult {
-	var result PickStatementResult
-	switch {
-	case !collection.IsEmpty(tup.First) && !collection.IsEmpty(tup.Second):
-		return generateCursorStatementForBothFilters(
-			tup.First,
-			tup.Second,
-			cursor,
-		)
-	case !collection.IsEmpty(tup.First) && collection.IsEmpty(tup.Second):
-		return generateCursorStatementForFirstFilter(tup.First, cursor)
-	case collection.IsEmpty(tup.First) && !collection.IsEmpty(tup.Second):
-		return generateCursorStatementForSecondFilter(tup.Second, cursor)
-	default:
-		result.Err = errors.New("no valid filters found after parsing")
+	if collection.IsEmpty(validFilters) {
+		return PickStatementResult{
+			Err: fmt.Errorf("no valid filters found in filter string %q", fstr),
+		}
 	}
 
-	return result
-}
-
-// generateStatementForBothFilters creates a statement when both filter sets are
-// non-empty.
-func generateStatementForBothFilters(
-	first, second []*query.Filter,
-) PickStatementResult {
-	var result PickStatementResult
-	fmap := FilterMap()
-
-	afilter, err := query.GenQualifiedAQLFilterStatement(fmap, first)
-	if err != nil {
-		result.Err = err
-
-		return result
-	}
-
-	cfilter, err := query.GenQualifiedAQLFilterStatement(fmap, second)
-	if err != nil {
-		result.Err = err
-
-		return result
-	}
-	result.Statement = fmt.Sprintf(annCvtListFilterQ, afilter, cfilter)
-
-	return result
-}
-
-// generateStatementForFirstFilter creates a statement when only first filter
-// set is non-empty.
-func generateStatementForFirstFilter(
-	first []*query.Filter,
-) PickStatementResult {
-	var result PickStatementResult
-	fmap := FilterMap()
-
-	afilter, err := query.GenQualifiedAQLFilterStatement(fmap, first)
-	if err != nil {
-		result.Err = err
-
-		return result
-	}
-
-	result.Statement = fmt.Sprintf(annExclusiveListFilterQ, afilter)
-
-	return result
-}
-
-// generateStatementForSecondFilter creates a statement when only second filter
-// set is non-empty.
-func generateStatementForSecondFilter(
-	second []*query.Filter,
-) PickStatementResult {
-	var result PickStatementResult
-	fmap := FilterMap()
-
-	cfilter, err := query.GenQualifiedAQLFilterStatement(fmap, second)
-	if err != nil {
-		result.Err = err
-
-		return result
-	}
-
-	result.Statement = fmt.Sprintf(cvtExclusiveListFilterQ, cfilter)
-
-	return result
-}
-
-// generateCursorStatementForBothFilters creates a cursor-based statement when both filter sets are non-empty.
-func generateCursorStatementForBothFilters(
-	first, second []*query.Filter, cursor int64,
-) PickStatementResult {
-	var result PickStatementResult
-	fmap := FilterMap()
-
-	afilter, err := query.GenQualifiedAQLFilterStatement(fmap, first)
-	if err != nil {
-		result.Err = err
-		return result
-	}
-
-	cfilter, err := query.GenQualifiedAQLFilterStatement(fmap, second)
-	if err != nil {
-		result.Err = err
-		return result
-	}
-	result.Statement = fmt.Sprintf(
-		annCvtListFilterWithCursorQ,
-		afilter,
-		cfilter,
-		cursor,
-	)
-
-	return result
-}
-
-// generateCursorStatementForFirstFilter creates a cursor-based statement when only first filter set is non-empty.
-func generateCursorStatementForFirstFilter(
-	first []*query.Filter, cursor int64,
-) PickStatementResult {
-	var result PickStatementResult
-	fmap := FilterMap()
-
-	afilter, err := query.GenQualifiedAQLFilterStatement(fmap, first)
-	if err != nil {
-		result.Err = err
-		return result
-	}
-
-	result.Statement = fmt.Sprintf(
-		annExclusiveListFilterWithCursorQ,
-		afilter,
-		cursor,
-	)
-
-	return result
-}
-
-// generateCursorStatementForSecondFilter creates a cursor-based statement when only second filter set is non-empty.
-func generateCursorStatementForSecondFilter(
-	second []*query.Filter, cursor int64,
-) PickStatementResult {
-	var result PickStatementResult
-	fmap := FilterMap()
-
-	cfilter, err := query.GenQualifiedAQLFilterStatement(fmap, second)
-	if err != nil {
-		result.Err = err
-		return result
-	}
-
-	result.Statement = fmt.Sprintf(
-		cvtExclusiveListFilterWithCursorQ,
-		cfilter,
-		cursor,
-	)
-
-	return result
+	return generateStatement(firstSet, secondSet, hasCursor)
 }
