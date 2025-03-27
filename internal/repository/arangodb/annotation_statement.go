@@ -83,7 +83,6 @@ func buildAQLStatement(ctx FilterContext) PickStatementResult {
 
 	switch ctx.Type {
 	case BothFilters:
-		return buildBothFiltersStatement(
 		result = buildBothFiltersStatement(
 			template,
 			ctx.FilterMap,
@@ -194,21 +193,6 @@ func buildSecondFilterStatement(
 	return result
 }
 
-// determineStatementType determines the statement type based on filter
-// presence.
-func determineStatementType(first, second []*query.Filter) StatementType {
-	switch {
-	case !collection.IsEmpty(first) && !collection.IsEmpty(second):
-		return BothFilters
-	case !collection.IsEmpty(first) && collection.IsEmpty(second):
-		return FirstFilter
-	case collection.IsEmpty(first) && !collection.IsEmpty(second):
-		return SecondFilter
-	default:
-		return ""
-	}
-}
-
 // getListAnnoStatement returns the appropriate AQL statement based on filter
 // string and cursor.
 func getListAnnoStatement(fstr string, cursor int64) PickStatementResult {
@@ -289,8 +273,8 @@ func determineStatementTypeFunc(ctx FilterContext) FilterContext {
 	if ctx.Err != nil {
 		return ctx
 	}
-	statementType := determineStatementType(ctx.FirstSet, ctx.SecondSet)
-	if statementType == "" {
+	statementType, ok := determineStatementType(ctx.FirstSet, ctx.SecondSet)
+	if !ok {
 		ctx.Err = errors.New(
 			"no valid filters found after parsing",
 		)
@@ -304,4 +288,21 @@ func determineStatementTypeFunc(ctx FilterContext) FilterContext {
 	)
 
 	return ctx
+}
+
+// determineStatementType determines the statement type based on filter
+// presence.
+func determineStatementType(
+	first, second []*query.Filter,
+) (StatementType, bool) {
+	switch {
+	case !collection.IsEmpty(first) && !collection.IsEmpty(second):
+		return BothFilters, true
+	case !collection.IsEmpty(first) && collection.IsEmpty(second):
+		return FirstFilter, true
+	case collection.IsEmpty(first) && !collection.IsEmpty(second):
+		return SecondFilter, true
+	default:
+		return "", false
+	}
 }
