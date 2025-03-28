@@ -242,12 +242,18 @@ func filterAndPartitionFunc(ctx FilterContext) FilterContext {
 	var secondSet []*query.Filter
 
 	for _, qfl := range ctx.Filters {
-		if _, ok := ctx.FilterMap[qfl.Field]; ok {
-			validFilters = append(validFilters, qfl)
-			if strings.HasPrefix(qfl.Field, "ann.") {
-				firstSet = append(firstSet, qfl)
+		if mappedField, ok := ctx.FilterMap[qfl.Field]; ok {
+			// Create a new filter with the mapped field
+			mappedFilter := &query.Filter{
+				Field: mappedField,
+				Value: qfl.Value,
+			}
+			validFilters = append(validFilters, mappedFilter)
+			// Check if the mapped field is for annotation or cvterm
+			if strings.HasPrefix(mappedField, "ann.") {
+				firstSet = append(firstSet, mappedFilter)
 			} else {
-				secondSet = append(secondSet, qfl)
+				secondSet = append(secondSet, mappedFilter)
 			}
 		}
 	}
