@@ -217,6 +217,9 @@ func getListAnnoStatement(fstr string, cursor int64) PickStatementResult {
 
 // parseFiltersFunc returns a function for parsing filter strings in a pipeline.
 func parseFiltersFunc(ctx FilterContext) FilterContext {
+	if ctx.Err != nil { // Pass through existing errors
+		return ctx
+	}
 	filters, err := query.ParseFilterString(ctx.FilterString)
 	if err != nil {
 		ctx.Err = fmt.Errorf(
