@@ -386,3 +386,95 @@ func testExistingError(t *testing.T) {
 
 	assert.Equal(existingErr, result.Err, "should preserve existing error")
 }
+
+func TestParseFiltersFunc(t *testing.T) {
+	t.Parallel()
+	t.Run("success case", testParseFiltersFuncSuccess)
+	t.Run(
+		"failure case - invalid filter string",
+		testParseFiltersFuncFailureInvalidString,
+	)
+	t.Run(
+		"edge case - empty filter string",
+		testParseFiltersFuncEdgeEmptyString,
+	)
+	t.Run("existing error case", testParseFiltersFuncExistingError)
+}
+
+func testParseFiltersFuncSuccess(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	ctx := FilterContext{
+		FilterString: "tag==gene;value!=test",
+	}
+	result := parseFiltersFunc(ctx)
+	assert.NoError(result.Err, "should not return error")
+	assert.Len(result.Filters, 2, "should parse two filters")
+	assert.Equal(
+		"tag",
+		result.Filters[0].Field,
+		"first filter field should be tag",
+	)
+	assert.Equal(
+		"gene",
+		result.Filters[0].Value,
+		"first filter value should be gene",
+	)
+	assert.Equal(
+		"value",
+		result.Filters[1].Field,
+		"second filter field should be value",
+	)
+	assert.Equal(
+		"test",
+		result.Filters[1].Value,
+		"second filter value should be test",
+	)
+}
+
+func testParseFiltersFuncFailureInvalidString(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	ctx := FilterContext{
+		FilterString: "tag=gene;", // Invalid format
+	}
+	result := parseFiltersFunc(ctx)
+	assert.NoError(
+		result.Err,
+		"should not return error for this specific invalid format",
+	)
+	assert.Empty(
+		result.Filters,
+		"filters should be empty for this specific invalid format",
+	)
+}
+
+func testParseFiltersFuncEdgeEmptyString(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	ctx := FilterContext{
+		FilterString: "",
+	}
+	result := parseFiltersFunc(ctx)
+	// Assuming query.ParseFilterString returns empty slice and no error for empty string
+	assert.NoError(result.Err, "should not return error for empty string")
+	assert.Empty(result.Filters, "should return empty slice for empty string")
+}
+
+// modify this test function based on parseFiltersFunc.
+func testParseFiltersFuncExistingError(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	originalErr := errors.New("previous error")
+	ctx := FilterContext{
+		FilterString: "tag==gene", // This string doesn't matter as the function should return early
+		Err:          originalErr,
+	}
+	result := parseFiltersFunc(ctx)
+	// The function should return immediately if ctx.Err is already set.
+	assert.Equal(originalErr, result.Err, "should preserve the original error")
+	assert.Nil(
+		result.Filters,
+		"filters should not be parsed when an error already exists",
+	)
+}
