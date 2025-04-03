@@ -248,8 +248,9 @@ func filterAndPartitionFunc(ctx FilterContext) FilterContext {
 		if mappedField, ok := ctx.FilterMap[qfl.Field]; ok {
 			// Create a new filter with the mapped field
 			mappedFilter := &query.Filter{
-				Field: mappedField,
-				Value: qfl.Value,
+				Field:    mappedField,
+				Value:    qfl.Value,
+				Operator: qfl.Operator,
 			}
 			validFilters = append(validFilters, mappedFilter)
 			// Check if the mapped field is for annotation or cvterm
