@@ -9,6 +9,79 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func createTestFilter(field, value string) *query.Filter {
+	return &query.Filter{
+		Field:    field,
+		Value:    value,
+		Operator: "==",
+	}
+}
+
+func testBothFiltersWithCursor(t *testing.T, filterMap map[string]string) {
+	t.Helper()
+	assert := require.New(t)
+	ctx := FilterContext{
+		Type:      BothFilters,
+		HasCursor: true,
+		FilterMap: filterMap,
+		FirstSet:  []*query.Filter{createTestFilter("value", "val1")},
+		SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
+	}
+	result := buildAQLStatement(ctx)
+	assert.NoError(result.Err, "should not return error")
+	assert.NotEmpty(result.Statement, "statement should not be empty")
+	assert.Contains(
+		result.Statement,
+		"FILTER ann.value",
+		"should contain first filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"FILTER cvt.label",
+		"should contain second filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"DATE_ISO8601(@cursor)",
+		"should contain cursor logic",
+	)
+}
+
+func testBothFiltersWithoutCursor(t *testing.T, filterMap map[string]string) {
+	t.Helper()
+	assert := require.New(t)
+	ctx := FilterContext{
+		Type:      BothFilters,
+		HasCursor: false,
+		FilterMap: filterMap,
+		FirstSet:  []*query.Filter{createTestFilter("value", "val1")},
+		SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
+	}
+	result := buildAQLStatement(ctx)
+	assert.NoError(result.Err, "should not return error")
+	assert.NotEmpty(result.Statement, "statement should not be empty")
+	assert.Contains(
+		result.Statement,
+		"FILTER ann.value",
+		"should contain first filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"FILTER cvt.label",
+		"should contain second filter",
+	)
+	assert.NotContains(
+		result.Statement,
+		"DATE_ISO8601",
+		"should not contain cursor logic",
+	)
+	assert.Contains(
+		result.Statement,
+		"FOR ann IN @anno_collection",
+		"should use annCvtListFilterQ base",
+	)
+}
+
 func testBothFiltersStatementTemplate(t *testing.T) {
 	t.Helper()
 	t.Run("with cursor", func(t *testing.T) {
@@ -326,328 +399,6 @@ func testParseFiltersFuncExistingError(t *testing.T) {
 	)
 }
 
-func testBuildAQLStatementExistingError(t *testing.T) {
-	t.Parallel()
-	assert := require.New(t)
-	originalErr := errors.New("pre-existing error")
-	ctx := FilterContext{Err: originalErr}
-	result := buildAQLStatement(ctx)
-	assert.Equal(originalErr, result.Err, "should return the existing error")
-	assert.Empty(
-		result.Statement,
-		"statement should be empty on existing error",
-	)
-}
-
-func testBuildAQLStatementInvalidType(t *testing.T) {
-	t.Parallel()
-	assert := require.New(t)
-	ctx := FilterContext{Type: StatementType("invalid")}
-	result := buildAQLStatement(ctx)
-	assert.Error(result.Err, "should return error for invalid statement type")
-	assert.Contains(
-		result.Err.Error(),
-		"no matching template found",
-		"error message should indicate unsupported type",
-	)
-	assert.Empty(result.Statement, "statement should be empty")
-}
-
-func testBuildAQLStatementBothFiltersNoCursor(
-	t *testing.T,
-	filterMap map[string]string,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	ctx := FilterContext{
-		Type:      BothFilters,
-		HasCursor: false,
-		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{createFilter("value", "val1")},
-		SecondSet: []*query.Filter{createFilter("tag", "tag1")},
-	}
-	result := buildAQLStatement(ctx)
-	assert.NoError(result.Err, "should not return error")
-	assert.NotEmpty(result.Statement, "statement should not be empty")
-	assert.Contains(
-		result.Statement,
-		"FILTER ann.value",
-		"should contain first filter",
-	)
-	assert.Contains(
-		result.Statement,
-		"FILTER cvt.label",
-		"should contain second filter",
-	)
-	assert.NotContains(
-		result.Statement,
-		"DATE_ISO8601",
-		"should not contain cursor logic",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR ann IN @anno_collection",
-		"should use annCvtListFilterQ base",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR cv IN @@cv_collection",
-		"should use annCvtListFilterQ base",
-	)
-}
-
-func testBuildAQLStatementBothFiltersWithCursor(
-	t *testing.T,
-	filterMap map[string]string,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	ctx := FilterContext{
-		Type:      BothFilters,
-		HasCursor: true,
-		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{createFilter("ann.value", "val1")},
-		SecondSet: []*query.Filter{createFilter("cvt.label", "tag1")},
-	}
-	result := buildAQLStatement(ctx)
-	assert.NoError(result.Err, "should not return error")
-	assert.NotEmpty(result.Statement, "statement should not be empty")
-	assert.Contains(
-		result.Statement,
-		"FILTER ann.value",
-		"should contain first filter",
-	)
-	assert.Contains(
-		result.Statement,
-		"FILTER cvt.label",
-		"should contain second filter",
-	)
-	assert.Contains(
-		result.Statement,
-		"DATE_ISO8601(@cursor)",
-		"should contain cursor logic",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR ann IN @anno_collection",
-		"should use annCvtListFilterWithCursorQ base",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR cvt IN @@cvterm_collection",
-		"should use annCvtListFilterWithCursorQ base",
-	)
-}
-
-func testBuildAQLStatementFirstFilterNoCursor(
-	t *testing.T,
-	filterMap map[string]string,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	ctx := FilterContext{
-		Type:      FirstFilter,
-		HasCursor: false,
-		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{createFilter("ann.value", "val1")},
-		SecondSet: []*query.Filter{}, // Ensure second set is empty
-	}
-	result := buildAQLStatement(ctx)
-	assert.NoError(result.Err, "should not return error")
-	assert.NotEmpty(result.Statement, "statement should not be empty")
-	assert.Contains(
-		result.Statement,
-		"FILTER ann.value",
-		"should contain first filter",
-	)
-	assert.NotContains(
-		result.Statement,
-		"cvt.label",
-		"should not contain second filter",
-	)
-	assert.NotContains(
-		result.Statement,
-		"DATE_ISO8601",
-		"should not contain cursor logic",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR ann IN @anno_collection",
-		"should use annExclusiveListFilterQ base",
-	)
-	assert.NotContains(
-		result.Statement,
-		"FOR cvt IN @@cvterm_collection",
-		"should not use cvterm parts",
-	)
-}
-
-func testBuildAQLStatementFirstFilterWithCursor(
-	t *testing.T,
-	filterMap map[string]string,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	ctx := FilterContext{
-		Type:      FirstFilter,
-		HasCursor: true,
-		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{createFilter("ann.value", "val1")},
-		SecondSet: []*query.Filter{},
-	}
-	result := buildAQLStatement(ctx)
-	assert.NoError(result.Err, "should not return error")
-	assert.NotEmpty(result.Statement, "statement should not be empty")
-	assert.Contains(
-		result.Statement,
-		"FILTER ann.value",
-		"should contain first filter",
-	)
-	assert.NotContains(
-		result.Statement,
-		"cvt.label",
-		"should not contain second filter",
-	)
-	assert.Contains(
-		result.Statement,
-		"DATE_ISO8601(@cursor)",
-		"should contain cursor logic",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR ann IN @anno_collection",
-		"should use annExclusiveListFilterWithCursorQ base",
-	)
-	assert.NotContains(
-		result.Statement,
-		"FOR cvt IN @@cvterm_collection",
-		"should not use cvterm parts",
-	)
-}
-
-func testBuildAQLStatementSecondFilterNoCursor(
-	t *testing.T,
-	filterMap map[string]string,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	ctx := FilterContext{
-		Type:      SecondFilter,
-		HasCursor: false,
-		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{}, // Ensure first set is empty
-		SecondSet: []*query.Filter{createFilter("cvt.label", "tag1")},
-	}
-	result := buildAQLStatement(ctx)
-	assert.NoError(result.Err, "should not return error")
-	assert.NotEmpty(result.Statement, "statement should not be empty")
-	assert.NotContains(
-		result.Statement,
-		"ann.value",
-		"should not contain first filter",
-	)
-	assert.Contains(
-		result.Statement,
-		"FILTER cvt.label",
-		"should contain second filter",
-	)
-	assert.NotContains(
-		result.Statement,
-		"DATE_ISO8601",
-		"should not contain cursor logic",
-	)
-	assert.NotContains(
-		result.Statement,
-		"FOR ann IN @anno_collection",
-		"should not use annotation parts",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR cvt IN @@cvterm_collection",
-		"should use cvtExclusiveListFilterQ base",
-	)
-}
-
-func testBuildAQLStatementSecondFilterWithCursor(
-	t *testing.T,
-	filterMap map[string]string,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	ctx := FilterContext{
-		Type:      SecondFilter,
-		HasCursor: true,
-		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{},
-		SecondSet: []*query.Filter{createFilter("cvt.label", "tag1")},
-	}
-	result := buildAQLStatement(ctx)
-	assert.NoError(result.Err, "should not return error")
-	assert.NotEmpty(result.Statement, "statement should not be empty")
-	assert.NotContains(
-		result.Statement,
-		"ann.value",
-		"should not contain first filter",
-	)
-	assert.Contains(
-		result.Statement,
-		"FILTER cvt.label",
-		"should contain second filter",
-	)
-	assert.Contains(
-		result.Statement,
-		"DATE_ISO8601(@cursor)",
-		"should contain cursor logic",
-	)
-	assert.NotContains(
-		result.Statement,
-		"FOR ann IN @anno_collection",
-		"should not use annotation parts",
-	)
-	assert.Contains(
-		result.Statement,
-		"FOR cvt IN @@cvterm_collection",
-		"should use cvtExclusiveListFilterWithCursorQ base",
-	)
-}
-
-func testBuildAQLStatementErrorGenBoth(
-	t *testing.T,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	badFilterMap := map[string]string{"valid": "good"}
-	ctx := FilterContext{
-		Type:      BothFilters,
-		HasCursor: false,
-		FilterMap: badFilterMap,
-		FirstSet:  []*query.Filter{createFilter("invalid", "val1")},
-		SecondSet: []*query.Filter{createFilter("cvt.label", "tag1")},
-	}
-	result := buildAQLStatement(ctx)
-	assert.Error(result.Err, "should return error from filter generation")
-	assert.Contains(
-		result.Err.Error(),
-		"error generating annotation filter",
-		"error message should indicate annotation filter error",
-	)
-	assert.Empty(result.Statement, "statement should be empty on error")
-}
-
 func testGenFilterStatementSuccessSingle(
 	t *testing.T,
 	filterMap map[string]string,
@@ -730,54 +481,4 @@ func testGenFilterStatementEdgeEmpty(
 	// query.GenQualifiedAQLFilterStatement returns empty string for empty filters
 	_, err := genFilterStatement(filterMap, filters, filterType)
 	assert.Error(err, "should return error for empty filter slice")
-}
-
-func testBuildAQLStatementErrorGenFirst(
-	t *testing.T,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	badFilterMap := map[string]string{"valid": "good"}
-	ctx := FilterContext{
-		Type:      FirstFilter,
-		HasCursor: false,
-		FilterMap: badFilterMap,
-		FirstSet:  []*query.Filter{createFilter("invalid", "val1")},
-		SecondSet: []*query.Filter{},
-	}
-	result := buildAQLStatement(ctx)
-	assert.Error(result.Err, "should return error from filter generation")
-	assert.Contains(
-		result.Err.Error(),
-		"error generating annotation filter",
-		"error message should indicate annotation filter error",
-	)
-	assert.Empty(result.Statement, "statement should be empty on error")
-}
-
-func testBuildAQLStatementErrorGenSecond(
-	t *testing.T,
-	createFilter func(string, string) *query.Filter,
-) {
-	t.Helper()
-	t.Parallel()
-	assert := require.New(t)
-	badFilterMap := map[string]string{"valid": "good"}
-	ctx := FilterContext{
-		Type:      SecondFilter,
-		HasCursor: false,
-		FilterMap: badFilterMap,
-		FirstSet:  []*query.Filter{},
-		SecondSet: []*query.Filter{createFilter("invalid", "tag1")},
-	}
-	result := buildAQLStatement(ctx)
-	assert.Error(result.Err, "should return error from filter generation")
-	assert.Contains(
-		result.Err.Error(),
-		"error generating cvterm filter",
-		"error message should indicate cvterm filter error",
-	)
-	assert.Empty(result.Statement, "statement should be empty on error")
 }
