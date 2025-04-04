@@ -2,6 +2,7 @@ package arangodb
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/dictyBase/arangomanager/query"
@@ -645,6 +646,90 @@ func testBuildAQLStatementErrorGenBoth(
 		"error message should indicate annotation filter error",
 	)
 	assert.Empty(result.Statement, "statement should be empty on error")
+}
+
+func testGenFilterStatementSuccessSingle(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	filters := []*query.Filter{
+		{Field: "tag", Operator: "==", Value: "gene"},
+	}
+	expected := "FILTER cvt.label == 'gene'"
+	filterType := "cvterm"
+
+	stmt, err := genFilterStatement(filterMap, filters, filterType)
+	assert.NoError(err, "should not return error for valid filter")
+	assert.Equal(
+		expected,
+		stmt,
+		"should generate correct AQL filter statement",
+	)
+}
+
+func testGenFilterStatementSuccessMultiple(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	filters := []*query.Filter{
+		{
+			Field:    "entry_id",
+			Operator: "==", Value: "DBS01234", Logic: ";",
+		},
+		{Field: "value", Operator: "!=", Value: "test"},
+	}
+	// Note: The order might vary depending on map iteration,
+	// but both filters should be present.
+	expectedPart1 := "FILTER ann.entry_id == 'DBS01234'"
+	expectedPart2 := "ann.value != 'test'"
+	filterType := "annotation"
+
+	stmt, err := genFilterStatement(filterMap, filters, filterType)
+	assert.NoError(
+		err,
+		"should not return error for multiple valid filters",
+	)
+	assert.Contains(stmt, expectedPart1, "should contain entry_id filter")
+	assert.Contains(stmt, expectedPart2, "should contain value filter")
+	assert.Contains(stmt, "AND", "should contain AND operator")
+}
+
+func testGenFilterStatementErrorInvalidField(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	filters := []*query.Filter{
+		{Field: "invalid_field", Operator: "==", Value: "some_value"},
+	}
+	filterType := "annotation"
+
+	_, err := genFilterStatement(filterMap, filters, filterType)
+	assert.Error(err, "should return error for invalid filter field")
+	assert.Contains(
+		err.Error(),
+		fmt.Sprintf("error generating %s filter", filterType),
+		"error message should include filter type",
+	)
+}
+
+func testGenFilterStatementEdgeEmpty(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	filters := []*query.Filter{}
+	filterType := "cvterm"
+
+	// query.GenQualifiedAQLFilterStatement returns empty string for empty filters
+	_, err := genFilterStatement(filterMap, filters, filterType)
+	assert.Error(err, "should return error for empty filter slice")
 }
 
 func testBuildAQLStatementErrorGenFirst(
