@@ -159,3 +159,28 @@ func TestParseFiltersFunc(t *testing.T) {
 	)
 	t.Run("existing error case", testParseFiltersFuncExistingError)
 }
+
+func TestGenFilterStatement(t *testing.T) {
+	t.Parallel()
+	filterMap := FilterMap() // Use the actual filter map
+
+	t.Run("success - single filter", func(t *testing.T) {
+		t.Parallel()
+		testGenFilterStatementSuccessSingle(t, filterMap)
+	})
+
+	t.Run("success - multiple filters", func(t *testing.T) {
+		t.Parallel()
+		testGenFilterStatementSuccessMultiple(t, filterMap)
+	})
+
+	t.Run("error - invalid filter field", func(t *testing.T) {
+		t.Parallel()
+		testGenFilterStatementErrorInvalidField(t, filterMap)
+	})
+
+	t.Run("edge case - empty filters slice", func(t *testing.T) {
+		t.Parallel()
+		testGenFilterStatementEdgeEmpty(t, filterMap)
+	})
+}
