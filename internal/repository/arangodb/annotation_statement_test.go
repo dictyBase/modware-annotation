@@ -398,3 +398,10 @@ func TestBuildAQLStatementFilterGenerationErrors(t *testing.T) {
 		)
 	})
 }
+
+func TestGetListAnnoStatement(t *testing.T) {
+	t.Parallel()
+	t.Run("basic cases", testGetListAnnoStatementBasicCases)
+	t.Run("valid filters", testGetListAnnoStatementValidFilters)
+	t.Run("tag filters", testGetListAnnoStatementTagFilters)
+}
