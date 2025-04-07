@@ -248,7 +248,7 @@ func filterAndPartitionFunc(ctx FilterContext) FilterContext {
 		if mappedField, ok := ctx.FilterMap[qfl.Field]; ok {
 			// Create a new filter with the mapped field
 			mappedFilter := &query.Filter{
-				Field:    mappedField,
+				Field:    qfl.Field,
 				Value:    qfl.Value,
 				Operator: qfl.Operator,
 			}
