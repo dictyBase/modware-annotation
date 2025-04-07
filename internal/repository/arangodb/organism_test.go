@@ -81,8 +81,8 @@ func TestGetOrganism(t *testing.T) {
 	added, err := repo.AddOrganism(baseOrg)
 	asrt.NoError(err, "expected no error adding test organism")
 
-	//nolint:paralleltest
 	t.Run("success", func(t *testing.T) {
+		// test depends on shared data
 		got, err := repo.GetOrganism(added.Key)
 		asrt.NoError(err, "expected no error getting organism")
 		validateOrganism(validateOrganismParams{
@@ -93,8 +93,8 @@ func TestGetOrganism(t *testing.T) {
 		})
 	})
 
-	//nolint:paralleltest
 	t.Run("not found", func(t *testing.T) {
+		// test depends on shared data
 		_, err := repo.GetOrganism("non_existent_id")
 		asrt.Error(err, "expected error for non-existent organism")
 		asrt.True(
@@ -124,8 +124,8 @@ func TestGetOrganismByName(t *testing.T) {
 	added, err := repo.AddOrganism(baseOrg)
 	asrt.NoError(err, "expected no error adding test organism")
 
-	//nolint:paralleltest
 	t.Run("success", func(t *testing.T) {
+		// test depends on shared data
 		got, err := repo.GetOrganismByName(
 			baseOrg.Attributes.Genus,
 			baseOrg.Attributes.Species,
@@ -139,8 +139,8 @@ func TestGetOrganismByName(t *testing.T) {
 		})
 	})
 
-	//nolint:paralleltest
 	t.Run("not found", func(t *testing.T) {
+		// test depends on shared data
 		_, err := repo.GetOrganismByName("NonExistent", "Species")
 		asrt.Error(err, "expected error for non-existent organism")
 		asrt.True(
@@ -162,8 +162,8 @@ func TestEditOrganism(t *testing.T) {
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
 	added := setupTestOrganism(t, asrt, repo)
 
-	//nolint:paralleltest
 	t.Run("success - full update", func(t *testing.T) {
+		// test depends on shared data
 		updated := updateOrganism(updateOrganismParams{
 			t:      t,
 			asrt:   asrt,
@@ -174,8 +174,8 @@ func TestEditOrganism(t *testing.T) {
 		validateFullUpdate(asrt, updated, added.Key)
 	})
 
-	//nolint:paralleltest
 	t.Run("success - partial update", func(t *testing.T) {
+		// test depends on shared data
 		updated := updateOrganism(updateOrganismParams{
 			t:      t,
 			asrt:   asrt,
@@ -186,8 +186,8 @@ func TestEditOrganism(t *testing.T) {
 		validatePartialUpdate(asrt, updated)
 	})
 
-	//nolint:paralleltest
 	t.Run("not found", func(t *testing.T) {
+		// test depends on shared data
 		_, err := repo.EditOrganism(getNotFoundUpdateParams())
 		asrt.Error(err, "expected error for non-existent organism")
 		asrt.True(repository.IsOrganismNotFound(err))
@@ -201,8 +201,8 @@ func TestRemoveOrganism(t *testing.T) {
 	t.Cleanup(func() { _ = repo.Dbh().Drop() })
 	added := setupTestOrganism(t, asrt, repo)
 
-	//nolint:paralleltest
 	t.Run("success", func(t *testing.T) {
+		// test depends on shared data
 		err := repo.RemoveOrganism(added.Key)
 		asrt.NoError(err, "expected no error removing organism")
 
@@ -215,8 +215,8 @@ func TestRemoveOrganism(t *testing.T) {
 		)
 	})
 
-	//nolint:paralleltest
 	t.Run("not found", func(t *testing.T) {
+		// test depends on shared data
 		err := repo.RemoveOrganism("non_existent_id")
 		asrt.Error(err, "expected error removing non-existent organism")
 		asrt.True(
@@ -309,7 +309,6 @@ func TestClearOrganisms(t *testing.T) {
 		repository.IsOrganismNotFound(err),
 		"should be organism not found error",
 	)
-
 	_, err = repo.GetOrganismByName("Polysphondylium", "fasciculatum")
 	asrt.Error(err, "expected error getting cleared organism")
 	asrt.True(

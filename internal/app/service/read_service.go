@@ -81,7 +81,7 @@ func (srv *AnnotationService) ListAnnotationGroups(
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	// default value of limit
-	searchLimit := int64(LIMIT)
+	searchLimit := LIMIT
 	if rgp.Limit > 0 {
 		searchLimit = rgp.Limit
 	}
