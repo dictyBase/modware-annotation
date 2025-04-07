@@ -482,3 +482,158 @@ func testGenFilterStatementEdgeEmpty(
 	_, err := genFilterStatement(filterMap, filters, filterType)
 	assert.Error(err, "should return error for empty filter slice")
 }
+
+func testGetListAnnoStatementBasicCases(t *testing.T) {
+	t.Parallel()
+	t.Run("empty filter string", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("", 0)
+		assert.Error(result.Err, "should return error for empty filter string")
+		assert.Equal(
+			"empty filter string",
+			result.Err.Error(),
+			"should have specific error message",
+		)
+		assert.Empty(result.Statement, "statement should be empty")
+	})
+
+	t.Run("invalid filter", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("invalid_field==test", 0)
+		assert.Error(result.Err, "should return error for invalid filter")
+		assert.Contains(
+			result.Err.Error(),
+			"no valid filters found",
+			"should have appropriate error message",
+		)
+		assert.Empty(result.Statement, "statement should be empty")
+	})
+
+	t.Run("malformed filter string", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("value=test", 0)
+		assert.Error(
+			result.Err,
+			"should return error for malformed filter string",
+		)
+		assert.Empty(result.Statement, "statement should be empty")
+	})
+}
+
+// Helper function to test filter statements.
+func testFilterStatement(
+	t *testing.T,
+	filterString, expectedFilter, filterDescription string,
+) {
+	t.Helper()
+	t.Run("without cursor", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement(filterString, 0)
+		assert.NoError(result.Err, "should not return error for filter")
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			expectedFilter,
+			"should contain "+filterDescription,
+		)
+		assert.NotContains(
+			result.Statement,
+			"DATE_ISO8601",
+			"should not contain cursor logic",
+		)
+	})
+
+	t.Run("with cursor", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement(filterString, 12345)
+		assert.NoError(
+			result.Err,
+			"should not return error for filter with cursor",
+		)
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			expectedFilter,
+			"should contain "+filterDescription,
+		)
+		assert.Contains(
+			result.Statement,
+			"DATE_ISO8601(@cursor)",
+			"should contain cursor logic",
+		)
+	})
+}
+
+func testGetListAnnoStatementValidFilters(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	t.Run("valid filter without cursor", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("value==test", 0)
+		assert.NoError(result.Err, "should not return error for valid filter")
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			"FILTER ann.value",
+			"should contain annotation filter",
+		)
+		assert.NotContains(
+			result.Statement,
+			"DATE_ISO8601",
+			"should not contain cursor logic",
+		)
+	})
+
+	t.Run("valid filter with cursor", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("value==test", 12345)
+		assert.NoError(
+			result.Err,
+			"should not return error for valid filter with cursor",
+		)
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			"FILTER ann.value",
+			"should contain annotation filter",
+		)
+		assert.Contains(
+			result.Statement,
+			"DATE_ISO8601(@cursor)",
+			"should contain cursor logic",
+		)
+	})
+}
+
+func testGetListAnnoStatementTagFilters(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	// Reuse the common filtering logic through testFilterStatement
+	testFilterStatement(t, "tag==gene", "FILTER cvt.label", "cvterm filter")
+
+	t.Run("multiple filters", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("value==test;tag==gene", 0)
+		assert.NoError(
+			result.Err,
+			"should not return error for multiple filters",
+		)
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			"FILTER ann.value",
+			"should contain annotation filter",
+		)
+		assert.Contains(
+			result.Statement,
+			"FILTER cvt.label",
+			"should contain cvterm filter",
+		)
+	})
+}
