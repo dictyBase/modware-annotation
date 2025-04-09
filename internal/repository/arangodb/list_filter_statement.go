@@ -23,7 +23,7 @@ const (
 
 	annExclusiveListFilterQ = `
 		LET annentries = (
-		    FOR ann IN @anno_collection
+		    FOR ann IN @@anno_collection
 			%s
 		        FILTER ann.is_obsolete == false
 			SORT ann.created_at DESC
@@ -43,7 +43,7 @@ const (
 	`
 	annCvtListFilterQ = `
 		LET annentries = (
-		    FOR ann IN @anno_collection
+		    FOR ann IN @@anno_collection
 			%s
 		        FILTER ann.is_obsolete == false
 			SORT ann.created_at DESC
@@ -87,7 +87,7 @@ const (
 
 	annExclusiveListFilterWithCursorQ = `
 		LET annentries = (
-		    FOR ann IN @anno_collection
+		    FOR ann IN @@anno_collection
 			%s
 		        FILTER ann.is_obsolete == false
 			FILTER ann.created_at <= DATE_ISO8601(@cursor)
@@ -109,7 +109,7 @@ const (
 
 	annCvtListFilterWithCursorQ = `
 		LET annentries = (
-		    FOR ann IN @anno_collection
+		    FOR ann IN @@anno_collection
 			%s
 		        FILTER ann.is_obsolete == false
 			FILTER ann.created_at <= DATE_ISO8601(@cursor)
@@ -129,20 +129,4 @@ const (
 				ontology: cv.metadata.namespace
 			    })
 	`
-
-	/* annListFilterWithCursorQ = `
-		FOR cvt IN @@cvt_collection
-			FOR ann IN 1..1 INBOUND cvt GRAPH @anno_cvterm_graph
-				FOR cv IN @@cv_collection
-					FILTER ann.is_obsolete == false
-					FILTER cvt.graph_id == cv._id
-					FILTER ann.created_at <= DATE_ISO8601(@cursor)
-					%s
-					SORT ann.created_at DESC
-					LIMIT @limit
-						RETURN MERGE(ann,{
-							tag: cvt.label,
-							ontology: cv.metadata.namespace
-						})
-	` */
 )
