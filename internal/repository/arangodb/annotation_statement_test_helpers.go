@@ -9,6 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func createTestFilterWithLogic(field, value, logic string) *query.Filter {
+	return &query.Filter{
+		Field:    field,
+		Value:    value,
+		Operator: "==",
+		Logic:    logic,
+	}
+}
+
 func createTestFilter(field, value string) *query.Filter {
 	return &query.Filter{
 		Field:    field,
@@ -326,7 +335,7 @@ func testParseFiltersFuncSuccess(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 	ctx := FilterContext{
-		FilterString: "tag==private note;ontology==dicty_annotation",
+		FilterString: `tag==private note;ontology==dicty_annotation`,
 	}
 	result := parseFiltersFunc(ctx)
 	assert.NoError(result.Err, "should not return error")
