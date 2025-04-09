@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTestFilterWithLogic(field, value, logic string) *query.Filter {
+func createTestFilterWithSemicolonLogic(field, value string) *query.Filter {
 	return &query.Filter{
 		Field:    field,
 		Value:    value,
 		Operator: "==",
-		Logic:    logic,
+		Logic:    ";",
 	}
 }
 
@@ -34,7 +34,7 @@ func testBothFiltersWithCursor(t *testing.T, filterMap map[string]string) {
 		HasCursor: true,
 		FilterMap: filterMap,
 		FirstSet: []*query.Filter{
-			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilterWithSemicolonLogic("value", "val1"),
 			createTestFilter("entry_id", "DBS01234"),
 		},
 		SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
@@ -72,7 +72,7 @@ func testBothFiltersWithoutCursor(t *testing.T, filterMap map[string]string) {
 		HasCursor: false,
 		FilterMap: filterMap,
 		FirstSet: []*query.Filter{
-			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilterWithSemicolonLogic("value", "val1"),
 			createTestFilter("entry_id", "DBS01234"),
 		},
 		SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
@@ -118,7 +118,7 @@ func testBuildAQLStatementFirstFilterWithoutCursor(
 		HasCursor: false,
 		FilterMap: filterMap,
 		FirstSet: []*query.Filter{
-			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilterWithSemicolonLogic("value", "val1"),
 			createTestFilter("entry_id", "DBS01234"),
 		},
 		SecondSet: []*query.Filter{}, // Ensure second set is empty
@@ -151,7 +151,7 @@ func testBuildAQLStatementFirstFilterWithCursor(
 		HasCursor: true,
 		FilterMap: filterMap,
 		FirstSet: []*query.Filter{
-			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilterWithSemicolonLogic("value", "val1"),
 			createTestFilter("entry_id", "DBS01234"),
 		},
 		SecondSet: []*query.Filter{},
@@ -188,7 +188,7 @@ func testBuildAQLStatementSecondFilterWithoutCursor(
 		FilterMap: filterMap,
 		FirstSet:  []*query.Filter{}, // Ensure first set is empty
 		SecondSet: []*query.Filter{
-			createTestFilterWithLogic("tag", "private note", ";"),
+			createTestFilterWithSemicolonLogic("tag", "private note"),
 			createTestFilter("ontology", "dicty_annotation"),
 		},
 	}
@@ -219,7 +219,7 @@ func testBuildAQLStatementSecondFilterWithCursor(
 		FilterMap: filterMap,
 		FirstSet:  []*query.Filter{},
 		SecondSet: []*query.Filter{
-			createTestFilterWithLogic("tag", "private note", ";"),
+			createTestFilterWithSemicolonLogic("tag", "private note"),
 			createTestFilter("ontology", "dicty_annotation"),
 		},
 	}
