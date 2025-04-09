@@ -252,6 +252,9 @@ func filterAndPartitionFunc(ctx FilterContext) FilterContext {
 				Value:    qfl.Value,
 				Operator: qfl.Operator,
 			}
+			if len(qfl.Logic) != 0 {
+				mappedFilter.Logic = qfl.Logic
+			}
 			validFilters = append(validFilters, mappedFilter)
 			// Check if the mapped field is for annotation or cvterm
 			if strings.HasPrefix(mappedField, "ann.") {
