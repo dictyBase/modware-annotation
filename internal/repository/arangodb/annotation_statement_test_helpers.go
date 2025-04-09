@@ -33,7 +33,10 @@ func testBothFiltersWithCursor(t *testing.T, filterMap map[string]string) {
 		Type:      BothFilters,
 		HasCursor: true,
 		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{createTestFilter("value", "val1")},
+		FirstSet: []*query.Filter{
+			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilter("entry_id", "DBS01234"),
+		},
 		SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
 	}
 	result := buildAQLStatement(ctx)
@@ -43,6 +46,11 @@ func testBothFiltersWithCursor(t *testing.T, filterMap map[string]string) {
 		result.Statement,
 		"FILTER ann.value",
 		"should contain first filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"AND ann.entry_id",
+		"should contain second filter with AND",
 	)
 	assert.Contains(
 		result.Statement,
@@ -63,7 +71,10 @@ func testBothFiltersWithoutCursor(t *testing.T, filterMap map[string]string) {
 		Type:      BothFilters,
 		HasCursor: false,
 		FilterMap: filterMap,
-		FirstSet:  []*query.Filter{createTestFilter("value", "val1")},
+		FirstSet: []*query.Filter{
+			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilter("entry_id", "DBS01234"),
+		},
 		SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
 	}
 	result := buildAQLStatement(ctx)
@@ -73,6 +84,11 @@ func testBothFiltersWithoutCursor(t *testing.T, filterMap map[string]string) {
 		result.Statement,
 		"FILTER ann.value",
 		"should contain first filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"AND ann.entry_id",
+		"should contain second filter with AND",
 	)
 	assert.Contains(
 		result.Statement,
@@ -88,6 +104,73 @@ func testBothFiltersWithoutCursor(t *testing.T, filterMap map[string]string) {
 		result.Statement,
 		"FOR ann IN @anno_collection",
 		"should use annCvtListFilterQ base",
+	)
+}
+
+func testBuildAQLStatementSecondFilterWithoutCursor(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	ctx := FilterContext{
+		Type:      SecondFilter,
+		HasCursor: false,
+		FilterMap: filterMap,
+		FirstSet:  []*query.Filter{}, // Ensure first set is empty
+		SecondSet: []*query.Filter{
+			createTestFilterWithLogic("tag", "private note", ";"),
+			createTestFilter("ontology", "dicty_annotation"),
+		},
+	}
+	result := buildAQLStatement(ctx)
+	assert.NoError(result.Err, "should not return error")
+	assert.NotEmpty(result.Statement, "statement should not be empty")
+	assert.Contains(
+		result.Statement,
+		"FILTER cvt.label",
+		"should contain second filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"AND cv.metadata.namespace",
+		"should contain AND logic",
+	)
+}
+
+func testBuildAQLStatementSecondFilterWithCursor(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	ctx := FilterContext{
+		Type:      SecondFilter,
+		HasCursor: true,
+		FilterMap: filterMap,
+		FirstSet:  []*query.Filter{},
+		SecondSet: []*query.Filter{
+			createTestFilterWithLogic("tag", "private note", ";"),
+			createTestFilter("ontology", "dicty_annotation"),
+		},
+	}
+	result := buildAQLStatement(ctx)
+	assert.NoError(result.Err, "should not return error")
+	assert.NotEmpty(result.Statement, "statement should not be empty")
+	assert.Contains(
+		result.Statement,
+		"FILTER cvt.label",
+		"should contain second filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"AND cv.metadata.namespace",
+		"should contain AND logic",
+	)
+	assert.Contains(
+		result.Statement,
+		"DATE_ISO8601(@cursor)",
+		"should contain cursor logic",
 	)
 }
 
