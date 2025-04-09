@@ -225,12 +225,12 @@ func testValidFilters(t *testing.T, filterMap map[string]string) {
 	assert.Len(result.FirstSet, 1, "should have 1 filter in first set")
 	assert.Len(result.SecondSet, 1, "should have 1 filter in second set")
 	assert.Equal(
-		"ann.entry_id",
+		"entry_id",
 		result.FirstSet[0].Field,
 		"first set should contain annotation filter",
 	)
 	assert.Equal(
-		"cvt.label",
+		"tag",
 		result.SecondSet[0].Field,
 		"second set should contain cvterm filter",
 	)
