@@ -610,6 +610,16 @@ func testGetListAnnoStatementValidFilters(t *testing.T) {
 		)
 	})
 
+	t.Run("another valid filter without cursor", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement(
+			`tag==private note;ontology==dicty_annotation`,
+			0,
+		)
+		assert.NoError(result.Err, "should not return error for valid filter")
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+	})
+
 	t.Run("valid filter with cursor", func(t *testing.T) {
 		assert := require.New(t)
 		result := getListAnnoStatement("value==test", 12345)
