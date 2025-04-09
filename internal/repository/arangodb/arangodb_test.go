@@ -306,7 +306,7 @@ func oboReader() (*os.File, error) {
 
 func testModelListSort(t *testing.T, m []*model.AnnoDoc) {
 	t.Helper()
-	assert := assert.New(t)
+	assert := require.New(t)
 	it, err := NewModelAnnoDocPairWiseIterator(m)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	for it.NextModelAnnoDocPair() {
@@ -340,8 +340,8 @@ func testGroupMember(
 				email,
 			)
 			assert.Equal(
-				gdoc.Ontology,
 				"dicty_annotation",
+				gdoc.Ontology,
 				"should have dicty_annotation ontology",
 			)
 			assert.Equalf(

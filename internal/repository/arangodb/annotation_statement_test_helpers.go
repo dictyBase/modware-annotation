@@ -372,7 +372,7 @@ func testValidFilters(t *testing.T, filterMap map[string]string) {
 	}
 
 	result := filterAndPartitionFunc(ctx)
-	assert.Nil(result.Err, "should not have error")
+	assert.NoError(result.Err, "should not have error")
 	assert.Len(result.Filters, 2, "should have 2 valid filters")
 	assert.Len(result.FirstSet, 1, "should have 1 filter in first set")
 	assert.Len(result.SecondSet, 1, "should have 1 filter in second set")
@@ -402,10 +402,10 @@ func testOnlyAnnotationFilters(t *testing.T, filterMap map[string]string) {
 
 	result := filterAndPartitionFunc(ctx)
 
-	assert.Nil(result.Err, "should not have error")
+	assert.NoError(result.Err, "should not have error")
 	assert.Len(result.Filters, 2, "should have 2 valid filters")
 	assert.Len(result.FirstSet, 2, "should have 2 filters in first set")
-	assert.Len(result.SecondSet, 0, "should have 0 filters in second set")
+	assert.Empty(result.SecondSet, "should have 0 filters in second set")
 }
 
 func testOnlyCvtermFilters(t *testing.T, filterMap map[string]string) {
@@ -422,9 +422,9 @@ func testOnlyCvtermFilters(t *testing.T, filterMap map[string]string) {
 
 	result := filterAndPartitionFunc(ctx)
 
-	assert.Nil(result.Err, "should not have error")
+	assert.NoError(result.Err, "should not have error")
 	assert.Len(result.Filters, 2, "should have 2 valid filters")
-	assert.Len(result.FirstSet, 0, "should have 0 filters in first set")
+	assert.Empty(result.FirstSet, "should have 0 filters in first set")
 	assert.Len(result.SecondSet, 2, "should have 2 filters in second set")
 }
 
@@ -441,7 +441,7 @@ func testInvalidFilters(t *testing.T, filterMap map[string]string) {
 
 	result := filterAndPartitionFunc(ctx)
 
-	assert.NotNil(result.Err, "should have error")
+	assert.Error(result.Err, "should have error")
 	assert.Contains(
 		result.Err.Error(),
 		"no valid filters found",
@@ -463,10 +463,10 @@ func testMixedFilters(t *testing.T, filterMap map[string]string) {
 
 	result := filterAndPartitionFunc(ctx)
 
-	assert.Nil(result.Err, "should not have error")
+	assert.NoError(result.Err, "should not have error")
 	assert.Len(result.Filters, 1, "should have 1 valid filter")
 	assert.Len(result.FirstSet, 1, "should have 1 filter in first set")
-	assert.Len(result.SecondSet, 0, "should have 0 filters in second set")
+	assert.Empty(result.SecondSet, "should have 0 filters in second set")
 }
 
 func testExistingError(t *testing.T) {
