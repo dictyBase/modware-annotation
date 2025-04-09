@@ -274,11 +274,31 @@ func filterAndPartitionFunc(ctx FilterContext) FilterContext {
 		return ctx
 	}
 
-	ctx.Filters = validFilters
-	ctx.FirstSet = firstSet
-	ctx.SecondSet = secondSet
+	// Make sure the following function is not mutating.
+	ctx.Filters = unsetLogicIfSingleFilter(validFilters)
+	ctx.FirstSet = unsetLogicIfSingleFilter(firstSet)
+	ctx.SecondSet = unsetLogicIfSingleFilter(secondSet)
 
 	return ctx
+}
+
+// unsetLogicIfSingleFilter checks if a slice contains exactly one filter.
+// If so, it returns a new slice containing a copy of the filter with its Logic field unset.
+// Otherwise, it returns the original slice.
+func unsetLogicIfSingleFilter(filters []*query.Filter) []*query.Filter {
+	if len(filters) != 1 {
+		return filters // Return original if no change needed or slice is empty/too large
+	}
+	// Create a new slice of size 1
+	newFilters := make([]*query.Filter, 1)
+	newFilters[0] = &query.Filter{
+		Field:    filters[0].Field,
+		Value:    filters[0].Value,
+		Operator: filters[0].Operator,
+		Logic:    "", // Unset logic
+	}
+
+	return newFilters
 }
 
 // determineStatementTypeFunc returns a function for determining statement type in a pipeline.
