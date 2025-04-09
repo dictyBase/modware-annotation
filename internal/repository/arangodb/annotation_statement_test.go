@@ -236,68 +236,15 @@ func TestBuildAQLStatementFirstFilter(t *testing.T) {
 	fmap := FilterMap()
 	t.Run("without cursor", func(t *testing.T) {
 		t.Parallel()
-		assert := require.New(t)
-		ctx := FilterContext{
-			Type:      FirstFilter,
-			HasCursor: false,
-			FilterMap: fmap,
-			FirstSet: []*query.Filter{
-				createTestFilterWithLogic("value", "val1", ";"),
-				createTestFilter("entry_id", "DBS01234"),
-			},
-			SecondSet: []*query.Filter{}, // Ensure second set is empty
-		}
-		result := buildAQLStatement(ctx)
-		assert.NoError(result.Err, "should not return error")
-		assert.NotEmpty(result.Statement, "statement should not be empty")
-		assert.Contains(
-			result.Statement,
-			"FILTER ann.value",
-			"should contain first filter",
-		)
-		assert.Contains(
-			result.Statement,
-			"AND ann.entry_id",
-			"should contain second filter with AND",
-		)
-		// Note: We don't check for absence of cvt.label since it might appear in the template
-		// but not as part of a FILTER statement (more as a reference in joins)
+		testBuildAQLStatementFirstFilterWithoutCursor(t, fmap)
 	})
 
 	t.Run("with cursor", func(t *testing.T) {
-		assert := require.New(t)
-		ctx := FilterContext{
-			Type:      FirstFilter,
-			HasCursor: true,
-			FilterMap: fmap,
-			FirstSet: []*query.Filter{
-				createTestFilterWithLogic("value", "val1", ";"),
-				createTestFilter("entry_id", "DBS01234"),
-			},
-			SecondSet: []*query.Filter{},
-		}
-		result := buildAQLStatement(ctx)
-		assert.NoError(result.Err, "should not return error")
-		assert.NotEmpty(result.Statement, "statement should not be empty")
-		assert.Contains(
-			result.Statement,
-			"FILTER ann.value",
-			"should contain first filter",
-		)
-		assert.Contains(
-			result.Statement,
-			"AND ann.entry_id",
-			"should contain second filter with AND",
-		)
-		assert.Contains(
-			result.Statement,
-			"DATE_ISO8601(@cursor)",
-			"should contain cursor logic",
-		)
+		t.Parallel()
+		testBuildAQLStatementFirstFilterWithCursor(t, fmap)
 	})
 }
 
-// Move the subtests to the helper file, do not need to make any other changes.
 func TestBuildAQLStatementSecondFilter(t *testing.T) {
 	t.Parallel()
 	fmap := FilterMap()
