@@ -326,7 +326,7 @@ func testParseFiltersFuncSuccess(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 	ctx := FilterContext{
-		FilterString: "tag==gene;value!=test",
+		FilterString: "tag==private note;ontology==dicty_annotation",
 	}
 	result := parseFiltersFunc(ctx)
 	assert.NoError(result.Err, "should not return error")
@@ -337,19 +337,20 @@ func testParseFiltersFuncSuccess(t *testing.T) {
 		"first filter field should be tag",
 	)
 	assert.Equal(
-		"gene",
+		"private note",
 		result.Filters[0].Value,
-		"first filter value should be gene",
+		"first filter value should be private note",
 	)
+	assert.Equal(";", result.Filters[0].Logic, "the logic should match")
 	assert.Equal(
-		"value",
+		"ontology",
 		result.Filters[1].Field,
-		"second filter field should be value",
+		"second filter field should be ontology",
 	)
 	assert.Equal(
-		"test",
+		"dicty_annotation",
 		result.Filters[1].Value,
-		"second filter value should be test",
+		"second filter value should be dicty_annotation",
 	)
 }
 
@@ -431,12 +432,12 @@ func testGenFilterStatementSuccessMultiple(
 			Field:    "entry_id",
 			Operator: "==", Value: "DBS01234", Logic: ";",
 		},
-		{Field: "value", Operator: "!=", Value: "test"},
+		{Field: "value", Operator: "!=", Value: "more test"},
 	}
 	// Note: The order might vary depending on map iteration,
 	// but both filters should be present.
 	expectedPart1 := "FILTER ann.entry_id == 'DBS01234'"
-	expectedPart2 := "ann.value != 'test'"
+	expectedPart2 := "ann.value != 'more test'"
 	filterType := "annotation"
 
 	stmt, err := genFilterStatement(filterMap, filters, filterType)
@@ -447,6 +448,19 @@ func testGenFilterStatementSuccessMultiple(
 	assert.Contains(stmt, expectedPart1, "should contain entry_id filter")
 	assert.Contains(stmt, expectedPart2, "should contain value filter")
 	assert.Contains(stmt, "AND", "should contain AND operator")
+
+	filters2 := []*query.Filter{
+		{
+			Field:    "tag",
+			Operator: "==", Value: "private note", Logic: ";",
+		},
+		{Field: "ontology", Operator: "==", Value: "dicty_annotation"},
+	}
+	_, err = genFilterStatement(filterMap, filters2, filterType)
+	assert.NoError(
+		err,
+		"should not return error for multiple valid filters",
+	)
 }
 
 func testGenFilterStatementErrorInvalidField(
