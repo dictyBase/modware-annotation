@@ -8,7 +8,17 @@ import (
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/go-playground/validator/v10"
 )
+
+var validate *validator.Validate
+
+// ListAnnotationsParams defines the parameters for listing annotations.
+type ListAnnotationsParams struct {
+	Cursor int64
+	Limit  int64  `validate:"required"`
+	Filter string `validate:"required"`
+}
 
 func (ar *arangorepository) GetAnnotationByID(
 	annoid string,
@@ -71,22 +81,24 @@ func (ar *arangorepository) GetAnnotationByEntry(
 }
 
 func (ar *arangorepository) ListAnnotations(
-	cursor int64,
-	limit int64,
-	fstr string,
+	params *ListAnnotationsParams,
 ) ([]*model.AnnoDoc, error) {
+	validate = validator.New(validator.WithRequiredStructEnabled())
+	if err := validate.Struct(params); err != nil {
+		return nil, fmt.Errorf("validation error: %w", err)
+	}
 	annoModel := make([]*model.AnnoDoc, 0)
 	bindVars := map[string]interface{}{
 		"@anno_collection":  ar.anno.annog.Name(),
 		"@cvt_collection":   ar.onto.Term.Name(),
 		"@cv_collection":    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
-		"limit":             limit + 1,
+		"limit":             params.Limit + 1,
 	}
-	if cursor != 0 {
-		bindVars["cursor"] = cursor
+	if params.Cursor != 0 {
+		bindVars["cursor"] = params.Cursor
 	}
-	result := getListAnnoStatement(fstr, cursor)
+	result := getListAnnoStatement(params.Filter, params.Cursor)
 	if result.Err != nil {
 		return nil, result.Err
 	}
