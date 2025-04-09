@@ -107,6 +107,75 @@ func testBothFiltersWithoutCursor(t *testing.T, filterMap map[string]string) {
 	)
 }
 
+func testBuildAQLStatementFirstFilterWithoutCursor(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	ctx := FilterContext{
+		Type:      FirstFilter,
+		HasCursor: false,
+		FilterMap: filterMap,
+		FirstSet: []*query.Filter{
+			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilter("entry_id", "DBS01234"),
+		},
+		SecondSet: []*query.Filter{}, // Ensure second set is empty
+	}
+	result := buildAQLStatement(ctx)
+	assert.NoError(result.Err, "should not return error")
+	assert.NotEmpty(result.Statement, "statement should not be empty")
+	assert.Contains(
+		result.Statement,
+		"FILTER ann.value",
+		"should contain first filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"AND ann.entry_id",
+		"should contain second filter with AND",
+	)
+	// Note: We don't check for absence of cvt.label since it might appear in the template
+	// but not as part of a FILTER statement (more as a reference in joins)
+}
+
+func testBuildAQLStatementFirstFilterWithCursor(
+	t *testing.T,
+	filterMap map[string]string,
+) {
+	t.Helper()
+	assert := require.New(t)
+	ctx := FilterContext{
+		Type:      FirstFilter,
+		HasCursor: true,
+		FilterMap: filterMap,
+		FirstSet: []*query.Filter{
+			createTestFilterWithLogic("value", "val1", ";"),
+			createTestFilter("entry_id", "DBS01234"),
+		},
+		SecondSet: []*query.Filter{},
+	}
+	result := buildAQLStatement(ctx)
+	assert.NoError(result.Err, "should not return error")
+	assert.NotEmpty(result.Statement, "statement should not be empty")
+	assert.Contains(
+		result.Statement,
+		"FILTER ann.value",
+		"should contain first filter",
+	)
+	assert.Contains(
+		result.Statement,
+		"AND ann.entry_id",
+		"should contain second filter with AND",
+	)
+	assert.Contains(
+		result.Statement,
+		"DATE_ISO8601(@cursor)",
+		"should contain cursor logic",
+	)
+}
+
 func testBuildAQLStatementSecondFilterWithoutCursor(
 	t *testing.T,
 	filterMap map[string]string,
