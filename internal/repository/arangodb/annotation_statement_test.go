@@ -302,7 +302,10 @@ func TestBuildAQLStatementSecondFilter(t *testing.T) {
 			HasCursor: false,
 			FilterMap: filterMap,
 			FirstSet:  []*query.Filter{}, // Ensure first set is empty
-			SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
+			SecondSet: []*query.Filter{
+				createTestFilterWithLogic("tag", "private note", ";"),
+				createTestFilter("ontology", "dicty_annotation"),
+			},
 		}
 		result := buildAQLStatement(ctx)
 		assert.NoError(result.Err, "should not return error")
@@ -311,6 +314,11 @@ func TestBuildAQLStatementSecondFilter(t *testing.T) {
 			result.Statement,
 			"FILTER cvt.label",
 			"should contain second filter",
+		)
+		assert.Contains(
+			result.Statement,
+			"AND",
+			"should contain AND logic",
 		)
 	})
 
