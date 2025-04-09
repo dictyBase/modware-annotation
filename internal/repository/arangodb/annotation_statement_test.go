@@ -107,38 +107,30 @@ func TestDetermineStatementType(t *testing.T) {
 
 func TestFilterAndPartitionFunc(t *testing.T) {
 	t.Parallel()
-
-	filterMap := map[string]string{
-		"entry_id":   "ann.entry_id",
-		"value":      "ann.value",
-		"created_by": "ann.created_by",
-		"tag":        "cvt.label",
-		"ontology":   "cv.metadata.namespace",
-	}
-
+	fmap := FilterMap()
 	t.Run("with valid filters", func(t *testing.T) {
 		t.Parallel()
-		testValidFilters(t, filterMap)
+		testValidFilters(t, fmap)
 	})
 
 	t.Run("with only annotation filters", func(t *testing.T) {
 		t.Parallel()
-		testOnlyAnnotationFilters(t, filterMap)
+		testOnlyAnnotationFilters(t, fmap)
 	})
 
 	t.Run("with only cvterm filters", func(t *testing.T) {
 		t.Parallel()
-		testOnlyCvtermFilters(t, filterMap)
+		testOnlyCvtermFilters(t, fmap)
 	})
 
 	t.Run("with invalid filters", func(t *testing.T) {
 		t.Parallel()
-		testInvalidFilters(t, filterMap)
+		testInvalidFilters(t, fmap)
 	})
 
 	t.Run("with mixed valid and invalid filters", func(t *testing.T) {
 		t.Parallel()
-		testMixedFilters(t, filterMap)
+		testMixedFilters(t, fmap)
 	})
 
 	t.Run("with existing error", func(t *testing.T) {
@@ -163,26 +155,26 @@ func TestParseFiltersFunc(t *testing.T) {
 
 func TestGenFilterStatement(t *testing.T) {
 	t.Parallel()
-	filterMap := FilterMap() // Use the actual filter map
+	fmap := FilterMap() // Use the actual filter map
 
 	t.Run("success - single filter", func(t *testing.T) {
 		t.Parallel()
-		testGenFilterStatementSuccessSingle(t, filterMap)
+		testGenFilterStatementSuccessSingle(t, fmap)
 	})
 
 	t.Run("success - multiple filters", func(t *testing.T) {
 		t.Parallel()
-		testGenFilterStatementSuccessMultiple(t, filterMap)
+		testGenFilterStatementSuccessMultiple(t, fmap)
 	})
 
 	t.Run("error - invalid filter field", func(t *testing.T) {
 		t.Parallel()
-		testGenFilterStatementErrorInvalidField(t, filterMap)
+		testGenFilterStatementErrorInvalidField(t, fmap)
 	})
 
 	t.Run("edge case - empty filters slice", func(t *testing.T) {
 		t.Parallel()
-		testGenFilterStatementEdgeEmpty(t, filterMap)
+		testGenFilterStatementEdgeEmpty(t, fmap)
 	})
 }
 
@@ -226,22 +218,22 @@ func TestBuildAQLStatementErrorHandling(t *testing.T) {
 
 func TestBuildAQLStatementBothFilters(t *testing.T) {
 	t.Parallel()
-	filterMap := FilterMap()
+	fmap := FilterMap()
 
 	t.Run("without cursor", func(t *testing.T) {
 		t.Parallel()
-		testBothFiltersWithoutCursor(t, filterMap)
+		testBothFiltersWithoutCursor(t, fmap)
 	})
 
 	t.Run("with cursor", func(t *testing.T) {
 		t.Parallel()
-		testBothFiltersWithCursor(t, filterMap)
+		testBothFiltersWithCursor(t, fmap)
 	})
 }
 
 func TestBuildAQLStatementFirstFilter(t *testing.T) {
 	t.Parallel()
-	filterMap := FilterMap()
+	fmap := FilterMap()
 
 	t.Run("without cursor", func(t *testing.T) {
 		t.Parallel()
@@ -249,7 +241,7 @@ func TestBuildAQLStatementFirstFilter(t *testing.T) {
 		ctx := FilterContext{
 			Type:      FirstFilter,
 			HasCursor: false,
-			FilterMap: filterMap,
+			FilterMap: fmap,
 			FirstSet:  []*query.Filter{createTestFilter("value", "val1")},
 			SecondSet: []*query.Filter{}, // Ensure second set is empty
 		}
@@ -270,7 +262,7 @@ func TestBuildAQLStatementFirstFilter(t *testing.T) {
 		ctx := FilterContext{
 			Type:      FirstFilter,
 			HasCursor: true,
-			FilterMap: filterMap,
+			FilterMap: fmap,
 			FirstSet:  []*query.Filter{createTestFilter("value", "val1")},
 			SecondSet: []*query.Filter{},
 		}
@@ -292,7 +284,7 @@ func TestBuildAQLStatementFirstFilter(t *testing.T) {
 
 func TestBuildAQLStatementSecondFilter(t *testing.T) {
 	t.Parallel()
-	filterMap := FilterMap()
+	fmap := FilterMap()
 
 	t.Run("without cursor", func(t *testing.T) {
 		t.Parallel()
@@ -300,7 +292,7 @@ func TestBuildAQLStatementSecondFilter(t *testing.T) {
 		ctx := FilterContext{
 			Type:      SecondFilter,
 			HasCursor: false,
-			FilterMap: filterMap,
+			FilterMap: fmap,
 			FirstSet:  []*query.Filter{}, // Ensure first set is empty
 			SecondSet: []*query.Filter{
 				createTestFilterWithLogic("tag", "private note", ";"),
@@ -327,7 +319,7 @@ func TestBuildAQLStatementSecondFilter(t *testing.T) {
 		ctx := FilterContext{
 			Type:      SecondFilter,
 			HasCursor: true,
-			FilterMap: filterMap,
+			FilterMap: fmap,
 			FirstSet:  []*query.Filter{},
 			SecondSet: []*query.Filter{createTestFilter("tag", "tag1")},
 		}
