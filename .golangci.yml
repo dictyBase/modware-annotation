@@ -2,6 +2,8 @@ run:
   timeout: 5m
   allow-parallel-runners: true
 linters-settings:
+   testifylint:
+    enable-all: true
    paralleltest:
     ignore-missing-subtests: true
    lll:
@@ -67,6 +69,7 @@ linters:
     - unconvert
     - thelper
     - tparallel
+    - testifylint
     - unparam
     - unused
     - unconvert
