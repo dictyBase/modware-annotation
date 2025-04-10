@@ -9,6 +9,13 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/model"
 )
 
+// ListAnnotationsParams defines the parameters for listing annotations.
+type ListAnnotationsParams struct {
+	Cursor int64
+	Limit  int64  `validate:"required"`
+	Filter string `validate:"required"`
+}
+
 // TaggedAnnotationRepository is an interface for accessing annotation
 // data from its data sources.
 type TaggedAnnotationRepository interface {
@@ -24,11 +31,7 @@ type TaggedAnnotationRepository interface {
 	RemoveAnnotation(id string, purge bool) error
 	// ListAnnotationGroup provides a paginated list of annotation along
 	// with optional filtering
-	ListAnnotations(
-		cursor int64,
-		limit int64,
-		filter string,
-	) ([]*model.AnnoDoc, error)
+	ListAnnotations(*ListAnnotationsParams) ([]*model.AnnoDoc, error)
 	ClearAnnotations() error
 	Clear() error
 	// AddAnnotationGroup creates a new annotation group
