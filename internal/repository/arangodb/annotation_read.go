@@ -13,13 +13,6 @@ import (
 
 var validate *validator.Validate
 
-// ListAnnotationsParams defines the parameters for listing annotations.
-type ListAnnotationsParams struct {
-	Cursor int64
-	Limit  int64  `validate:"required"`
-	Filter string `validate:"required"`
-}
-
 func (ar *arangorepository) GetAnnotationByID(
 	annoid string,
 ) (*model.AnnoDoc, error) {
@@ -81,16 +74,15 @@ func (ar *arangorepository) GetAnnotationByEntry(
 }
 
 func (ar *arangorepository) ListAnnotations(
-	params *ListAnnotationsParams,
+	params *repository.ListAnnotationsParams,
 ) ([]*model.AnnoDoc, error) {
 	validate = validator.New(validator.WithRequiredStructEnabled())
 	if err := validate.Struct(params); err != nil {
-		return nil, fmt.Errorf("validation error: %w", err)
+		return nil, fmt.Errorf("error in valdating parameters %w", err)
 	}
 	annoModel := make([]*model.AnnoDoc, 0)
 	bindVars := map[string]interface{}{
-		"@anno_collection":  ar.anno.annog.Name(),
-		"@cvt_collection":   ar.onto.Term.Name(),
+		"@anno_collection":  ar.anno.annot.Name(),
 		"@cv_collection":    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"limit":             params.Limit + 1,
