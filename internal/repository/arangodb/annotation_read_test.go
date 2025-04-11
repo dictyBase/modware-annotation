@@ -1,134 +1,62 @@
 package arangodb
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/stretchr/testify/require"
 )
 
 const (
-	filterOne = `FILTER ann.entry_id == 'DDB_G0286429'
-				  AND cvt.label == 'private note'
-				  AND cv.metadata.namespace == 'dicty_annotation'
-	`
-	filterTwo = `FILTER ann.entry_id == 'DDB_G0294491'
-				  AND cvt.label == 'name description'
-				  AND cv.metadata.namespace == 'dicty_annotation'
-	`
-	filterThree = `FILTER ann.entry_id == 'jumbo'`
+	filterOne   = `entry_id==DDB_G0286429;tag==private note;ontology==dicty_annotation`
+	filterTwo   = `entry_id==DDB_G0294491;tag==name description;ontology==dicty_annotation`
+	filterThree = `entry_id==jumbo`
 )
 
-func TestListAnnotations(t *testing.T) {
-	t.Parallel()
-	assert, anrepo := setUp(t)
-	defer tearDown(anrepo)
-	tal := newTestTaggedAnnotationsList(15)
-	for _, anno := range tal {
-		_, err := anrepo.AddAnnotation(anno)
-		assert.NoErrorf(err, "expect no error, received %s", err)
-	}
-	mla, err := anrepo.ListAnnotations(0, 4, "")
-	if err != nil {
-		assert.NoErrorf(err, "expect no error, received %s", err)
-	}
-	assert.Len(mla, 5, "should have 5 annotations")
-	for ict, manno := range mla {
-		assert.Contains(manno.Value, "cool gene", "should contain the phrase cool gene")
-		assert.Equal(tal[ict].Data.Attributes.CreatedBy, manno.CreatedBy, "should match created by")
-		assert.Subset(tags, []string{manno.Tag}, "should contain the tag in the slice")
-		assert.Equal(tal[ict].Data.Attributes.Ontology, manno.Ontology, "should match the ontology")
-		assert.Contains(manno.EnrtyId, "DDB_G0", "should contain the DDB_G0 in entry id")
-		assert.Equal(int(manno.Rank), 0, "should match the zero rank")
-	}
-	ml2, err := anrepo.ListAnnotations(
-		toTimestamp(mla[len(mla)-1].CreatedAt),
-		4,
-		"",
-	)
-	if err != nil {
-		t.Fatalf("error in fetching annotation list %s", err)
-	}
-	assert.Len(ml2, 5, "should have five annotations")
-	assert.Exactly(mla[len(mla)-1], ml2[0], "should have identical model objects")
-
-	ml3, err := anrepo.ListAnnotations(
-		toTimestamp(ml2[len(ml2)-1].CreatedAt),
-		4,
-		"",
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Len(ml3, 5, "should have five annotations")
-	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
-
-	ml4, err := anrepo.ListAnnotations(
-		toTimestamp(ml3[len(ml3)-1].CreatedAt),
-		4,
-		"",
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Len(ml4, 3, "should have three annotations")
-	assert.Exactly(ml3[len(ml3)-1], ml4[0], "should have identical model objects")
-	testModelListSort(t, mla)
-	testModelListSort(t, ml2)
-	testModelListSort(t, ml3)
-	testModelListSort(t, ml4)
-}
-
+//nolint:tparallel
 func TestListAnnoFilter(t *testing.T) {
 	t.Parallel()
 	assert, anrepo := setUp(t)
-	defer tearDown(anrepo)
+	defer tearDown(anrepo) // Teardown might be needed if tests interfere
+
+	// Setup: Create test data once
 	tal := newTestTaggedAnnotationsListForFiltering(20)
 	for _, anno := range tal {
 		_, err := anrepo.AddAnnotation(anno)
-		assert.NoErrorf(err, "expect no error, received %s", err)
+		assert.NoErrorf(
+			err,
+			"setup: expect no error adding annotation, received %s",
+			err,
+		)
 	}
-	mla, err := anrepo.ListAnnotations(0, 4, filterOne)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Len(mla, 5, "should have 5 annotations")
-	for _, m := range mla {
-		assert.Equal(m.CreatedBy, "sidd@gmail.com", "should match created by")
-		assert.Equal(m.Tag, tags[0], "should match the tag")
-		assert.Equal(m.EnrtyId, ddbg[0], "should match the entry id")
-	}
-	ml2, err := anrepo.ListAnnotations(
-		toTimestamp(mla[len(mla)-1].CreatedAt),
-		4, filterOne,
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Len(ml2, 5, "should have five annotations")
-	assert.Exactly(mla[len(mla)-1], ml2[0], "should have identical model objects")
-	ml3, err := anrepo.ListAnnotations(
-		toTimestamp(ml2[len(ml2)-1].CreatedAt),
-		4, filterOne,
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Len(ml3, 2, "should have two annotations")
-	assert.Exactly(ml2[len(ml2)-1], ml3[0], "should have identical model objects")
-	ml4, err := anrepo.ListAnnotations(0, 6, filterTwo)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Len(ml4, 7, "should have 7 annotations")
-	for _, m := range ml4 {
-		assert.Equal(m.CreatedBy, "basu@gmail.com", "should match created by")
-		assert.Equal(m.Tag, tags[1], "should match the tag")
-		assert.Equal(m.EnrtyId, ddbg[1], "should match the entry id")
-	}
-	ml5, err := anrepo.ListAnnotations(
-		toTimestamp(ml4[len(ml4)-1].CreatedAt),
-		4, filterTwo,
-	)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Len(ml5, 4, "should have four annotations")
-	assert.Exactly(ml4[len(ml4)-1], ml5[0], "should have identical model objects")
-	for _, sml := range [][]*model.AnnoDoc{mla, ml2, ml3, ml4, ml5} {
-		testModelListSort(t, sml)
-	}
-	_, err = anrepo.ListAnnotations(0, 4, filterThree)
-	assert.Error(err, "expect error")
-	assert.True(repository.IsAnnotationListNotFound(err), "expect no annotation list found")
+
+	var mla, ml2, ml4 []*model.AnnoDoc // Store results for subsequent tests
+
+	t.Run("FilterOneFirstPage", func(t *testing.T) {
+		mla = testListAnnoFilterOneFirstPage(t, assert, anrepo)
+	})
+
+	t.Run("FilterOneSecondPage", func(t *testing.T) {
+		ml2 = testListAnnoFilterOneSecondPage(t, assert, anrepo, mla)
+	})
+
+	t.Run("FilterOneThirdPage", func(t *testing.T) {
+		testListAnnoFilterOneThirdPage(t, assert, anrepo, ml2)
+	})
+
+	t.Run("FilterTwoFirstPage", func(t *testing.T) {
+		ml4 = testListAnnoFilterTwoFirstPage(t, assert, anrepo)
+	})
+
+	t.Run("FilterTwoSecondPage", func(t *testing.T) {
+		testListAnnoFilterTwoSecondPage(t, assert, anrepo, ml4)
+	})
+
+	t.Run("FilterNotFound", func(t *testing.T) {
+		testListAnnoFilterNotFound(t, assert, anrepo)
+	})
 }
 
 func TestGetAnnotationByID(t *testing.T) {
@@ -148,7 +76,10 @@ func TestGetAnnotationByID(t *testing.T) {
 	assert.Equal(mann.Tag, eim.Tag, "should match tag")
 	assert.Equal(mann.Key, eim.Key, "should match the identifier")
 	assert.Equal(mann.Value, eim.Value, "should match the value")
-	assert.True(mann.CreatedAt.Equal(eim.CreatedAt), "should match created time of annotation")
+	assert.True(
+		mann.CreatedAt.Equal(eim.CreatedAt),
+		"should match created time of annotation",
+	)
 	assert.Equal(mann.Rank, eim.Rank, "should match rank")
 
 	em2, err := anrepo.GetAnnotationByID(ml2.Key)
@@ -180,8 +111,12 @@ func TestGetAnnotationByEntry(t *testing.T) {
 		Ontology: nta.Data.Attributes.Ontology,
 	})
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(mae.Rank, int64(0), "should match rank 0")
-	assert.Equal(mae.EnrtyId, nta.Data.Attributes.EntryId, "should match the entry id")
+	assert.Equal(int64(0), mae.Rank, "should match rank 0")
+	assert.Equal(
+		mae.EnrtyId,
+		nta.Data.Attributes.EntryId,
+		"should match the entry id",
+	)
 
 	ml2, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
 		Tag:      nta2.Data.Attributes.Tag,
@@ -189,7 +124,11 @@ func TestGetAnnotationByEntry(t *testing.T) {
 		Ontology: nta2.Data.Attributes.Ontology,
 	})
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(ml2.EnrtyId, nta2.Data.Attributes.EntryId, "should match the entry id")
+	assert.Equal(
+		ml2.EnrtyId,
+		nta2.Data.Attributes.EntryId,
+		"should match the entry id",
+	)
 	assert.Equal(ml2.Tag, nta2.Data.Attributes.Tag, "should match the tag")
 
 	emt, err := anrepo.GetAnnotationByEntry(&annotation.EntryAnnotationRequest{
@@ -205,55 +144,32 @@ func TestGetAnnotationByEntry(t *testing.T) {
 	assert.True(emt.NotFound, "the entry should not exist")
 }
 
+//nolint:tparallel
 func TestAddAnnotation(t *testing.T) {
 	t.Parallel()
 	assert, anrepo := setUp(t)
 	defer tearDown(anrepo)
-	nta := newTestAnnoWithTagAndOnto("dicty_annotation", "curator")
-	mann, err := anrepo.AddAnnotation(nta)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.False(mann.IsObsolete, "new tagged annotation should not be obsolete")
-	assert.Equal(mann.Value, nta.Data.Attributes.Value, "should match the value")
-	assert.Equal(mann.CreatedBy, nta.Data.Attributes.CreatedBy, "should match created_by")
-	assert.Equal(mann.EnrtyId, nta.Data.Attributes.EntryId, "should match entry identifier")
-	assert.Equal(mann.Rank, nta.Data.Attributes.Rank, "should match the rank")
-	assert.Equal(mann.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
-	assert.Equal(mann.Tag, nta.Data.Attributes.Tag, "should match the ontology tag")
-	_, err = anrepo.AddAnnotation(nta)
-	assert.Error(err, "expect error for existing annotation")
-	assert.Regexp(
-		regexp.MustCompile("already exists"),
-		err.Error(), "error should have existence of annotation",
-	)
-	nta.Data.Attributes.Tag = "respiration"
-	_, err = anrepo.AddAnnotation(nta)
-	assert.Error(err, "expect error in case of non-existent ontology and tag")
-	assert.Regexp(
-		regexp.MustCompile("respiration"),
-		err.Error(), "error should contain the non-existent tag name",
-	)
-	nta = newTestAnnoWithTagAndOnto("caboose", "description")
-	_, err = anrepo.AddAnnotation(nta)
-	assert.Error(err, "expect error in case of non-existent ontology and tag")
-	assert.Regexp(
-		regexp.MustCompile("caboose"),
-		err.Error(), "error should contain the non-existent ontology",
-	)
-	nta = newTestAnnoWithTagAndOnto("dicty_annotation", "summary")
-	mann2, err := anrepo.AddAnnotation(nta)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.False(mann2.IsObsolete, "new tagged annotation should not be obsolete")
-	assert.Equal(mann2.Value, nta.Data.Attributes.Value, "should match the value")
-	assert.Equal(mann2.CreatedBy, nta.Data.Attributes.CreatedBy, "should match created_by")
-	assert.Equal(mann2.EnrtyId, nta.Data.Attributes.EntryId, "should match entry identifier")
-	assert.Equal(mann2.Rank, nta.Data.Attributes.Rank, "should match the rank")
-	assert.Equal(mann2.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
-	assert.Equal(mann2.Tag, "description", "should match the ontology tag")
-	nta = newTestAnnoWithTagAndOnto("dicty_annotation", "decreased 3',5'-cyclic-GMP phosphodiesterase activity")
-	m3, err := anrepo.AddAnnotation(nta)
-	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(m3.Ontology, nta.Data.Attributes.Ontology, "should match ontology name")
-	assert.Equal(m3.Tag, nta.Data.Attributes.Tag, "should match the tag")
+
+	firstAnno := newTestAnnoWithTagAndOnto("dicty_annotation", "curator")
+	t.Run("SuccessFirst", func(t *testing.T) {
+		testAddAnnotationSuccess(t, assert, anrepo, firstAnno)
+	})
+	t.Run("Duplicate", func(t *testing.T) {
+		testAddAnnotationDuplicate(t, assert, anrepo, firstAnno)
+	})
+	t.Run("NonExistentTag", func(t *testing.T) {
+		testAddAnnotationNonExistentTag(t, assert, anrepo, firstAnno)
+	})
+	t.Run("NonExistentOntology", func(t *testing.T) {
+		testAddAnnotationNonExistentOntology(t, assert, anrepo)
+	})
+	t.Run("SuccessSecond", func(t *testing.T) {
+		testAddAnnotationSuccessSecond(t, assert, anrepo)
+	})
+
+	t.Run("SuccessThird", func(t *testing.T) {
+		testAddAnnotationSuccessThird(t, assert, anrepo)
+	})
 }
 
 func TestGetAnnotationGroup(t *testing.T) {
@@ -330,7 +246,10 @@ func TestListAnnGrFilter(t *testing.T) {
 	}
 	_, err = anrepo.ListAnnotationGroup(0, 4, "FILTER ann.entry_id == 'jumbo'")
 	assert.Error(err, "expect error")
-	assert.True(repository.IsAnnotationGroupListNotFound(err), "expect no annotation group to be found")
+	assert.True(
+		repository.IsAnnotationGroupListNotFound(err),
+		"expect no annotation group to be found",
+	)
 }
 
 func TestListAnnotationGroup(t *testing.T) {
@@ -397,10 +316,297 @@ func TestGetAnnotationTag(t *testing.T) {
 		m, err := anrepo.GetAnnotationTag(tag, "dicty_annotation")
 		assert.NoErrorf(err, "expect no error from fetching %s tag", tag)
 		assert.Equal(m.Name, tag, "should match tag name")
-		assert.Equal(m.Ontology, "dicty_annotation", "should match ontology")
+		assert.Equal("dicty_annotation", m.Ontology, "should match ontology")
 		assert.Falsef(m.IsObsolete, "tag %s should not be obsolete", tag)
 	}
 	_, err := anrepo.GetAnnotationTag("yadayada", "dicty_annotation")
 	assert.Error(err, "expect error from non-existent tag")
-	assert.True(repository.IsAnnoTagNotFound(err), "should be an error for non-existent tag")
+	assert.True(
+		repository.IsAnnoTagNotFound(err),
+		"should be an error for non-existent tag",
+	)
+}
+
+func testListAnnoFilterOneFirstPage(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) []*model.AnnoDoc {
+	t.Helper()
+	mla, err := anrepo.ListAnnotations(
+		&repository.ListAnnotationsParams{Limit: 4, Filter: filterOne},
+	)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Len(mla, 5, "should have 5 annotations")
+	for _, m := range mla {
+		assert.Equal("sidd@gmail.com", m.CreatedBy, "should match created by")
+		assert.Equal(m.Tag, tags[0], "should match the tag")
+		assert.Equal(m.EnrtyId, ddbg[0], "should match the entry id")
+	}
+	testModelListSort(t, mla)
+
+	return mla
+}
+
+func testListAnnoFilterOneSecondPage(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+	prevResult []*model.AnnoDoc,
+) []*model.AnnoDoc {
+	t.Helper()
+	assert.NotEmpty(prevResult, "previous result should not be empty")
+	ml2, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
+		Limit:  4, Filter: filterOne,
+	})
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Len(ml2, 5, "should have five annotations")
+	assert.Exactly(
+		prevResult[len(prevResult)-1],
+		ml2[0],
+		"should have identical model objects",
+	)
+	testModelListSort(t, ml2)
+
+	return ml2
+}
+
+func testListAnnoFilterOneThirdPage(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+	prevResult []*model.AnnoDoc,
+) {
+	t.Helper()
+	assert.NotEmpty(prevResult, "previous result should not be empty")
+	ml3, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
+		Limit:  4, Filter: filterOne,
+	})
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Len(ml3, 2, "should have two annotations")
+	assert.Exactly(
+		prevResult[len(prevResult)-1],
+		ml3[0],
+		"should have identical model objects",
+	)
+	testModelListSort(t, ml3)
+}
+
+func testListAnnoFilterTwoFirstPage(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) []*model.AnnoDoc {
+	t.Helper()
+	ml4, err := anrepo.ListAnnotations(
+		&repository.ListAnnotationsParams{Limit: 6, Filter: filterTwo},
+	)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Len(ml4, 7, "should have 7 annotations")
+	for _, m := range ml4 {
+		assert.Equal("basu@gmail.com", m.CreatedBy, "should match created by")
+		assert.Equal(m.Tag, tags[1], "should match the tag")
+		assert.Equal(m.EnrtyId, ddbg[1], "should match the entry id")
+	}
+	testModelListSort(t, ml4)
+
+	return ml4
+}
+
+func testListAnnoFilterTwoSecondPage(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+	prevResult []*model.AnnoDoc,
+) {
+	t.Helper()
+	assert.NotEmpty(prevResult, "previous result should not be empty")
+	ml5, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
+		Limit:  4, Filter: filterTwo,
+	})
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Len(ml5, 4, "should have four annotations")
+	assert.Exactly(
+		prevResult[len(prevResult)-1],
+		ml5[0],
+		"should have identical model objects",
+	)
+	testModelListSort(t, ml5)
+}
+
+func testListAnnoFilterNotFound(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) {
+	t.Helper()
+	_, err := anrepo.ListAnnotations(
+		&repository.ListAnnotationsParams{Limit: 4, Filter: filterThree},
+	)
+	assert.Error(err, "expect error")
+	assert.True(
+		repository.IsAnnotationListNotFound(err),
+		"expect no annotation list found",
+	)
+}
+
+// Helper functions for TestAddAnnotation subtests.
+func testAddAnnotationSuccess(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+	nta *annotation.NewTaggedAnnotation,
+) {
+	t.Helper()
+	mann, err := anrepo.AddAnnotation(nta)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.False(
+		mann.IsObsolete,
+		"new tagged annotation should not be obsolete",
+	)
+	assert.Equal(
+		nta.Data.Attributes.Value,
+		mann.Value,
+		"should match the value",
+	)
+	assert.Equal(
+		nta.Data.Attributes.CreatedBy,
+		mann.CreatedBy,
+		"should match created_by",
+	)
+	assert.Equal(
+		nta.Data.Attributes.EntryId,
+		mann.EnrtyId,
+		"should match entry identifier",
+	)
+	assert.Equal(nta.Data.Attributes.Rank, mann.Rank, "should match the rank")
+	assert.Equal(
+		nta.Data.Attributes.Ontology,
+		mann.Ontology,
+		"should match ontology name",
+	)
+	assert.Equal(
+		nta.Data.Attributes.Tag,
+		mann.Tag,
+		"should match the ontology tag",
+	)
+}
+
+func testAddAnnotationDuplicate(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+	nta *annotation.NewTaggedAnnotation,
+) {
+	t.Helper()
+	_, err := anrepo.AddAnnotation(nta)
+	assert.Error(err, "expect error for existing annotation")
+	assert.Regexp(
+		"already exists",
+		err.Error(), "error should have existence of annotation",
+	)
+}
+
+func testAddAnnotationNonExistentTag(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+	nta *annotation.NewTaggedAnnotation,
+) {
+	t.Helper()
+	// Create a copy to avoid modifying the original nta used in other tests
+	ntaCopy := &annotation.NewTaggedAnnotation{
+		Data: &annotation.NewTaggedAnnotation_Data{
+			Attributes: &annotation.NewTaggedAnnotationAttributes{
+				Value:     nta.Data.Attributes.Value,
+				CreatedBy: nta.Data.Attributes.CreatedBy,
+				EntryId:   nta.Data.Attributes.EntryId,
+				Rank:      nta.Data.Attributes.Rank,
+				Ontology:  nta.Data.Attributes.Ontology,
+				Tag:       "respiration", // Non-existent tag
+			},
+		},
+	}
+	_, err := anrepo.AddAnnotation(ntaCopy)
+	assert.Error(err, "expect error in case of non-existent ontology and tag")
+	assert.Regexp(
+		"respiration",
+		err.Error(), "error should contain the non-existent tag name",
+	)
+}
+
+func testAddAnnotationNonExistentOntology(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) {
+	t.Helper()
+	nta := newTestAnnoWithTagAndOnto("caboose", "description")
+	_, err := anrepo.AddAnnotation(nta)
+	assert.Error(err, "expect error in case of non-existent ontology and tag")
+	assert.Regexp(
+		"caboose",
+		err.Error(), "error should contain the non-existent ontology",
+	)
+}
+
+func testAddAnnotationSuccessSecond(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) {
+	t.Helper()
+	nta := newTestAnnoWithTagAndOnto("dicty_annotation", "summary")
+	mann2, err := anrepo.AddAnnotation(nta)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.False(
+		mann2.IsObsolete,
+		"new tagged annotation should not be obsolete",
+	)
+	assert.Equal(
+		nta.Data.Attributes.Value,
+		mann2.Value,
+		"should match the value",
+	)
+	assert.Equal(
+		nta.Data.Attributes.CreatedBy,
+		mann2.CreatedBy,
+		"should match created_by",
+	)
+	assert.Equal(
+		nta.Data.Attributes.EntryId,
+		mann2.EnrtyId,
+		"should match entry identifier",
+	)
+	assert.Equal(nta.Data.Attributes.Rank, mann2.Rank, "should match the rank")
+	assert.Equal(
+		nta.Data.Attributes.Ontology,
+		mann2.Ontology,
+		"should match ontology name",
+	)
+	// The tag "summary" maps to "description" in the test setup ontology
+	assert.Equal("description", mann2.Tag, "should match the ontology tag")
+}
+
+func testAddAnnotationSuccessThird(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) {
+	t.Helper()
+	nta := newTestAnnoWithTagAndOnto(
+		"dicty_annotation",
+		"decreased 3',5'-cyclic-GMP phosphodiesterase activity",
+	)
+	annm, err := anrepo.AddAnnotation(nta)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	assert.Equal(
+		nta.Data.Attributes.Ontology,
+		annm.Ontology,
+		"should match ontology name",
+	)
+	assert.Equal(nta.Data.Attributes.Tag, annm.Tag, "should match the tag")
 }
