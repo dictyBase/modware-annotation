@@ -102,7 +102,7 @@ func testBothFiltersWithoutCursor(t *testing.T, filterMap map[string]string) {
 	)
 	assert.Contains(
 		result.Statement,
-		"FOR ann IN @anno_collection",
+		"FOR ann IN @@anno_collection",
 		"should use annCvtListFilterQ base",
 	)
 }
