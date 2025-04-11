@@ -275,5 +275,6 @@ const (
               updated_at: ag.updated_at,
               group_id: ag._key,
               annotations: annotations
+	}
 	`
 )
