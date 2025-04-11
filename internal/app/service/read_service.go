@@ -6,6 +6,7 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/dictyBase/aphgrpc"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
@@ -144,12 +145,12 @@ func (srv *AnnotationService) ListAnnotations(
 	if ral.Limit > 0 {
 		searchLimit = ral.Limit
 	}
-	params := &repository.ListAnnotationsParams{
-		Cursor: ral.Cursor,
-		Limit:  searchLimit,
-		Filter: ral.Filter,
-	}
-	mlc, err := srv.repo.ListAnnotations(params)
+	mlc, err := srv.repo.ListAnnotations(
+		&repository.ListAnnotationsParams{
+			Cursor: ral.Cursor,
+			Limit:  searchLimit,
+			Filter: ral.Filter,
+		})
 	if err != nil {
 		if repository.IsAnnotationListNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -157,14 +158,7 @@ func (srv *AnnotationService) ListAnnotations(
 
 		return nil, aphgrpc.HandleGetError(ctx, err)
 	}
-	tcdata := make([]*annotation.TaggedAnnotationCollection_Data, 0)
-	for _, m := range mlc {
-		tcdata = append(tcdata, &annotation.TaggedAnnotationCollection_Data{
-			Type:       srv.GetResourceName(),
-			Id:         m.Key,
-			Attributes: getAnnoAttributes(m),
-		})
-	}
+	tcdata := collection.Map(mlc, srv.modelToCollectionData)
 	if len(tcdata) < int(searchLimit)-2 { // fewer result than limit
 		tac.Data = tcdata
 		tac.Meta = &annotation.Meta{Limit: ral.Limit}
@@ -201,6 +195,17 @@ func (srv *AnnotationService) GetAnnotationTag(
 	tag.IsObsolete = mta.IsObsolete
 
 	return tag, nil
+}
+
+// modelToCollectionData converts an AnnoDoc model to TaggedAnnotationCollection_Data.
+func (srv *AnnotationService) modelToCollectionData(
+	m *model.AnnoDoc,
+) *annotation.TaggedAnnotationCollection_Data {
+	return &annotation.TaggedAnnotationCollection_Data{
+		Type:       srv.GetResourceName(),
+		Id:         m.Key,
+		Attributes: getAnnoAttributes(m),
+	}
 }
 
 func (srv *AnnotationService) getGroup(
