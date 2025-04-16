@@ -48,6 +48,23 @@ type FeatureAnnotationDoc struct {
 	NotFound     bool             `json:"-"`
 }
 
+// PubSchema returns a JSON schema containing three mandatory fields:
+// id (string), created_at (date-time), and updated_at (date-time).
+func PubSchema() ([]byte, error) {
+	schema := `{
+        		"type": "object",
+        		"properties": {
+            		"id": { "type": "string" },
+            		"created_at": { "type": "string", "format": "date-time" },
+            		"updated_at": { "type": "string", "format": "date-time" }
+        	},
+        	"required": ["id", "created_at", "updated_at"],
+        	"additionalProperties": false
+    	}`
+
+	return []byte(schema), nil
+}
+
 // FeatureAnnotationSchema returns a JSON schema for validating feature annotations.
 func FeatureAnnotationSchema() ([]byte, error) {
 	baseSchema := `{
