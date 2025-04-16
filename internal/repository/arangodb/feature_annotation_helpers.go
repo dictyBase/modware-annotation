@@ -22,7 +22,7 @@ type CreateIndexArgs struct {
 
 func validateParams(collP *FeatureCollectionParams) error {
 	if err := validator.New().Struct(collP); err != nil {
-		return fmt.Errorf("invalid collection parameters: %w", err)
+		return fmt.Errorf("invalid feature collection parameters: %w", err)
 	}
 
 	return nil
@@ -175,6 +175,54 @@ func createPubCollection(
 	}
 
 	return coll, nil
+}
+
+func createEdgeCollection(
+	dbh *manager.Database,
+	collP *FeatureCollectionParams,
+) (driver.Collection, error) {
+	// Assuming edge collection doesn't need a schema for now
+	coll, err := dbh.FindOrCreateCollection(
+		collP.Edge,
+		&driver.CreateCollectionOptions{
+			Type: driver.CollectionTypeEdge,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to create/find edge collection: %w",
+			err,
+		)
+	}
+
+	return coll, nil
+}
+
+func createFeaturePubGraph(
+	dbh *manager.Database,
+	graphName string,
+	featureColl driver.Collection,
+	pubColl driver.Collection,
+	edgeColl driver.Collection,
+) (driver.Graph, error) {
+	grph, err := dbh.FindOrCreateGraph(
+		graphName,
+		[]driver.EdgeDefinition{
+			{
+				Collection: edgeColl.Name(),
+				From:       []string{featureColl.Name()},
+				To:         []string{pubColl.Name()},
+			},
+		})
+	if err != nil {
+		return grph, fmt.Errorf(
+			"failed to create/find graph %s: %w",
+			graphName,
+			err,
+		)
+	}
+
+	return grph, nil
 }
 
 func updateBasicFields(

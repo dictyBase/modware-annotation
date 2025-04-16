@@ -18,6 +18,8 @@ type featureAnnoRepo struct {
 	database *manager.Database
 	feature  driver.Collection
 	pub      driver.Collection
+	edge     driver.Collection
+	featPub  driver.Graph
 }
 
 // NewFeatureAnnoRepo creates a new instance of FeatureAnnotationRepository.
@@ -44,6 +46,11 @@ func NewFeatureAnnoRepo(
 		return nil, err
 	}
 
+	fpedge, err := createEdgeCollection(dbh, collP)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := createFeatureIndices(dbh, featureColl); err != nil {
 		return nil, err
 	}
@@ -52,11 +59,25 @@ func NewFeatureAnnoRepo(
 		return nil, err
 	}
 
+	// Create the graph connecting feature and pub collections
+	grph, err := createFeaturePubGraph(
+		dbh,
+		collP.Graph,
+		featureColl,
+		pubColl,
+		fpedge,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &featureAnnoRepo{
 		sess:     sess,
 		database: dbh,
 		feature:  featureColl,
 		pub:      pubColl,
+		edge:     fpedge,
+		featPub:  grph,
 	}, nil
 }
 
