@@ -44,7 +44,7 @@ func NewFeatureAnnoRepo(
 		return nil, err
 	}
 
-	if err := createIndices(dbh, featureColl); err != nil {
+	if err := createFeatureIndices(dbh, featureColl); err != nil {
 		return nil, err
 	}
 

@@ -69,47 +69,73 @@ func createFeatureCollection(
 	return coll, nil
 }
 
-func createIndices(dbh *manager.Database, coll driver.Collection) error {
-	_, _, err := dbh.EnsurePersistentIndex(
-		coll.Name(),
-		[]string{"feature_id"},
-		&driver.EnsurePersistentIndexOptions{
-			InBackground: true,
-			Unique:       true,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create id-version index: %w", err)
+func createIndices(
+	dbh *manager.Database,
+	coll driver.Collection,
+	fields []string,
+	uniqueFields []string,
+	errPrefix string,
+) error {
+	// Create unique indices
+	for _, field := range uniqueFields {
+		_, _, err := dbh.EnsurePersistentIndex(
+			coll.Name(),
+			[]string{field},
+			&driver.EnsurePersistentIndexOptions{
+				InBackground: true,
+				Unique:       true,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to create unique %s index for %s: %w",
+				field,
+				errPrefix,
+				err,
+			)
+		}
 	}
 
-	_, _, err = dbh.EnsurePersistentIndex(
-		coll.Name(),
-		[]string{"name"},
-		&driver.EnsurePersistentIndexOptions{
-			InBackground: true,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create name index: %w", err)
+	// Create non-unique indices
+	for _, field := range fields {
+		_, _, err := dbh.EnsurePersistentIndex(
+			coll.Name(),
+			[]string{field},
+			&driver.EnsurePersistentIndexOptions{
+				InBackground: true,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to create %s index for %s: %w",
+				field,
+				errPrefix,
+				err,
+			)
+		}
 	}
 
 	return nil
 }
 
-func createPubIndices(dbh *manager.Database, coll driver.Collection) error {
-	_, _, err := dbh.EnsurePersistentIndex(
-		coll.Name(),
-		[]string{"id"},
-		&driver.EnsurePersistentIndexOptions{
-			InBackground: true,
-			Unique:       true,
-		},
+func createFeatureIndices(dbh *manager.Database, coll driver.Collection) error {
+	return createIndices(
+		dbh,
+		coll,
+		[]string{"name"},
+		[]string{"feature_id"},
+		"feature collection",
 	)
-	if err != nil {
-		return fmt.Errorf("failed to create id index for pub collection: %w", err)
-	}
+}
 
-	return nil
+func createPubIndices(dbh *manager.Database, coll driver.Collection) error {
+	return createIndices(
+		dbh,
+		coll,
+		[]string{},
+		[]string{"id"},
+		"pub collection",
+	)
 }
 
 func createPubCollection(
