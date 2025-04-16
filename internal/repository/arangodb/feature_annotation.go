@@ -17,6 +17,7 @@ type featureAnnoRepo struct {
 	sess     *manager.Session
 	database *manager.Database
 	feature  driver.Collection
+	pub      driver.Collection
 }
 
 // NewFeatureAnnoRepo creates a new instance of FeatureAnnotationRepository.
@@ -38,6 +39,11 @@ func NewFeatureAnnoRepo(
 		return nil, err
 	}
 
+	pubColl, err := createPubCollection(dbh, collP)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := createIndices(dbh, featureColl); err != nil {
 		return nil, err
 	}
@@ -46,6 +52,7 @@ func NewFeatureAnnoRepo(
 		sess:     sess,
 		database: dbh,
 		feature:  featureColl,
+		pub:      pubColl,
 	}, nil
 }
 

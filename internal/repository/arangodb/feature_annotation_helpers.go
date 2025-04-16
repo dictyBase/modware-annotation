@@ -96,6 +96,42 @@ func createIndices(dbh *manager.Database, coll driver.Collection) error {
 	return nil
 }
 
+func createPubCollection(
+	dbh *manager.Database,
+	collP *FeatureCollectionParams,
+) (driver.Collection, error) {
+	schema, err := model.PubSchema()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to generate pub schema: %w",
+			err,
+		)
+	}
+
+	schemaOpt := &driver.CollectionSchemaOptions{
+		Level:   driver.CollectionSchemaLevelModerate,
+		Message: "Pub validation failed",
+		Type:    "json",
+	}
+	if err := schemaOpt.LoadRule(schema); err != nil {
+		return nil, fmt.Errorf("error in loading pub schema %s", err)
+	}
+	coll, err := dbh.FindOrCreateCollection(
+		collP.Pub,
+		&driver.CreateCollectionOptions{
+			Schema: schemaOpt,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to create/find pub collection: %w",
+			err,
+		)
+	}
+
+	return coll, nil
+}
+
 func updateBasicFields(
 	faDoc *model.FeatureAnnotationDoc,
 	doc *feature.FeatureAnnotationUpdate,
