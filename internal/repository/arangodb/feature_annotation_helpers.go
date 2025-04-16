@@ -11,6 +11,15 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// CreateIndexArgs holds the arguments for the createIndices function.
+type CreateIndexArgs struct {
+	Dbh          *manager.Database
+	Coll         driver.Collection
+	Fields       []string
+	UniqueFields []string
+	ErrPrefix    string
+}
+
 func validateParams(collP *FeatureCollectionParams) error {
 	if err := validator.New().Struct(collP); err != nil {
 		return fmt.Errorf("invalid collection parameters: %w", err)
@@ -69,17 +78,12 @@ func createFeatureCollection(
 	return coll, nil
 }
 
-func createIndices(
-	dbh *manager.Database,
-	coll driver.Collection,
-	fields []string,
-	uniqueFields []string,
-	errPrefix string,
-) error {
+// createIndices creates persistent indices for a collection based on the provided arguments.
+func createIndices(args *CreateIndexArgs) error {
 	// Create unique indices
-	for _, field := range uniqueFields {
-		_, _, err := dbh.EnsurePersistentIndex(
-			coll.Name(),
+	for _, field := range args.UniqueFields {
+		_, _, err := args.Dbh.EnsurePersistentIndex(
+			args.Coll.Name(),
 			[]string{field},
 			&driver.EnsurePersistentIndexOptions{
 				InBackground: true,
@@ -90,16 +94,16 @@ func createIndices(
 			return fmt.Errorf(
 				"failed to create unique %s index for %s: %w",
 				field,
-				errPrefix,
+				args.ErrPrefix,
 				err,
 			)
 		}
 	}
 
 	// Create non-unique indices
-	for _, field := range fields {
-		_, _, err := dbh.EnsurePersistentIndex(
-			coll.Name(),
+	for _, field := range args.Fields {
+		_, _, err := args.Dbh.EnsurePersistentIndex(
+			args.Coll.Name(),
 			[]string{field},
 			&driver.EnsurePersistentIndexOptions{
 				InBackground: true,
@@ -109,7 +113,7 @@ func createIndices(
 			return fmt.Errorf(
 				"failed to create %s index for %s: %w",
 				field,
-				errPrefix,
+				args.ErrPrefix,
 				err,
 			)
 		}
@@ -119,23 +123,22 @@ func createIndices(
 }
 
 func createFeatureIndices(dbh *manager.Database, coll driver.Collection) error {
-	return createIndices(
-		dbh,
-		coll,
-		[]string{"name"},
-		[]string{"feature_id"},
-		"feature collection",
-	)
+	return createIndices(&CreateIndexArgs{
+		Dbh:          dbh,
+		Coll:         coll,
+		Fields:       []string{"name"},
+		UniqueFields: []string{"feature_id"},
+		ErrPrefix:    "feature collection",
+	})
 }
 
 func createPubIndices(dbh *manager.Database, coll driver.Collection) error {
-	return createIndices(
-		dbh,
-		coll,
-		[]string{},
-		[]string{"id"},
-		"pub collection",
-	)
+	return createIndices(&CreateIndexArgs{
+		Dbh:          dbh,
+		Coll:         coll,
+		UniqueFields: []string{"id"},
+		ErrPrefix:    "pub collection",
+	})
 }
 
 func createPubCollection(
