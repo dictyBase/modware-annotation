@@ -48,6 +48,10 @@ func NewFeatureAnnoRepo(
 		return nil, err
 	}
 
+	if err := createPubIndices(dbh, pubColl); err != nil {
+		return nil, err
+	}
+
 	return &featureAnnoRepo{
 		sess:     sess,
 		database: dbh,

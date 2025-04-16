@@ -96,6 +96,22 @@ func createIndices(dbh *manager.Database, coll driver.Collection) error {
 	return nil
 }
 
+func createPubIndices(dbh *manager.Database, coll driver.Collection) error {
+	_, _, err := dbh.EnsurePersistentIndex(
+		coll.Name(),
+		[]string{"id"},
+		&driver.EnsurePersistentIndexOptions{
+			InBackground: true,
+			Unique:       true,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create id index for pub collection: %w", err)
+	}
+
+	return nil
+}
+
 func createPubCollection(
 	dbh *manager.Database,
 	collP *FeatureCollectionParams,
