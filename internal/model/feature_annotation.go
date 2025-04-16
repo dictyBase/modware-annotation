@@ -75,15 +75,6 @@ func FeatureAnnotationSchema() ([]byte, error) {
 			"type":  "array",
 			"items": map[string]string{"type": "string"},
 		},
-		"publications": map[string]interface{}{
-			"type":  "array",
-			"items": map[string]string{"type": "string"},
-		},
-		"pubmed": map[string]interface{}{
-			"type":          "array",
-			"minProperties": 0,
-			"items":         map[string]string{"type": "string"},
-		},
 		"dblinks":     getDbLinksSchema(),
 		"properties":  getPropertiesSchema(),
 		"is_obsolete": map[string]string{"type": "boolean"},
@@ -92,9 +83,8 @@ func FeatureAnnotationSchema() ([]byte, error) {
 	// Convert properties to JSON and handle potential error
 	propsJSON, err := json.Marshal(properties)
 	if err != nil {
-		return []byte(
-				"",
-			), fmt.Errorf(
+		return []byte(""),
+			fmt.Errorf(
 				"failed to marshal feature annotation schema: %v",
 				err,
 			)
