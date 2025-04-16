@@ -44,4 +44,5 @@ type CollectionParams struct {
 type FeatureCollectionParams struct {
 	// Feature is the collection for storing feature annotations
 	Feature string `validate:"required"`
+	Pub     string `validate:"required"`
 }
