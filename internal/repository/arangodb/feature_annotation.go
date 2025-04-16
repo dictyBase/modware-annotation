@@ -9,6 +9,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
@@ -34,53 +35,36 @@ func NewFeatureAnnoRepo(
 		)
 	}
 
-	sess, dbh, err := createSession(connP)
-	if err != nil {
-		return nil, err
-	}
-
-	featureColl, err := createFeatureCollection(dbh, collP)
-	if err != nil {
-		return nil, err
-	}
-
-	pubColl, err := createPubCollection(dbh, collP)
-	if err != nil {
-		return nil, err
-	}
-
-	fpedge, err := createEdgeCollection(dbh, collP)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := createFeatureIndices(dbh, featureColl); err != nil {
-		return nil, err
-	}
-
-	if err := createPubIndices(dbh, pubColl); err != nil {
-		return nil, err
-	}
-
-	// Create the graph connecting feature and pub collections
-	grph, err := createFeaturePubGraph(
-		dbh,
-		collP.Graph,
-		featureColl,
-		pubColl,
-		fpedge,
+	// Execute the initialization pipeline
+	finalState := collection.Pipe7(
+		&repoInitState{
+			connP: connP,
+			collP: collP,
+		},
+		stepCreateSession,
+		stepCreateFeatureCollection,
+		stepCreatePubCollection,
+		stepCreateEdgeCollection,
+		stepCreateFeatureIndices,
+		stepCreatePubIndices,
+		stepCreateGraph,
 	)
-	if err != nil {
-		return nil, err
+
+	// Check for errors during the pipeline execution
+	if finalState.Err != nil {
+		return nil, fmt.Errorf(
+			"error during repository initialization: %w",
+			finalState.Err,
+		)
 	}
 
 	return &featureAnnoRepo{
-		sess:     sess,
-		database: dbh,
-		feature:  featureColl,
-		pub:      pubColl,
-		edge:     fpedge,
-		featPub:  grph,
+		sess:     finalState.sess,
+		database: finalState.dbh,
+		feature:  finalState.featureColl,
+		pub:      finalState.pubColl,
+		edge:     finalState.edgeColl,
+		featPub:  finalState.graph,
 	}, nil
 }
 
