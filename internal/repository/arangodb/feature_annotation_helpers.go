@@ -8,7 +8,6 @@ import (
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
-	"github.com/go-playground/validator/v10"
 )
 
 // CreateIndexArgs holds the arguments for the createIndices function.
@@ -18,14 +17,6 @@ type CreateIndexArgs struct {
 	Fields       []string
 	UniqueFields []string
 	ErrPrefix    string
-}
-
-func validateParams(collP *FeatureCollectionParams) error {
-	if err := validator.New().Struct(collP); err != nil {
-		return fmt.Errorf("invalid feature collection parameters: %w", err)
-	}
-
-	return nil
 }
 
 func createSession(
