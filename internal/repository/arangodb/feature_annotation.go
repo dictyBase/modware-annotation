@@ -130,40 +130,30 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 		)
 	}
 	newDoc.DocumentMeta = meta
-	// Handle publications if present
-	if len(doc.Attributes.Publications) > 0 {
-		// Upsert publications and get their keys
-		pubrs, err := fann.database.DoRun(
-			pubUpsertQ,
-			map[string]interface{}{
-				"ids":         doc.Attributes.Publications,
-				"@collection": fann.pub.Name(),
-			},
-		)
+	doi := doc.Attributes.Publications
+	pubmed := doc.Attributes.Pubmed
+	if !collection.IsEmpty(doi) {
+		pubmedKeys, err := fann.upsertAndGetPubKeys(doi)
 		if err != nil {
-			return nil, fmt.Errorf("error upserting publications: %w", err)
+			return nil, err // Error already formatted in helper
 		}
-		pubKeys := make([]string, 0)
-		err = pubrs.Read(&pubKeys)
+		err = fann.createFeaturePubEdges(newDoc.ID, pubmedKeys, "pubmed")
 		if err != nil {
-			return nil, fmt.Errorf("error reading publications key: %w", err)
+			return nil, err // Error already formatted in helper
 		}
-		// Create edges between feature and publications
-		err = fann.database.Do(
-			featurePubEdgeQ,
-			map[string]interface{}{
-				"feature_key":       newDoc.ID.String(), // Use the _id of the new feature
-				"pub_keys":          pubKeys,
-				"source":            "doi", // Or derive from doc.Attributes.Source if available
-				"@@edge_collection": fann.edge.Name(),
-			},
-		)
+		newDoc.Pubmed = doi
+	}
+
+	if !collection.IsEmpty(pubmed) {
+		pubKeys, err := fann.upsertAndGetPubKeys(pubmed)
 		if err != nil {
-			return nil, fmt.Errorf(
-				"error creating feature-publication edges: %w",
-				err,
-			)
+			return nil, err // Error already formatted in helper
 		}
+		err = fann.createFeaturePubEdges(newDoc.ID, pubKeys, "doi")
+		if err != nil {
+			return nil, err // Error already formatted in helper
+		}
+		newDoc.Publications = pubmed
 	}
 
 	return newDoc, nil
@@ -361,4 +351,50 @@ func (fann *featureAnnoRepo) RemoveTag(
 
 func (fann *featureAnnoRepo) Dbh() *manager.Database {
 	return fann.database
+}
+
+// upsertAndGetPubKeys handles the upsert logic for a list of publication IDs
+// and returns their corresponding document keys (_id).
+func (fann *featureAnnoRepo) upsertAndGetPubKeys(
+	ids []string,
+) ([]string, error) {
+	pubrs, err := fann.database.DoRun(
+		pubUpsertQ,
+		map[string]interface{}{
+			"ids":         ids,
+			"@collection": fann.pub.Name(),
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error upserting publications: %w", err)
+	}
+	pubKeys := make([]string, 0)
+	err = pubrs.Read(&pubKeys)
+	if err != nil {
+		return nil, fmt.Errorf("error reading publication keys: %w", err)
+	}
+
+	return pubKeys, nil
+}
+
+// createFeaturePubEdges creates edges between a feature and a list of publications.
+func (fann *featureAnnoRepo) createFeaturePubEdges(
+	featureID driver.DocumentID,
+	pubKeys []string,
+	source string,
+) error {
+	err := fann.database.Do(
+		featurePubEdgeQ,
+		map[string]interface{}{
+			"feature_key":       featureID.String(),
+			"pub_keys":          pubKeys,
+			"source":            source,
+			"@@edge_collection": fann.edge.Name(),
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("error creating feature-publication edges: %w", err)
+	}
+
+	return nil
 }
