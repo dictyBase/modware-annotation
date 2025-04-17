@@ -277,8 +277,6 @@ func setOptionalFields(
 	faDoc *model.FeatureAnnotationDoc,
 ) *model.FeatureAnnotationDoc {
 	faDoc.Synonyms = doc.Attributes.Synonyms
-	faDoc.Publications = doc.Attributes.Publications
-	faDoc.Pubmed = doc.Attributes.Pubmed
 	faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, convertDbLink)
 	faDoc.Properties = collection.Map(
 		doc.Attributes.Properties,
