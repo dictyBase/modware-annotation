@@ -130,6 +130,41 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 		)
 	}
 	newDoc.DocumentMeta = meta
+	// Handle publications if present
+	if len(doc.Attributes.Publications) > 0 {
+		// Upsert publications and get their keys
+		pubrs, err := fann.database.DoRun(
+			pubUpsertQ,
+			map[string]interface{}{
+				"ids":         doc.Attributes.Publications,
+				"@collection": fann.pub.Name(),
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error upserting publications: %w", err)
+		}
+		pubKeys := make([]string, 0)
+		err = pubrs.Read(&pubKeys)
+		if err != nil {
+			return nil, fmt.Errorf("error reading publications key: %w", err)
+		}
+		// Create edges between feature and publications
+		err = fann.database.Do(
+			featurePubEdgeQ,
+			map[string]interface{}{
+				"feature_key":       newDoc.ID.String(), // Use the _id of the new feature
+				"pub_keys":          pubKeys,
+				"source":            "doi", // Or derive from doc.Attributes.Source if available
+				"@@edge_collection": fann.edge.Name(),
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"error creating feature-publication edges: %w",
+				err,
+			)
+		}
+	}
 
 	return newDoc, nil
 }
