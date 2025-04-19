@@ -26,8 +26,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dictyBase/aphgrpc v1.4.2 h1:jkNyIpUBATNVNTM99TfAHln8UEpzyvNNNuM2+UY6t2E=
 github.com/dictyBase/aphgrpc v1.4.2/go.mod h1:rzi2U95QntAuS6XpqespgZmQ8Ujo2Sq2R5FyhW5adA8=
-github.com/dictyBase/arangomanager v0.6.0 h1:enUvK7hf3uRJprFHCnQ7hixr24kwsMJIrhI4mpzFm5Y=
-github.com/dictyBase/arangomanager v0.6.0/go.mod h1:CkrV5QpjFlkk8h+NHzfDP+kfzq+49zaCcDlUtKrayK4=
+github.com/dictyBase/arangomanager v0.7.0 h1:OiFZgL9N6uUJrm0wwQ8Y6Oe0DsiPggPGOmc4wH7CKjI=
+github.com/dictyBase/arangomanager v0.7.0/go.mod h1:CkrV5QpjFlkk8h+NHzfDP+kfzq+49zaCcDlUtKrayK4=
 github.com/dictyBase/go-genproto v0.0.0-20250322103257-0f58eec92bd9 h1:7FqFPIsWC7su42vYD44yrjJ38sadeBQIWwa9K8/0Hqs=
 github.com/dictyBase/go-genproto v0.0.0-20250322103257-0f58eec92bd9/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-obograph v1.6.0 h1:otuiEadRCJ25o6X/5tWhDjiiAbK0R8LBLQpBxVREotc=
