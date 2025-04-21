@@ -5,6 +5,7 @@
     - Run specific test: `gotestsum --format-hide-empty-pkg --format testdox --format-icons hivis -- -run TestFindSimilar ./...`
     - Run tests with verbose output: `gotestum --format-hide-empty-pkg --format standard-verbose --format-icons hivis`
     - Format code: `gofumpt -w .`
+    - Lint codebase: `golangcli-lint run`
 
 - **Code Style Guidelines**
     - Imports: Standard library first, then external packages, then internal packages
