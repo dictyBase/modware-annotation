@@ -171,6 +171,9 @@ func setUpFeatureTest(
 		GetConnectParamsFromDB(tra),
 		&FeatureCollectionParams{
 			Feature: "feature_test",
+			Pub:     "pub_test",
+			Edge:    "feature_pub_test",
+			Graph:   "feature_graph",
 		},
 	)
 	assert.NoErrorf(
