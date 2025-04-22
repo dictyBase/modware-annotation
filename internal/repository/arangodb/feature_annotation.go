@@ -98,65 +98,152 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	doc *feature.NewFeatureAnnotation,
 ) (*model.FeatureAnnotationDoc, error) {
 	// Create new feature annotation document
-	faDoc := &model.FeatureAnnotationDoc{
-		AnnoId:     doc.Id,
-		Name:       doc.Attributes.Name,
-		CreatedAt:  doc.CreatedAt.AsTime(),
-		UpdatedAt:  doc.CreatedAt.AsTime(), // Initially same as created_at
-		CreatedBy:  doc.CreatedBy,
-		UpdatedBy:  doc.CreatedBy, // Initially same as created_by
-		IsObsolete: false,
-	}
-	if doc.UpdatedAt.IsValid() {
-		faDoc.UpdatedAt = doc.UpdatedAt.AsTime()
-	}
-	if len(doc.UpdatedBy) > 0 {
-		faDoc.UpdatedBy = doc.UpdatedBy
+	faDoc := createFeatureAnnotationDoc(doc)
+
+	// Setup transaction options
+	txOptions := &manager.TransactionOptions{
+		WriteCollections: []string{
+			fann.feature.Name(),
+			fann.pub.Name(),
+			fann.edge.Name(),
+		},
 	}
 
-	// Set optional fields
-	setOptionalFields(doc, faDoc)
-
-	// Create context to return new document
-	newDoc := &model.FeatureAnnotationDoc{}
-	ctx := driver.WithReturnNew(context.Background(), newDoc)
-
-	// Insert document and get updated version
-	meta, err := fann.feature.CreateDocument(ctx, faDoc)
+	// Begin transaction with context
+	txr, err := fann.database.BeginTransaction(
+		context.Background(),
+		txOptions,
+	)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"error creating feature annotation document: %w",
-			err,
-		)
-	}
-	newDoc.DocumentMeta = meta
-	doi := doc.Attributes.Publications
-	pubmed := doc.Attributes.Pubmed
-	if !collection.IsEmpty(doi) {
-		pubmedKeys, err := fann.upsertAndGetPubKeys(doi)
-		if err != nil {
-			return nil, err // Error already formatted in helper
-		}
-		err = fann.createFeaturePubEdges(newDoc.ID, pubmedKeys, "pubmed")
-		if err != nil {
-			return nil, err // Error already formatted in helper
-		}
-		newDoc.Pubmed = doi
+		return nil, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	if !collection.IsEmpty(pubmed) {
-		pubKeys, err := fann.upsertAndGetPubKeys(pubmed)
-		if err != nil {
-			return nil, err // Error already formatted in helper
+	// Store feature annotation using AQL with transaction
+	newDoc, err := fann.storeFeatureAnnotation(txr, faDoc)
+	if err != nil {
+		if abortErr := txr.Abort(); abortErr != nil {
+			return nil, fmt.Errorf(
+				"error in aborting transaction after %v: %w",
+				err,
+				abortErr,
+			)
 		}
-		err = fann.createFeaturePubEdges(newDoc.ID, pubKeys, "doi")
-		if err != nil {
-			return nil, err // Error already formatted in helper
+
+		return nil, err
+	}
+
+	// Handle publications
+	if err := fann.handlePublications(txr, doc, newDoc); err != nil {
+		if abortErr := txr.Abort(); abortErr != nil {
+			return nil, fmt.Errorf(
+				"error in aborting transaction after %v: %w",
+				err,
+				abortErr,
+			)
 		}
-		newDoc.Publications = pubmed
+
+		return nil, err
+	}
+
+	// Commit the transaction
+	if err := txr.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %w", err)
 	}
 
 	return newDoc, nil
+}
+
+// createFeatureAnnotationDoc creates a new feature annotation document from the input.
+
+// storeFeatureAnnotation stores the feature annotation in the database and returns the new document.
+func (fann *featureAnnoRepo) storeFeatureAnnotation(
+	txr *manager.TransactionHandler,
+	faDoc *model.FeatureAnnotationDoc,
+) (*model.FeatureAnnotationDoc, error) {
+	result, err := txr.DoRun(
+		fmt.Sprintf("INSERT @doc INTO %s RETURN NEW", fann.feature.Name()),
+		map[string]interface{}{
+			"doc": faDoc,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error storing feature annotation: %w", err)
+	}
+
+	// Read the result into a document
+	newDoc := &model.FeatureAnnotationDoc{}
+	if err := result.Read(newDoc); err != nil {
+		return nil, fmt.Errorf("error reading result: %w", err)
+	}
+
+	return newDoc, nil
+}
+
+// handlePublications processes both types of publications (DOI and Pubmed).
+func (fann *featureAnnoRepo) handlePublications(
+	txr *manager.TransactionHandler,
+	doc *feature.NewFeatureAnnotation,
+	newDoc *model.FeatureAnnotationDoc,
+) error {
+	// Handle DOI publications
+	if !collection.IsEmpty(doc.Attributes.Publications) {
+		if err := fann.processPublicationType(
+			txr,
+			newDoc,
+			doc.Attributes.Publications,
+			"pubmed",
+		); err != nil {
+			return err
+		}
+	}
+
+	// Handle Pubmed publications
+	if !collection.IsEmpty(doc.Attributes.Pubmed) {
+		if err := fann.processPublicationType(
+			txr,
+			newDoc,
+			doc.Attributes.Pubmed,
+			"doi",
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processPublicationType handles a specific type of publication (DOI or Pubmed).
+func (fann *featureAnnoRepo) processPublicationType(
+	txr *manager.TransactionHandler,
+	newDoc *model.FeatureAnnotationDoc,
+	pubIDs []string,
+	sourceType string,
+) error {
+	// Upsert publications
+	pubKeys, err := fann.upsertPublicationsTx(txr, pubIDs)
+	if err != nil {
+		return err // Error already formatted in helper
+	}
+
+	// Create edges between feature and publications
+	err = fann.createPublicationEdgesTx(
+		txr,
+		newDoc.ID.String(),
+		pubKeys,
+		sourceType,
+	)
+	if err != nil {
+		return err // Error already formatted in helper
+	}
+
+	// Update the document with the publication IDs
+	if sourceType == "pubmed" {
+		newDoc.Pubmed = pubIDs
+	} else {
+		newDoc.Publications = pubIDs
+	}
+
+	return nil
 }
 
 // EditFeatureAnnotation updates an existing feature annotation.
@@ -323,7 +410,6 @@ func (fann *featureAnnoRepo) RemoveTag(
 	if err != nil {
 		return err
 	}
-
 	// Find tag index using IndexFunc
 	idx := slices.IndexFunc(doc.Properties, func(p model.TagPropertyDoc) bool {
 		return p.Tag == req.Tag
@@ -348,17 +434,17 @@ func (fann *featureAnnoRepo) RemoveTag(
 }
 
 // Dbh returns the underlying database handler.
-
 func (fann *featureAnnoRepo) Dbh() *manager.Database {
 	return fann.database
 }
 
-// upsertAndGetPubKeys handles the upsert logic for a list of publication IDs
-// and returns their corresponding document keys (_id).
-func (fann *featureAnnoRepo) upsertAndGetPubKeys(
+// upsertPublicationsTx handles the upsert logic for a list of publication IDs
+// within a transaction and returns their corresponding document keys.
+func (fann *featureAnnoRepo) upsertPublicationsTx(
+	txr *manager.TransactionHandler,
 	ids []string,
 ) ([]string, error) {
-	pubrs, err := fann.database.DoRun(
+	result, err := txr.DoRun(
 		pubUpsertQ,
 		map[string]interface{}{
 			"ids":         ids,
@@ -366,35 +452,70 @@ func (fann *featureAnnoRepo) upsertAndGetPubKeys(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error upserting publications: %w", err)
+		return nil, fmt.Errorf(
+			"error upserting publications within transaction: %w",
+			err,
+		)
 	}
 	pubKeys := make([]string, 0)
-	err = pubrs.Read(&pubKeys)
+	err = result.Read(&pubKeys)
 	if err != nil {
-		return nil, fmt.Errorf("error reading publication keys: %w", err)
+		return nil, fmt.Errorf(
+			"error reading publication keys from transaction: %w",
+			err,
+		)
 	}
 
 	return pubKeys, nil
 }
 
-// createFeaturePubEdges creates edges between a feature and a list of publications.
-func (fann *featureAnnoRepo) createFeaturePubEdges(
-	featureID driver.DocumentID,
+// createPublicationEdgesTx creates edges between a feature and publications within a transaction.
+func (fann *featureAnnoRepo) createPublicationEdgesTx(
+	txr *manager.TransactionHandler,
+	featureKey string,
 	pubKeys []string,
 	source string,
 ) error {
-	err := fann.database.Do(
+	err := txr.Do(
 		featurePubEdgeQ,
 		map[string]interface{}{
-			"feature_key":       featureID.String(),
+			"feature_key":       featureKey,
 			"pub_keys":          pubKeys,
 			"source":            source,
 			"@@edge_collection": fann.edge.Name(),
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("error creating feature-publication edges: %w", err)
+		return fmt.Errorf(
+			"error creating feature-publication edges within transaction: %w",
+			err,
+		)
 	}
 
 	return nil
+}
+
+func createFeatureAnnotationDoc(
+	doc *feature.NewFeatureAnnotation,
+) *model.FeatureAnnotationDoc {
+	faDoc := &model.FeatureAnnotationDoc{
+		AnnoId:     doc.Id,
+		Name:       doc.Attributes.Name,
+		CreatedAt:  doc.CreatedAt.AsTime(),
+		UpdatedAt:  doc.CreatedAt.AsTime(), // Initially same as created_at
+		CreatedBy:  doc.CreatedBy,
+		UpdatedBy:  doc.CreatedBy, // Initially same as created_by
+		IsObsolete: false,
+	}
+	if doc.UpdatedAt.IsValid() {
+		faDoc.UpdatedAt = doc.UpdatedAt.AsTime()
+	}
+	if len(doc.UpdatedBy) > 0 {
+		faDoc.UpdatedBy = doc.UpdatedBy
+	}
+
+	// Set optional fields
+	setOptionalFields(doc, faDoc)
+
+	return faDoc
 }
