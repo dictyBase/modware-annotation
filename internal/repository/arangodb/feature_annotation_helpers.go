@@ -232,8 +232,6 @@ func updateAttributes(
 ) {
 	mdoc.Name = attrs.Name
 	mdoc.Synonyms = append(mdoc.Synonyms, attrs.Synonyms...)
-	mdoc.Publications = append(mdoc.Publications, attrs.Publications...)
-	mdoc.Pubmed = append(mdoc.Pubmed, attrs.Pubmed...)
 	mdoc.DbLinks = append(
 		mdoc.DbLinks,
 		collection.Map(attrs.Dblinks, convertDbLink)...)
