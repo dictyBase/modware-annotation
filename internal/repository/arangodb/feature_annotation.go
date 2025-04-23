@@ -72,11 +72,11 @@ func NewFeatureAnnoRepo(
 func (fann *featureAnnoRepo) GetFeatureAnnotation(
 	fid string,
 ) (*model.FeatureAnnotationDoc, error) {
-	doc := &model.FeatureAnnotationDoc{}
 	res, err := fann.database.GetRow(
 		featureGetByIdQ,
 		map[string]interface{}{
 			"@collection": fann.feature.Name(),
+			"graph":       fann.featPub.Name(),
 			"id":          fid,
 		},
 	)
@@ -86,6 +86,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 	if res.IsEmpty() {
 		return nil, &repository.AnnoNotFoundError{Id: fid}
 	}
+	doc := &model.FeatureAnnotationDoc{}
 	if err := res.Read(doc); err != nil {
 		return nil, fmt.Errorf("error reading document: %w", err)
 	}
