@@ -282,21 +282,25 @@ func stepCommitTransaction(state *editState) *editState {
 	return state
 }
 
+// featureAnnotationUpdateValidator defines validation rules for feature
+// annotation updates.
+type featureAnnotationUpdateValidator struct {
+	ID        string `validate:"required"       json:"id"`
+	UpdatedBy string `validate:"required,email" json:"updated_by"`
+}
+
 // stepValidateInput validates the input document before proceeding.
 func stepValidateInput(state *editState) *editState {
 	if state.Err != nil {
 		return state
 	}
 
-	// Check for required fields
-	if state.doc.Id == "" {
-		state.Err = fmt.Errorf("feature ID is required")
-
-		return state
-	}
-
-	if state.doc.UpdatedBy == "" {
-		state.Err = fmt.Errorf("updater email is required")
+	// Perform validation
+	if err := validate.Struct(&featureAnnotationUpdateValidator{
+		ID:        state.doc.Id,
+		UpdatedBy: state.doc.UpdatedBy,
+	}); err != nil {
+		state.Err = fmt.Errorf("invalid feature annotation update: %w", err)
 
 		return state
 	}

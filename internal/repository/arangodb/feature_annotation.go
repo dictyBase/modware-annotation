@@ -12,7 +12,6 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
-	"github.com/go-playground/validator/v10"
 )
 
 type featureAnnoRepo struct {
@@ -29,7 +28,7 @@ func NewFeatureAnnoRepo(
 	connP *manager.ConnectParams,
 	collP *FeatureCollectionParams,
 ) (repository.FeatureAnnotationRepository, error) {
-	if err := validator.New().Struct(collP); err != nil {
+	if err := validate.Struct(collP); err != nil {
 		return nil, fmt.Errorf(
 			"invalid feature collection parameters: %w", err,
 		)
