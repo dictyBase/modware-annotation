@@ -111,7 +111,8 @@ func getMultiPropertyTestCase() *feature.NewFeatureAnnotation {
 	return &feature.NewFeatureAnnotation{
 		Id: "DDB_G0285426",
 		Attributes: &feature.FeatureAnnotationAttributes{
-			Name: "sgene",
+			Name:   "sgene",
+			Pubmed: []string{"123456", "456234"},
 			Properties: []*feature.TagProperty{
 				{
 					Tag:       "description",

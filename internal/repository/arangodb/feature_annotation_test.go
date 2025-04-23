@@ -76,7 +76,8 @@ func TestAddFeatureAnnotationFull(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(cleanupDB(repo))
-	feat := getCombinedFeatureDoc(getBaseFeatureDoc, getMultiPropertyTestCase)
+	// Use the complete doc which includes both pubmed and publications
+	feat := getCompleteFeatureDoc()
 	doc, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding feature annotation")
 	validateBasicFields(validateFeatureAnnotationParams{
@@ -97,6 +98,25 @@ func TestAddFeatureAnnotationFull(t *testing.T) {
 		got:        doc.Properties,
 		expected:   feat.Attributes.Properties,
 	})
+	// Check lengths before matching elements
+	asrt.Greater(
+		len(doc.Pubmed),
+		0,
+		"should have pubmed ids in input",
+	)
+	asrt.Greater(len(doc.Publications), 0, "should have doi ids in result")
+	// Validate Pubmed IDs
+	asrt.ElementsMatch(
+		feat.Attributes.Pubmed,
+		doc.Pubmed,
+		"should match pubmed ids",
+	)
+	// Validate Publications
+	asrt.ElementsMatch(
+		feat.Attributes.Publications,
+		doc.Publications,
+		"should match publications",
+	)
 }
 
 func TestAddFeatureAnnotationMultiProperty(t *testing.T) {
