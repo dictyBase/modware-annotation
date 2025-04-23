@@ -21,16 +21,19 @@ const (
 	// if it doesn't exist, or updates the updated_at field if it does.
 	// It returns the newly created or updated documents.
 	pubUpsertQ = `
-		FOR id_val IN @ids
-			UPSERT { id: id_val }
-			INSERT {
-				id: id_val,
-				created_at: DATE_ISO8601(DATE_NOW()),
-				updated_at: DATE_ISO8601(DATE_NOW())
-			}
-			UPDATE { updated_at: DATE_ISO8601(DATE_NOW()) }
-			IN @@collection
-			RETURN NEW._key
+		LET allKeys = (
+			FOR id_val IN @ids
+				UPSERT { id: id_val }
+				INSERT {
+					id: id_val,
+					created_at: DATE_ISO8601(DATE_NOW()),
+					updated_at: DATE_ISO8601(DATE_NOW())
+				}
+				UPDATE { updated_at: DATE_ISO8601(DATE_NOW()) }
+				IN @@collection
+				RETURN NEW._id
+		)
+		RETURN allKeys
 	`
 
 	featureExistQ = `
