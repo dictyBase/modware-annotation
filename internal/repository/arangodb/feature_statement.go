@@ -51,11 +51,23 @@ const (
 	featureObsoleteQ = `
         FOR f IN @@collection
             FILTER f.feature_id == @id
-            UPDATE f WITH { is_obsolete: true } IN @@collection
+	    UPDATE f WITH { is_obsolete: true } IN @@collection
     `
-	featureGetByIdQ = `FOR f IN @@collection 
-    		FILTER f.feature_id == @id 
-    		FILTER f.is_obsolete == false 
-    		LIMIT 1 
-    		RETURN f`
+	featureGetByIdQ = `
+	FOR f IN @@collection 
+	    FILTER f.feature_id == @id 
+	    FILTER f.is_obsolete == false 
+	    LIMIT 1
+	    LET pubmed = (
+		FOR v,e IN 1..1 OUTBOUND f GRAPH @graph 
+		FILTER e.source == 'pubmed'
+		RETURN v.id	
+	    )
+	    LET doi = (
+		FOR v,e IN 1..1 OUTBOUND f GRAPH @graph 
+		FILTER e.source == 'doi'
+		RETURN v.id	
+	    )
+	    RETURN MERGE(f, {pubmed: pubmed, publications: doi})
+    `
 )
