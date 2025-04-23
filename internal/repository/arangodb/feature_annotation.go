@@ -185,24 +185,24 @@ func (fann *featureAnnoRepo) handlePublications(
 	doc *feature.NewFeatureAnnotation,
 	newDoc *model.FeatureAnnotationDoc,
 ) error {
-	// Handle DOI publications
-	if !collection.IsEmpty(doc.Attributes.Publications) {
+	// Handle pubmed publications
+	if !collection.IsEmpty(doc.Attributes.Pubmed) {
 		if err := fann.processPublicationType(
 			txr,
 			newDoc,
-			doc.Attributes.Publications,
+			doc.Attributes.Pubmed,
 			"pubmed",
 		); err != nil {
 			return err
 		}
 	}
 
-	// Handle Pubmed publications
-	if !collection.IsEmpty(doc.Attributes.Pubmed) {
+	// Handle doi publications
+	if !collection.IsEmpty(doc.Attributes.Publications) {
 		if err := fann.processPublicationType(
 			txr,
 			newDoc,
-			doc.Attributes.Pubmed,
+			doc.Attributes.Publications,
 			"doi",
 		); err != nil {
 			return err
@@ -479,10 +479,10 @@ func (fann *featureAnnoRepo) createPublicationEdgesTx(
 	err := txr.Do(
 		featurePubEdgeQ,
 		map[string]interface{}{
-			"feature_key":       featureKey,
-			"pub_keys":          pubKeys,
-			"source":            source,
-			"@@edge_collection": fann.edge.Name(),
+			"feature_key":      featureKey,
+			"pub_keys":         pubKeys,
+			"source":           source,
+			"@edge_collection": fann.edge.Name(),
 		},
 	)
 	if err != nil {
