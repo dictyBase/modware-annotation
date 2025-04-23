@@ -23,24 +23,21 @@ func TestGetFeatureAnnotation(t *testing.T) {
 
 	got, err := repo.GetFeatureAnnotation(added.AnnoId)
 	asrt.NoError(err, "expected no error getting feature annotation")
-	validateBasicFields(validateFeatureAnnotationParams{
+
+	// Use the consolidated validation helper
+	validateCompleteFeatureAnnotation(validateCompleteFeatureParams{
 		t:          t,
 		assertions: asrt,
 		got:        got,
-		base:       feat,
+		expected:   feat,
 	})
-	validateDbLinks(validateDbLinksParams{
-		t:          t,
-		assertions: asrt,
-		got:        got.DbLinks,
-		expected:   feat.Attributes.Dblinks,
-	})
-	validateProperties(validatePropertiesParams{
-		t:          t,
-		assertions: asrt,
-		got:        got.Properties,
-		expected:   feat.Attributes.Properties,
-	})
+
+	// Check specific length conditions for this test case if needed (optional)
+	asrt.Greater(
+		len(got.Pubmed),
+		0,
+		"should have pubmed ids in result for this test case")
+	asrt.Greater(len(got.Publications), 0, "should have publications in result for this test case")
 
 	_, err = repo.GetFeatureAnnotation("non_existent_id")
 	asrt.Error(err, "expected error for non-existent feature annotation")
@@ -80,43 +77,21 @@ func TestAddFeatureAnnotationFull(t *testing.T) {
 	feat := getCompleteFeatureDoc()
 	doc, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "expected no error adding feature annotation")
-	validateBasicFields(validateFeatureAnnotationParams{
+
+	// Use the consolidated validation helper
+	validateCompleteFeatureAnnotation(validateCompleteFeatureParams{
 		t:          t,
 		assertions: asrt,
 		got:        doc,
-		base:       feat,
+		expected:   feat,
 	})
-	validateDbLinks(validateDbLinksParams{
-		t:          t,
-		assertions: asrt,
-		got:        doc.DbLinks,
-		expected:   feat.Attributes.Dblinks,
-	})
-	validateProperties(validatePropertiesParams{
-		t:          t,
-		assertions: asrt,
-		got:        doc.Properties,
-		expected:   feat.Attributes.Properties,
-	})
-	// Check lengths before matching elements
+
+	// Check specific length conditions for this test case if needed (optional)
 	asrt.Greater(
 		len(doc.Pubmed),
 		0,
-		"should have pubmed ids in input",
-	)
-	asrt.Greater(len(doc.Publications), 0, "should have doi ids in result")
-	// Validate Pubmed IDs
-	asrt.ElementsMatch(
-		feat.Attributes.Pubmed,
-		doc.Pubmed,
-		"should match pubmed ids",
-	)
-	// Validate Publications
-	asrt.ElementsMatch(
-		feat.Attributes.Publications,
-		doc.Publications,
-		"should match publications",
-	)
+		"should have pubmed ids in result for this test case")
+	asrt.Greater(len(doc.Publications), 0, "should have publications in result for this test case")
 }
 
 func TestAddFeatureAnnotationMultiProperty(t *testing.T) {
