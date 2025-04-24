@@ -70,6 +70,9 @@ func setup(
 		arangodb.GetConnectParamsFromDB(tra),
 		&arangodb.FeatureCollectionParams{
 			Feature: "feature_test",
+			Pub:     "pub_test",
+			Edge:    "feature_pub_test",
+			Graph:   "feature_pub_graph_test",
 		},
 	)
 	assert.NoErrorf(
