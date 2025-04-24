@@ -303,3 +303,13 @@ func CurriedTFold[A, B, R any](
 func IsEmpty[T any](slice []T) bool {
 	return len(slice) == 0
 }
+
+// Sorted returns a new slice containing the elements of the input slice
+// sorted in ascending order. The original slice is not modified.
+func Sorted[T cmp.Ordered](slice []T) []T {
+	sortedSlice := make([]T, len(slice))
+	copy(sortedSlice, slice)
+	slices.Sort(sortedSlice)
+
+	return sortedSlice
+}
