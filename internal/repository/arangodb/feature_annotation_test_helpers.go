@@ -51,8 +51,12 @@ type featFn func() *feature.NewFeatureAnnotation
 
 func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
 	return &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0000001", // Add a default ID
 		CreatedBy: "mock@email.com",
 		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &feature.FeatureAnnotationAttributes{ // Initialize Attributes
+			Name: "base_feature", // Add a default Name
+		},
 	}
 }
 
