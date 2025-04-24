@@ -37,7 +37,11 @@ func TestGetFeatureAnnotation(t *testing.T) {
 		len(got.Pubmed),
 		0,
 		"should have pubmed ids in result for this test case")
-	asrt.Greater(len(got.Publications), 0, "should have publications in result for this test case")
+	asrt.Greater(
+		len(got.Publications),
+		0,
+		"should have publications in result for this test case",
+	)
 
 	_, err = repo.GetFeatureAnnotation("non_existent_id")
 	asrt.Error(err, "expected error for non-existent feature annotation")
@@ -91,7 +95,11 @@ func TestAddFeatureAnnotationFull(t *testing.T) {
 		len(doc.Pubmed),
 		0,
 		"should have pubmed ids in result for this test case")
-	asrt.Greater(len(doc.Publications), 0, "should have publications in result for this test case")
+	asrt.Greater(
+		len(doc.Publications),
+		0,
+		"should have publications in result for this test case",
+	)
 }
 
 func TestAddFeatureAnnotationMultiProperty(t *testing.T) {
@@ -274,6 +282,202 @@ func TestAddPropertiesToExistingFeature(t *testing.T) {
 		doc.Properties,
 		"should have combined properties",
 	)
+}
+
+// TestUpdatePublications_AppendDOI verifies that updating publications (DOIs)
+// appends the new DOIs to the existing list.
+func TestUpdatePublications_AppendDOI(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	// Start with a feature that has DOIs
+	initialDoc := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(initialDoc)
+	asrt.NoError(err, "expected no error adding initial feature annotation")
+	asrt.NotEmpty(added.Publications, "Initial document should have DOIs")
+
+	newDOIs := []string{"doi:10.1000/new1", "doi:10.1000/new2"}
+	update := &feature.FeatureAnnotationUpdate{
+		Id:        added.AnnoId,
+		UpdatedBy: "doi_updater@email.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Publications: newDOIs,
+		},
+	}
+
+	doc, err := repo.EditFeatureAnnotation(update)
+	asrt.NoError(err)
+
+	// Combine initial and new DOIs for expected result
+	expectedDOIs := slices.Concat(added.Publications, newDOIs)
+	slices.Sort(expectedDOIs)
+	slices.Sort(doc.Publications)
+	asrt.ElementsMatch(
+		expectedDOIs,
+		doc.Publications,
+		"Publications (DOIs) should contain both initial and newly added DOIs",
+	)
+	asrt.Equal(update.UpdatedBy, doc.UpdatedBy, "UpdatedBy should be updated")
+}
+
+// TestUpdatePublications_AppendPubmed verifies that updating publications
+// (Pubmed) appends the new Pubmed IDs to the existing list.
+func TestUpdatePublications_AppendPubmed(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	// Start with a feature that has Pubmed IDs
+	initialDoc := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(initialDoc)
+	asrt.NoError(err, "expected no error adding initial feature annotation")
+	asrt.NotEmpty(added.Pubmed, "Initial document should have Pubmed IDs")
+
+	newPubmedIDs := []string{"pmid:new1", "pmid:new2"}
+	update := &feature.FeatureAnnotationUpdate{
+		Id:        added.AnnoId,
+		UpdatedBy: "pubmed_updater@email.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Pubmed: newPubmedIDs,
+		},
+	}
+
+	doc, err := repo.EditFeatureAnnotation(update)
+	asrt.NoError(err)
+
+	// Combine initial and new Pubmed IDs for expected result
+	expectedPubmedIDs := slices.Concat(added.Pubmed, newPubmedIDs)
+	slices.Sort(expectedPubmedIDs)
+	slices.Sort(doc.Pubmed)
+	asrt.ElementsMatch(
+		expectedPubmedIDs,
+		doc.Pubmed,
+		"Pubmed IDs should contain both initial and newly added IDs",
+	)
+	asrt.Equal(update.UpdatedBy, doc.UpdatedBy, "UpdatedBy should be updated")
+	// Verify DOIs are also appended (as per DOI append logic)
+	expectedDOIs := added.Publications
+	slices.Sort(expectedDOIs)
+	slices.Sort(doc.Publications)
+	asrt.ElementsMatch(
+		expectedDOIs,
+		doc.Publications,
+		"DOIs should remain unchanged",
+	)
+}
+
+func TestUpdatePublications_AddInitial(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	// Start with a feature that has NO publications
+	initialDoc := getFullFeatureDoc() // Base doc has no pubs
+	added, err := repo.AddFeatureAnnotation(initialDoc)
+	asrt.NoError(err, "expected no error adding initial feature annotation")
+	asrt.Empty(added.Publications, "Initial document should have no DOIs")
+	asrt.Empty(added.Pubmed, "Initial document should have no Pubmed IDs")
+
+	newDOIs := []string{"doi:10.1000/new1", "doi:10.1000/new2"}
+	newPubmedIDs := []string{"2039439", "934833"}
+	update := &feature.FeatureAnnotationUpdate{
+		Id:        added.AnnoId,
+		UpdatedBy: "initial_pub_adder@email.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Publications: newDOIs,
+			Pubmed:       newPubmedIDs,
+		},
+	}
+
+	doc, err := repo.EditFeatureAnnotation(update)
+	asrt.NoError(err)
+	asrt.ElementsMatch(
+		collection.Sorted(newDOIs),
+		collection.Sorted(doc.Publications),
+		"DOIs should be added",
+	)
+	asrt.ElementsMatch(
+		collection.Sorted(newPubmedIDs),
+		collection.Sorted(doc.Pubmed),
+		"Pubmed IDs should be added",
+	)
+	asrt.Equal(update.UpdatedBy, doc.UpdatedBy, "UpdatedBy should be updated")
+}
+
+// TestUpdatePublications_Simultaneous verifies that updating both DOIs and
+// Pubmed IDs simultaneously appends the new IDs to their respective existing lists.
+func TestUpdatePublications_Simultaneous(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	// Start with a feature that HAS publications
+	initialDoc := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(initialDoc)
+	asrt.NoError(err, "expected no error adding initial feature annotation")
+	asrt.NotEmpty(added.Publications, "Initial document should have DOIs")
+	asrt.NotEmpty(added.Pubmed, "Initial document should have Pubmed IDs")
+
+	newDOIs := []string{"doi:10.1000/new1", "doi:10.1000/new2"}
+	newPubmedIDs := []string{"2039439", "934833"}
+	update := &feature.FeatureAnnotationUpdate{
+		Id:        added.AnnoId,
+		UpdatedBy: "simul_updater@email.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Publications: newDOIs,
+			Pubmed:       newPubmedIDs,
+		},
+	}
+
+	doc, err := repo.EditFeatureAnnotation(update)
+	asrt.NoError(err)
+
+	// Calculate expected combined lists
+	expectedDOIs := slices.Concat(added.Publications, newDOIs)
+	expectedPubmedIDs := slices.Concat(added.Pubmed, newPubmedIDs)
+
+	// Sort for comparison
+	slices.Sort(expectedDOIs)
+	slices.Sort(doc.Publications)
+	slices.Sort(expectedPubmedIDs)
+	slices.Sort(doc.Pubmed)
+
+	asrt.ElementsMatch(
+		expectedDOIs,
+		doc.Publications,
+		"DOIs should contain both initial and newly added IDs",
+	)
+	asrt.ElementsMatch(
+		expectedPubmedIDs,
+		doc.Pubmed,
+		"Pubmed IDs should contain both initial and newly added IDs",
+	)
+	asrt.Equal(update.UpdatedBy, doc.UpdatedBy, "UpdatedBy should be updated")
+}
+
+func TestUpdateFeatureAnnotation_InvalidInput(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	// Add a feature first so we have a valid ID
+	added, err := repo.AddFeatureAnnotation(getBaseFeatureDoc())
+	asrt.NoError(err, "expected no error adding base feature annotation")
+
+	// Create an update request missing the required UpdatedBy field
+	update := &feature.FeatureAnnotationUpdate{
+		Id: added.AnnoId,
+		// UpdatedBy: "missing@email.com", // Intentionally missing
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: "updated name",
+		},
+	}
+
+	_, err = repo.EditFeatureAnnotation(update)
+	// Expecting a validation error from stepValidateInput
+	// The exact error type/message might depend on the validator used.
+	// Checking for any error is a basic start. A more specific check
+	// for a validation error type would be better if available.
+	asrt.Error(err, "Expected an error due to missing UpdatedBy field")
+	// Example of a more specific check if using a validation library:
+	// var validationErr *validator.ValidationErrors
+	// asrt.ErrorAs(err, &validationErr, "Expected a validation error")
 }
 
 func TestAddTagToExistingFeature(t *testing.T) {
