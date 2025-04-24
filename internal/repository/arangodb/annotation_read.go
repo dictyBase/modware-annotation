@@ -11,7 +11,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var validate *validator.Validate
+// validate is the package global validator instance for validating structs.
+var validate = validator.New(validator.WithRequiredStructEnabled())
 
 func (ar *arangorepository) GetAnnotationByID(
 	annoid string,
@@ -76,7 +77,6 @@ func (ar *arangorepository) GetAnnotationByEntry(
 func (ar *arangorepository) ListAnnotations(
 	params *repository.ListAnnotationsParams,
 ) ([]*model.AnnoDoc, error) {
-	validate = validator.New(validator.WithRequiredStructEnabled())
 	if err := validate.Struct(params); err != nil {
 		return nil, fmt.Errorf("error in valdating parameters %w", err)
 	}

@@ -40,12 +40,23 @@ type validateFeatureAnnotationParams struct {
 	base       *feature.NewFeatureAnnotation
 }
 
+type validateCompleteFeatureParams struct {
+	t          *testing.T
+	assertions *require.Assertions
+	got        *model.FeatureAnnotationDoc
+	expected   *feature.NewFeatureAnnotation // Contains base info + attributes
+}
+
 type featFn func() *feature.NewFeatureAnnotation
 
 func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
 	return &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0000001", // Add a default ID
 		CreatedBy: "mock@email.com",
 		CreatedAt: timestamppb.New(time.Now()),
+		Attributes: &feature.FeatureAnnotationAttributes{ // Initialize Attributes
+			Name: "base_feature", // Add a default Name
+		},
 	}
 }
 
@@ -111,7 +122,8 @@ func getMultiPropertyTestCase() *feature.NewFeatureAnnotation {
 	return &feature.NewFeatureAnnotation{
 		Id: "DDB_G0285426",
 		Attributes: &feature.FeatureAnnotationAttributes{
-			Name: "sgene",
+			Name:   "sgene",
+			Pubmed: []string{"123456", "456234"},
 			Properties: []*feature.TagProperty{
 				{
 					Tag:       "description",
@@ -171,6 +183,9 @@ func setUpFeatureTest(
 		GetConnectParamsFromDB(tra),
 		&FeatureCollectionParams{
 			Feature: "feature_test",
+			Pub:     "pub_test",
+			Edge:    "feature_pub_test",
+			Graph:   "feature_graph",
 		},
 	)
 	assert.NoErrorf(
@@ -291,6 +306,50 @@ func validateBasicFields(params validateFeatureAnnotationParams) {
 		params.got.CreatedAt,
 		params.got.UpdatedAt,
 		"should have matching created and updated at",
+	)
+}
+
+// validateCompleteFeatureAnnotation checks all standard fields of a feature annotation document
+// against the expected input data.
+func validateCompleteFeatureAnnotation(params validateCompleteFeatureParams) {
+	params.t.Helper()
+
+	// Validate basic fields like ID, creator, timestamps, name
+	validateBasicFields(validateFeatureAnnotationParams{
+		t:          params.t,
+		assertions: params.assertions,
+		got:        params.got,
+		base:       params.expected,
+	})
+
+	// Validate associated database links
+	validateDbLinks(validateDbLinksParams{
+		t:          params.t,
+		assertions: params.assertions,
+		got:        params.got.DbLinks,
+		expected:   params.expected.Attributes.Dblinks,
+	})
+
+	// Validate associated properties (tags)
+	validateProperties(validatePropertiesParams{
+		t:          params.t,
+		assertions: params.assertions,
+		got:        params.got.Properties,
+		expected:   params.expected.Attributes.Properties,
+	})
+
+	// Validate Pubmed IDs
+	params.assertions.ElementsMatch(
+		params.expected.Attributes.Pubmed,
+		params.got.Pubmed,
+		"should match pubmed ids",
+	)
+
+	// Validate Publications (DOIs, etc.)
+	params.assertions.ElementsMatch(
+		params.expected.Attributes.Publications,
+		params.got.Publications,
+		"should match publications",
 	)
 }
 

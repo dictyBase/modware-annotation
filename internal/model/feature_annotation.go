@@ -48,6 +48,23 @@ type FeatureAnnotationDoc struct {
 	NotFound     bool             `json:"-"`
 }
 
+// PubSchema returns a JSON schema containing three mandatory fields:
+// id (string), created_at (date-time), and updated_at (date-time).
+func PubSchema() ([]byte, error) {
+	schema := `{
+        		"type": "object",
+        		"properties": {
+            		"id": { "type": "string" },
+            		"created_at": { "type": "string", "format": "date-time" },
+            		"updated_at": { "type": "string", "format": "date-time" }
+        	},
+        	"required": ["id", "created_at", "updated_at"],
+        	"additionalProperties": false
+    	}`
+
+	return []byte(schema), nil
+}
+
 // FeatureAnnotationSchema returns a JSON schema for validating feature annotations.
 func FeatureAnnotationSchema() ([]byte, error) {
 	baseSchema := `{
@@ -75,15 +92,6 @@ func FeatureAnnotationSchema() ([]byte, error) {
 			"type":  "array",
 			"items": map[string]string{"type": "string"},
 		},
-		"publications": map[string]interface{}{
-			"type":  "array",
-			"items": map[string]string{"type": "string"},
-		},
-		"pubmed": map[string]interface{}{
-			"type":          "array",
-			"minProperties": 0,
-			"items":         map[string]string{"type": "string"},
-		},
 		"dblinks":     getDbLinksSchema(),
 		"properties":  getPropertiesSchema(),
 		"is_obsolete": map[string]string{"type": "boolean"},
@@ -92,9 +100,8 @@ func FeatureAnnotationSchema() ([]byte, error) {
 	// Convert properties to JSON and handle potential error
 	propsJSON, err := json.Marshal(properties)
 	if err != nil {
-		return []byte(
-				"",
-			), fmt.Errorf(
+		return []byte(""),
+			fmt.Errorf(
 				"failed to marshal feature annotation schema: %v",
 				err,
 			)
