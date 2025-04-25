@@ -7,6 +7,7 @@ import (
 
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
+	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -284,8 +285,6 @@ func TestAddPropertiesToExistingFeature(t *testing.T) {
 	)
 }
 
-// TestUpdatePublications_AppendDOI verifies that updating publications (DOIs)
-// appends the new DOIs to the existing list.
 func TestUpdatePublications_AppendDOI(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -320,8 +319,6 @@ func TestUpdatePublications_AppendDOI(t *testing.T) {
 	asrt.Equal(update.UpdatedBy, doc.UpdatedBy, "UpdatedBy should be updated")
 }
 
-// TestUpdatePublications_AppendPubmed verifies that updating publications
-// (Pubmed) appends the new Pubmed IDs to the existing list.
 func TestUpdatePublications_AppendPubmed(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -332,7 +329,7 @@ func TestUpdatePublications_AppendPubmed(t *testing.T) {
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 	asrt.NotEmpty(added.Pubmed, "Initial document should have Pubmed IDs")
 
-	newPubmedIDs := []string{"pmid:new1", "pmid:new2"}
+	newPubmedIDs := []string{"76543", "4839439"}
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        added.AnnoId,
 		UpdatedBy: "pubmed_updater@email.com",
