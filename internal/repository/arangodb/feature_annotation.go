@@ -291,6 +291,35 @@ func (fann *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotatio
 	return nil, fmt.Errorf("not implemented")
 }
 
+// ListByPubmedId retrieves feature annotations associated with a given PubMed ID
+func (fann *featureAnnoRepo) ListByPubmedId(id string) ([]*model.FeatureAnnotationDoc, error) {
+	binds := map[string]interface{}{
+		"@collection": fann.pub.Name(),
+		"graph":       fann.featPub.Name(),
+		"id":          id,
+	}
+	
+	rs, err := fann.database.SearchRows(featureByPubmedIdQ, binds)
+	if err != nil {
+		return nil, fmt.Errorf("error querying for feature annotations by PubMed ID: %w", err)
+	}
+	
+	if rs.IsEmpty() {
+		return nil, &repository.PubmedAnnoNotFoundError{Id: id}
+	}
+	
+	var docs []*model.FeatureAnnotationDoc
+	for rs.Scan() {
+		var doc model.FeatureAnnotationDoc
+		if err := rs.Read(&doc); err != nil {
+			return nil, fmt.Errorf("error reading feature annotation document: %w", err)
+		}
+		docs = append(docs, &doc)
+	}
+	
+	return docs, nil
+}
+
 func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
 	fid string,
 	purge bool,
