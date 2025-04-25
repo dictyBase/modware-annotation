@@ -294,36 +294,36 @@ func (fann *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotatio
 // ListByPublicationId retrieves feature annotations associated with a given
 // publication ID and source.
 func (fann *featureAnnoRepo) ListByPublicationId(
-	id string,
+	publicationId string,
 	source string,
 ) ([]*model.FeatureAnnotationDoc, error) {
 	binds := map[string]interface{}{
 		"@collection": fann.pub.Name(),
 		"graph":       fann.featPub.Name(),
-		"id":          id,
+		"id":          publicationId,
 		"source":      source,
 	}
 
-	rs, err := fann.database.SearchRows(featureByPublicationIdQ, binds)
+	resultSet, err := fann.database.SearchRows(featureByPublicationIdQ, binds)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"error querying for feature annotations by publication ID %s and source %s: %w",
-			id,
+			publicationId,
 			source,
 			err,
 		)
 	}
 
-	if rs.IsEmpty() {
+	if resultSet.IsEmpty() {
 		return nil, &repository.PublicationAnnotationNotFoundError{
-			ID: id, Source: source,
+			ID: publicationId, Source: source,
 		}
 	}
 
 	var docs []*model.FeatureAnnotationDoc
-	for rs.Scan() {
+	for resultSet.Scan() {
 		var doc model.FeatureAnnotationDoc
-		if err := rs.Read(&doc); err != nil {
+		if err := resultSet.Read(&doc); err != nil {
 			return nil, fmt.Errorf(
 				"error reading feature annotation document: %w",
 				err,

@@ -43,6 +43,7 @@ func (panf *PublicationAnnotationNotFoundError) Error() string {
 
 func IsPublicationAnnotationNotFound(err error) bool {
 	_, ok := err.(*PublicationAnnotationNotFoundError)
+
 	return ok
 }
 
