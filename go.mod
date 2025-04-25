@@ -5,7 +5,7 @@ require (
 	github.com/bufbuild/protovalidate-go v0.10.0
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.8.0
-	github.com/dictyBase/go-genproto v0.0.0-20250322103257-0f58eec92bd9
+	github.com/dictyBase/go-genproto v0.0.0-20250416011002-08ac47e2a066
 	github.com/dictyBase/go-obograph v1.6.0
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
