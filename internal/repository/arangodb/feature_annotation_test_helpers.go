@@ -1,12 +1,14 @@
 package arangodb
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/dictyBase/arangomanager/testarango"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
+	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/require"
@@ -45,6 +47,18 @@ type validateCompleteFeatureParams struct {
 	assertions *require.Assertions
 	got        *model.FeatureAnnotationDoc
 	expected   *feature.NewFeatureAnnotation // Contains base info + attributes
+}
+
+// testListByPublicationIdSuccessParams defines the parameters for the
+// testListByPublicationIdSuccess helper function.
+type testListByPublicationIdSuccessParams struct {
+	t                    *testing.T
+	pubID                string
+	source               string
+	featureIDFieldPrefix string
+	setPubFunc           func(*feature.FeatureAnnotationAttributes, []string)
+	unrelatedPubID       string
+	errorMsgSuffix       string
 }
 
 type featFn func() *feature.NewFeatureAnnotation
@@ -378,6 +392,69 @@ func getRemoveTestCases() []removeFeatureTestCase {
 			wantErr: true,
 		},
 	}
+}
+
+func assertListByPublicationResults(
+	t *testing.T,
+	asrt *require.Assertions,
+	results []*model.FeatureAnnotationDoc,
+	added1 *model.FeatureAnnotationDoc,
+	added2 *model.FeatureAnnotationDoc,
+) {
+	t.Helper()
+	asrt.Len(results, 2, "Should retrieve exactly 2 feature annotations")
+	retrievedIDs := collection.Map(
+		results,
+		func(doc *model.FeatureAnnotationDoc) string {
+			return doc.AnnoId
+		},
+	)
+	expectedIDs := []string{added1.AnnoId, added2.AnnoId}
+	slices.Sort(retrievedIDs)
+	slices.Sort(expectedIDs)
+	asrt.Equal(
+		expectedIDs,
+		retrievedIDs,
+		"Retrieved feature IDs should match the linked ones",
+	)
+}
+
+func testListByPublicationIdSuccess(
+	params *testListByPublicationIdSuccessParams,
+) {
+	params.t.Helper() // Mark as helper
+	asrt, repo := setUpFeatureTest(params.t)
+	params.t.Cleanup(cleanupDB(repo))
+
+	// Create features linked to the target pubID
+	feat1 := getFullFeatureDoc()
+	feat1.Id = params.featureIDFieldPrefix + "1"
+	params.setPubFunc(feat1.Attributes, []string{params.pubID})
+	added1, err := repo.AddFeatureAnnotation(feat1)
+	asrt.NoError(err, "Failed to add feature 1")
+
+	feat2 := getFullFeatureDoc()
+	feat2.Id = params.featureIDFieldPrefix + "2"
+	params.setPubFunc(feat2.Attributes, []string{params.pubID})
+	added2, err := repo.AddFeatureAnnotation(feat2)
+	asrt.NoError(err, "Failed to add feature 2")
+
+	// Create unrelated feature
+	feat3 := getFullFeatureDoc()
+	feat3.Id = params.featureIDFieldPrefix + "3"
+	params.setPubFunc(
+		feat3.Attributes,
+		[]string{params.unrelatedPubID},
+	) // Use a different pub ID
+	_, err = repo.AddFeatureAnnotation(feat3)
+	asrt.NoError(err, "Failed to add unrelated feature 3")
+
+	// Action: Call ListByPublicationId
+	results, err := repo.ListByPublicationId(params.pubID, params.source)
+	asrt.NoError(err, "Expected no error retrieving by "+params.errorMsgSuffix)
+
+	// Assertions (common logic extracted)
+	assertListByPublicationResults(params.t, asrt, results, added1, added2)
 }
 
 func cleanupDB(repo repository.FeatureAnnotationRepository) func() {
