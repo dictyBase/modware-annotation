@@ -804,3 +804,45 @@ func TestListByPublicationId_SuccessDOI(t *testing.T) {
 		"Retrieved feature IDs should match the linked ones",
 	)
 }
+
+func TestListByPublicationId_NotFoundIncorrectID(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	// Setup: Create a feature linked to a known pubmed ID
+	pubID := "PMID:11111"
+	source := "pubmed"
+	feat1 := getFullFeatureDoc()
+	feat1.Id = "DDB_G0000021"
+	feat1.Attributes.Pubmed = []string{pubID}
+	_, err := repo.AddFeatureAnnotation(feat1)
+	asrt.NoError(err, "Failed to add feature 1")
+	// Action: Call with a non-existent ID
+	nonExistentPubID := "PMID:99999"
+	_, err = repo.ListByPublicationId(nonExistentPubID, source)
+	asrt.Error(err, "Expected an error for non-existent publication ID")
+	asrt.True(
+		repository.IsPublicationAnnotationNotFound(err),
+		"Error should be PublicationAnnotationNotFoundError",
+	)
+}
+
+func TestListByPublicationId_NotFoundIncorrectSource(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	pubID := "PMID:22222"
+	incorrectSource := "doi"
+	feat1 := getFullFeatureDoc()
+	feat1.Id = "DDB_G0000031"
+	feat1.Attributes.Pubmed = []string{"pubID"}
+	_, err := repo.AddFeatureAnnotation(feat1)
+	asrt.NoError(err, "Failed to add feature 1")
+	// Action: Call with the correct ID but incorrect source ("doi")
+	_, err = repo.ListByPublicationId(pubID, incorrectSource)
+	asrt.Error(err, "Expected an error for incorrect source")
+	asrt.True(
+		repository.IsPublicationAnnotationNotFound(err),
+		"Error should be PublicationAnnotationNotFoundError",
+	)
