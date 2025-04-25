@@ -14,6 +14,11 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
+const (
+	pubmedSource = "pubmed"
+	doiSource    = "doi"
+)
+
 type featureAnnoRepo struct {
 	sess     *manager.Session
 	database *manager.Database
@@ -191,7 +196,7 @@ func (fann *featureAnnoRepo) handlePublications(
 			txr,
 			newDoc,
 			doc.Attributes.Pubmed,
-			"pubmed",
+			pubmedSource,
 		); err != nil {
 			return err
 		}
@@ -203,7 +208,7 @@ func (fann *featureAnnoRepo) handlePublications(
 			txr,
 			newDoc,
 			doc.Attributes.Publications,
-			"doi",
+			doiSource,
 		); err != nil {
 			return err
 		}
@@ -237,7 +242,7 @@ func (fann *featureAnnoRepo) processPublicationType(
 	}
 
 	// Update the document with the publication IDs
-	if sourceType == "pubmed" {
+	if sourceType == pubmedSource {
 		newDoc.Pubmed = pubIDs
 	} else {
 		newDoc.Publications = pubIDs
