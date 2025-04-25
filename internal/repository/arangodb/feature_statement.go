@@ -71,11 +71,11 @@ const (
 	    RETURN MERGE(f, {pubmed: pubmed, publications: doi})
     `
 
-	featureByPubmedIdQ = `
+	featureByPublicationIdQ = `
 	FOR pub IN @@collection
     		FOR v,e IN 1..1 INBOUND pub GRAPH @graph
-        	FILTER e.source == 'pubmed'
         	FILTER pub.id == @id
+        	FILTER e.source == @source
         	FILTER v.is_obsolete == false
         	RETURN v
    `
