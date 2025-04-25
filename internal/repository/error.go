@@ -28,6 +28,24 @@ func IsAnnotationNotFound(err error) bool {
 	return false
 }
 
+type PublicationAnnotationNotFoundError struct {
+	ID     string
+	Source string
+}
+
+func (panf *PublicationAnnotationNotFoundError) Error() string {
+	return fmt.Sprintf(
+		"no annotations found for publication ID %s with source %s",
+		panf.ID,
+		panf.Source,
+	)
+}
+
+func IsPublicationAnnotationNotFound(err error) bool {
+	_, ok := err.(*PublicationAnnotationNotFoundError)
+	return ok
+}
+
 func IsGroupNotFound(err error) bool {
 	if _, ok := err.(*GroupNotFoundError); ok {
 		return true
@@ -107,20 +125,5 @@ func IsListNotFound(err error) bool {
 		return true
 	}
 
-	return false
-}
-
-type PubmedAnnoNotFoundError struct{
-	Id string
-}
-
-func (pe *PubmedAnnoNotFoundError) Error() string {
-	return fmt.Sprintf("no annotations found for PubMed ID %s", pe.Id)
-}
-
-func IsPubmedAnnoNotFound(err error) bool {
-	if _, ok := err.(*PubmedAnnoNotFoundError); ok {
-		return true
-	}
 	return false
 }
