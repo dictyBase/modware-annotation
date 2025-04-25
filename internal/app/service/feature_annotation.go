@@ -114,11 +114,13 @@ func (srv *FeatureAnnotationService) UpdateFeatureAnnotation(
 	}
 	feat, err := srv.repo.EditFeatureAnnotation(req)
 	if err != nil {
-		return &feature.FeatureAnnotation{}, aphgrpc.HandleUpdateError(ctx, err)
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
 	}
 	featProto := convertToProto(feat)
-	if err := srv.publisher.Publish(srv.Topics["featureAnnotationUpdate"], featProto); err != nil {
-		return featProto, aphgrpc.HandleUpdateError(ctx, err)
+	if err := srv.publisher.Publish(
+		srv.Topics["featureAnnotationUpdate"], featProto,
+	); err != nil {
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
 	}
 
 	return featProto, nil
@@ -141,6 +143,149 @@ func (srv *FeatureAnnotationService) DeleteFeatureAnnotation(
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (srv *FeatureAnnotationService) AddTag(
+	ctx context.Context,
+	req *feature.AddTagRequest,
+) (*feature.FeatureAnnotation, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	feat, err := srv.repo.AddTag(req)
+	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
+	}
+	featProto := convertToProto(feat)
+	if err := srv.publisher.Publish(
+		srv.Topics["featureAnnotationUpdate"],
+		featProto,
+	); err != nil {
+		// Log the publish error but return the successful update response
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
+	}
+
+	return featProto, nil
+}
+
+func (srv *FeatureAnnotationService) UpdateTag(
+	ctx context.Context,
+	req *feature.UpdateTagRequest,
+) (*feature.FeatureAnnotation, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	feat, err := srv.repo.UpdateTag(req)
+	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
+	}
+	featProto := convertToProto(feat)
+	if err := srv.publisher.Publish(
+		srv.Topics["featureAnnotationUpdate"],
+		featProto,
+	); err != nil {
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
+	}
+
+	return featProto, nil
+}
+
+func (srv *FeatureAnnotationService) RemoveTag(
+	ctx context.Context,
+	req *feature.RemoveTagRequest,
+) (*feature.FeatureAnnotation, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	// First, attempt to remove the tag
+	err := srv.repo.RemoveTag(req)
+	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return nil, aphgrpc.HandleDeleteError(ctx, err)
+	}
+
+	// If removal is successful, fetch the updated annotation
+	feat, err := srv.repo.GetFeatureAnnotation(req.Id)
+	if err != nil {
+		// This case should ideally not happen if the RemoveTag
+		// succeeded, but handle defensively
+		if repository.IsAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(
+				ctx,
+				fmt.Errorf(
+					"annotation not found after tag removal: %w",
+					err,
+				),
+			)
+		}
+		return nil, aphgrpc.HandleGetError(
+			ctx,
+			fmt.Errorf(
+				"failed to fetch annotation after tag removal: %w",
+				err,
+			),
+		)
+	}
+
+	// Convert and publish the updated annotation state
+	featProto := convertToProto(feat)
+	if err := srv.publisher.Publish(
+		srv.Topics["featureAnnotationUpdate"],
+		featProto,
+	); err != nil {
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
+	}
+
+	return featProto, nil
+}
+
+func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
+	ctx context.Context,
+	req *feature.PubmedId,
+) (*feature.FeatureAnnotationCollection, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	// Assuming "pubmed" is the correct source identifier for PubMed IDs in the repository
+	feats, err := srv.repo.ListByPublicationId(req.Id, "pubmed")
+	if err != nil {
+		if repository.IsPublicationAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return nil, aphgrpc.HandleGetError(ctx, err)
+	}
+
+	return &feature.FeatureAnnotationCollection{
+		Data: collection.Map(feats, convertToProto),
+	}, nil
+}
+
+func (srv *FeatureAnnotationService) ListFeatureAnnotationsByDOI(
+	ctx context.Context,
+	req *feature.DOI,
+) (*feature.FeatureAnnotationCollection, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	feats, err := srv.repo.ListByPublicationId(req.Id, "doi")
+	if err != nil {
+		if repository.IsPublicationAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return nil, aphgrpc.HandleGetError(ctx, err)
+	}
+
+	return &feature.FeatureAnnotationCollection{
+		Data: collection.Map(feats, convertToProto),
+	}, nil
 }
 
 func convertToProto(
