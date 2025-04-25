@@ -166,6 +166,82 @@ func testCreateValidFeature(params *testParams) {
 	})
 }
 
+func testListByPubmedIdValid(params *testParams) {
+	params.t.Helper()
+	params.t.Run("ListByPubmedIdValid", func(t *testing.T) {
+		t.Parallel()
+		pubmedId := "12345678"
+		// Create features associated with the pubmed ID
+		feat1 := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G0285428",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:   "Feature 1",
+				Pubmed: []string{pubmedId},
+			},
+		}
+		feat2 := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G0285429",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:   "Feature 2",
+				Pubmed: []string{pubmedId},
+			},
+		}
+		_, err := params.client.CreateFeatureAnnotation(params.ctx, feat1)
+		params.assert.NoError(err)
+		_, err = params.client.CreateFeatureAnnotation(params.ctx, feat2)
+		params.assert.NoError(err)
+
+		// List features by pubmed ID
+		req := &feature.PubmedId{Id: pubmedId}
+		resp, err := params.client.ListFeatureAnnotationsByPubmedId(
+			params.ctx,
+			req,
+		)
+		params.assert.NoError(err)
+		params.assert.Len(resp.Data, 2)
+		// Check if the returned features match the created ones (order might vary)
+		foundIds := []string{resp.Data[0].Id, resp.Data[1].Id}
+		params.assert.Contains(foundIds, feat1.Id)
+		params.assert.Contains(foundIds, feat2.Id)
+	})
+}
+
+func testListByPubmedIdNotFound(params *testParams) {
+	params.t.Helper()
+	params.t.Run("ListByPubmedIdNotFound", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.PubmedId{Id: "99999999"} // Non-existent pubmed ID
+		_, err := params.client.ListFeatureAnnotationsByPubmedId(
+			params.ctx,
+			req,
+		)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.NotFound, st.Code())
+	})
+}
+
+func testListByPubmedIdInvalid(params *testParams) {
+	params.t.Helper()
+	params.t.Run("ListByPubmedIdInvalid", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.PubmedId{Id: ""} // Invalid (empty) pubmed ID
+		_, err := params.client.ListFeatureAnnotationsByPubmedId(
+			params.ctx,
+			req,
+		)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.InvalidArgument, st.Code())
+	})
+}
+
 func testCreateMissingFields(params *testParams) {
 	params.t.Helper()
 	params.t.Run("CreateFailsMissingRequiredFields", func(t *testing.T) {

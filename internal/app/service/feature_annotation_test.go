@@ -47,5 +47,22 @@ func TestUpdateFeatureAnnotation(t *testing.T) {
 	}
 	testUpdateExistingFeature(params)
 	testUpdateNonExistentFeature(params)
+	testUpdateExistingFeature(params)
+	testUpdateNonExistentFeature(params)
 	testUpdateWithInvalidData(params)
+}
+
+func TestListFeatureAnnotationsByPubmedId(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testListByPubmedIdValid(params)
+	testListByPubmedIdNotFound(params)
+	testListByPubmedIdInvalid(params)
 }
