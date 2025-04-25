@@ -33,4 +33,6 @@ type FeatureAnnotationRepository interface {
 	RemoveTag(
 		req *feature.RemoveTagRequest,
 	) error
+	// ListByPubmedId retrieves all feature annotations associated with the given PubMed ID
+	ListByPubmedId(id string) ([]*model.FeatureAnnotationDoc, error)
 }
