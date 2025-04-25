@@ -109,3 +109,18 @@ func IsListNotFound(err error) bool {
 
 	return false
 }
+
+type PubmedAnnoNotFoundError struct{
+	Id string
+}
+
+func (pe *PubmedAnnoNotFoundError) Error() string {
+	return fmt.Sprintf("no annotations found for PubMed ID %s", pe.Id)
+}
+
+func IsPubmedAnnoNotFound(err error) bool {
+	if _, ok := err.(*PubmedAnnoNotFoundError); ok {
+		return true
+	}
+	return false
+}
