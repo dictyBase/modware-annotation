@@ -757,6 +757,7 @@ func TestListByPublicationId_SuccessPubmed(t *testing.T) {
 		"Retrieved feature IDs should match the linked ones",
 	)
 }
+
 func TestListByPublicationId_SuccessDOI(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -846,3 +847,31 @@ func TestListByPublicationId_NotFoundIncorrectSource(t *testing.T) {
 		repository.IsPublicationAnnotationNotFound(err),
 		"Error should be PublicationAnnotationNotFoundError",
 	)
+}
+
+func TestListByPublicationId_NotFoundObsolete(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+	// Setup: Create an obsolete feature linked to a publication
+	pubID := "PMID:44444"
+	source := "pubmed"
+
+	feat1 := getFullFeatureDoc()
+	feat1.Id = "DDB_G0000041"
+	feat1.Attributes.Pubmed = []string{pubID}
+	feat1.IsObsolete = true
+	_, err := repo.AddFeatureAnnotation(feat1)
+	asrt.NoError(err, "Failed to add feature 1")
+
+	// Action: Call ListByPublicationId for the publication
+	_, err = repo.ListByPublicationId(pubID, source)
+	asrt.Error(
+		err,
+		"Expected an error as only obsolete annotations are linked",
+	)
+	asrt.True(
+		repository.IsPublicationAnnotationNotFound(err),
+		"Error should be PublicationAnnotationNotFoundError",
+	)
+}
