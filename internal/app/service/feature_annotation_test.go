@@ -35,7 +35,7 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	testGetFeatureWithInvalidID(params)
 }
 
-func TestUpdateFeatureAnnotation(t *testing.T) {
+func TestUpdateFeatureAnnotationX(t *testing.T) {
 	t.Parallel()
 	client, assert := setup(t)
 	ctx := context.Background()
@@ -45,8 +45,6 @@ func TestUpdateFeatureAnnotation(t *testing.T) {
 		client: client,
 		assert: assert,
 	}
-	testUpdateExistingFeature(params)
-	testUpdateNonExistentFeature(params)
 	testUpdateExistingFeature(params)
 	testUpdateNonExistentFeature(params)
 	testUpdateWithInvalidData(params)
