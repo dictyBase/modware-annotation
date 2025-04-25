@@ -1,19 +1,17 @@
 name: Create Pull Request
 on: create
 jobs:
-  create-pr:
-    runs-on: ubuntu-20.04
-    if: github.actor != 'dependabot[bot]'
+  create-pull-request:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: get branch name
-        id: vars
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create Pull Request
+        env: 
+          GH_TOKEN: ${{ github.token }}
         run: |
-          branch=$(echo ${{ github.ref }} | sed -r 's/refs\/heads\///')
-          echo ::set-output name=branch::${branch}
-      - name: pull-request
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_branch: develop
-          pr_title: Pulling ${{ steps.vars.outputs.branch }} into develop
+          # Get current branch name
+          branch_name=$(git symbolic-ref --short HEAD)
+          # Create pull request using GitHub CLI
+          gh pr create --base develop --title "Auto-generated Pull Request for $branch_name" --body "Pulling '$branch_name into develop. Please review and merge."
+  
