@@ -562,7 +562,7 @@ func createFeatureAnnotationDoc(
 		UpdatedAt:  doc.CreatedAt.AsTime(), // Initially same as created_at
 		CreatedBy:  doc.CreatedBy,
 		UpdatedBy:  doc.CreatedBy, // Initially same as created_by
-		IsObsolete: false,
+		IsObsolete: doc.IsObsolete,
 	}
 	if doc.UpdatedAt.IsValid() {
 		faDoc.UpdatedAt = doc.UpdatedAt.AsTime()
