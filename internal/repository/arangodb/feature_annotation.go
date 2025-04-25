@@ -291,32 +291,47 @@ func (fann *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotatio
 	return nil, fmt.Errorf("not implemented")
 }
 
-// ListByPubmedId retrieves feature annotations associated with a given PubMed ID
-func (fann *featureAnnoRepo) ListByPubmedId(id string) ([]*model.FeatureAnnotationDoc, error) {
+// ListByPublicationId retrieves feature annotations associated with a given
+// publication ID and source.
+func (fann *featureAnnoRepo) ListByPublicationId(
+	id string,
+	source string,
+) ([]*model.FeatureAnnotationDoc, error) {
 	binds := map[string]interface{}{
 		"@collection": fann.pub.Name(),
 		"graph":       fann.featPub.Name(),
 		"id":          id,
+		"source":      source,
 	}
-	
-	rs, err := fann.database.SearchRows(featureByPubmedIdQ, binds)
+
+	rs, err := fann.database.SearchRows(featureByPublicationIdQ, binds)
 	if err != nil {
-		return nil, fmt.Errorf("error querying for feature annotations by PubMed ID: %w", err)
+		return nil, fmt.Errorf(
+			"error querying for feature annotations by publication ID %s and source %s: %w",
+			id,
+			source,
+			err,
+		)
 	}
-	
+
 	if rs.IsEmpty() {
-		return nil, &repository.PubmedAnnoNotFoundError{Id: id}
+		return nil, &repository.PublicationAnnotationNotFoundError{
+			ID: id, Source: source,
+		}
 	}
-	
+
 	var docs []*model.FeatureAnnotationDoc
 	for rs.Scan() {
 		var doc model.FeatureAnnotationDoc
 		if err := rs.Read(&doc); err != nil {
-			return nil, fmt.Errorf("error reading feature annotation document: %w", err)
+			return nil, fmt.Errorf(
+				"error reading feature annotation document: %w",
+				err,
+			)
 		}
 		docs = append(docs, &doc)
 	}
-	
+
 	return docs, nil
 }
 
