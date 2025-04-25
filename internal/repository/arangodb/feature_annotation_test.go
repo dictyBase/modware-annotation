@@ -7,7 +7,6 @@ import (
 
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
-	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -34,13 +33,11 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	})
 
 	// Check specific length conditions for this test case if needed (optional)
-	asrt.Greater(
-		len(got.Pubmed),
-		0,
+	asrt.NotEmpty(
+		got.Pubmed,
 		"should have pubmed ids in result for this test case")
-	asrt.Greater(
-		len(got.Publications),
-		0,
+	asrt.NotEmpty(
+		got.Publications,
 		"should have publications in result for this test case",
 	)
 
@@ -92,13 +89,11 @@ func TestAddFeatureAnnotationFull(t *testing.T) {
 	})
 
 	// Check specific length conditions for this test case if needed (optional)
-	asrt.Greater(
-		len(doc.Pubmed),
-		0,
+	asrt.NotEmpty(
+		doc.Pubmed,
 		"should have pubmed ids in result for this test case")
-	asrt.Greater(
-		len(doc.Publications),
-		0,
+	asrt.NotEmpty(
+		doc.Publications,
 		"should have publications in result for this test case",
 	)
 }
@@ -709,98 +704,28 @@ func TestRemoveNonExistentTag(t *testing.T) {
 
 func TestListByPublicationId_SuccessPubmed(t *testing.T) {
 	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	pubID := "PMID:12345"
-	source := "pubmed"
-	// Create features
-	feat1 := getFullFeatureDoc()
-	feat1.Id = "DDB_G0000001"
-	feat1.Attributes.Pubmed = []string{pubID}
-	added1, err := repo.AddFeatureAnnotation(feat1)
-	asrt.NoError(err, "Failed to add feature 1")
-
-	feat2 := getFullFeatureDoc()
-	feat2.Id = "DDB_G0000002"
-	feat2.Attributes.Pubmed = []string{pubID}
-	added2, err := repo.AddFeatureAnnotation(feat2)
-	asrt.NoError(err, "Failed to add feature 2")
-
-	// Create unrelated feature and publication
-	feat3 := getFullFeatureDoc()
-	feat3.Id = "DDB_G0000003"
-	feat3.Attributes.Pubmed = []string{"67890"}
-	_, err = repo.AddFeatureAnnotation(feat3)
-	asrt.NoError(err, "Failed to add feature 3")
-	// Action: Call ListByPublicationId
-	results, err := repo.ListByPublicationId(pubID, source)
-	asrt.NoError(err, "Expected no error retrieving by Pubmed ID")
-
-	// Assertions
-	asrt.Len(results, 2, "Should retrieve exactly 2 feature annotations")
-	retrievedIDs := collection.Map(
-		results,
-		func(doc *model.FeatureAnnotationDoc) string {
-			return doc.AnnoId
-		},
-	)
-	expectedIDs := []string{added1.AnnoId, added2.AnnoId}
-	slices.Sort(retrievedIDs)
-	slices.Sort(expectedIDs)
-	asrt.Equal(
-		expectedIDs,
-		retrievedIDs,
-		"Retrieved feature IDs should match the linked ones",
-	)
+	testListByPublicationIdSuccess(&testListByPublicationIdSuccessParams{
+		t:                    t,
+		pubID:                "PMID:12345",
+		source:               pubmedSource, // Use constant
+		featureIDFieldPrefix: "DDB_G000000",
+		setPubFunc:           func(attrs *feature.FeatureAnnotationAttributes, ids []string) { attrs.Pubmed = ids },
+		unrelatedPubID:       "PMID:67890",
+		errorMsgSuffix:       "Pubmed ID",
+	})
 }
 
 func TestListByPublicationId_SuccessDOI(t *testing.T) {
 	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	pubID := "doi:10.1234/journal.1"
-	source := "doi"
-
-	// Create features
-	feat1 := getFullFeatureDoc()
-	feat1.Id = "DDB_G0000011"
-	feat1.Attributes.Publications = []string{pubID}
-	added1, err := repo.AddFeatureAnnotation(feat1)
-	asrt.NoError(err, "Failed to add feature 1")
-
-	feat2 := getFullFeatureDoc()
-	feat2.Id = "DDB_G0000012"
-	feat2.Attributes.Publications = []string{pubID}
-	added2, err := repo.AddFeatureAnnotation(feat2)
-	asrt.NoError(err, "Failed to add feature 2")
-
-	// Create unrelated feature and publication
-	feat3 := getFullFeatureDoc()
-	feat3.Id = "DDB_G0000013"
-	feat2.Attributes.Publications = []string{"doi:10.5678/journal.2"}
-	_, err = repo.AddFeatureAnnotation(feat3)
-	// Action: Call ListByPublicationId
-	results, err := repo.ListByPublicationId(pubID, source)
-	asrt.NoError(err, "Expected no error retrieving by DOI")
-
-	// Assertions
-	asrt.Len(results, 2, "Should retrieve exactly 2 feature annotations")
-	retrievedIDs := collection.Map(
-		results,
-		func(doc *model.FeatureAnnotationDoc) string {
-			return doc.AnnoId
-		},
-	)
-	expectedIDs := []string{added1.AnnoId, added2.AnnoId}
-	slices.Sort(retrievedIDs)
-	slices.Sort(expectedIDs)
-	asrt.Equal(
-		expectedIDs,
-		retrievedIDs,
-		"Retrieved feature IDs should match the linked ones",
-	)
+	testListByPublicationIdSuccess(&testListByPublicationIdSuccessParams{
+		t:                    t,
+		pubID:                "doi:10.1234/journal.1",
+		source:               doiSource, // Use constant
+		featureIDFieldPrefix: "DDB_G000001",
+		setPubFunc:           func(attrs *feature.FeatureAnnotationAttributes, ids []string) { attrs.Publications = ids },
+		unrelatedPubID:       "doi:10.5678/journal.2",
+		errorMsgSuffix:       "DOI",
+	})
 }
 
 func TestListByPublicationId_NotFoundIncorrectID(t *testing.T) {
