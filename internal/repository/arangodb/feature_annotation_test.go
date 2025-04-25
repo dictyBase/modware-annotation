@@ -709,3 +709,51 @@ func TestRemoveNonExistentTag(t *testing.T) {
 	})
 	asrt.Error(err, "should return error for missing tag")
 }
+
+func TestListByPublicationId_SuccessPubmed(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	pubID := "PMID:12345"
+	source := "pubmed"
+	// Create features
+	feat1 := getFullFeatureDoc()
+	feat1.Id = "DDB_G0000001"
+	feat1.Attributes.Pubmed = []string{pubID}
+	added1, err := repo.AddFeatureAnnotation(feat1)
+	asrt.NoError(err, "Failed to add feature 1")
+
+	feat2 := getFullFeatureDoc()
+	feat2.Id = "DDB_G0000002"
+	feat2.Attributes.Pubmed = []string{pubID}
+	added2, err := repo.AddFeatureAnnotation(feat2)
+	asrt.NoError(err, "Failed to add feature 2")
+
+	// Create unrelated feature and publication
+	feat3 := getFullFeatureDoc()
+	feat3.Id = "DDB_G0000003"
+	feat3.Attributes.Pubmed = []string{"67890"}
+	_, err = repo.AddFeatureAnnotation(feat3)
+	asrt.NoError(err, "Failed to add feature 3")
+	// Action: Call ListByPublicationId
+	results, err := repo.ListByPublicationId(pubID, source)
+	asrt.NoError(err, "Expected no error retrieving by Pubmed ID")
+
+	// Assertions
+	asrt.Len(results, 2, "Should retrieve exactly 2 feature annotations")
+	retrievedIDs := collection.Map(
+		results,
+		func(doc *model.FeatureAnnotationDoc) string {
+			return doc.AnnoId
+		},
+	)
+	expectedIDs := []string{added1.AnnoId, added2.AnnoId}
+	slices.Sort(retrievedIDs)
+	slices.Sort(expectedIDs)
+	asrt.Equal(
+		expectedIDs,
+		retrievedIDs,
+		"Retrieved feature IDs should match the linked ones",
+	)
+}
