@@ -66,3 +66,18 @@ func TestListFeatureAnnotationsByPubmedId(t *testing.T) {
 	testListByPubmedIdNotFound(params)
 	testListByPubmedIdInvalid(params)
 }
+
+func TestListFeatureAnnotationsByDOI(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testListByDOIValid(params)
+	testListByDOINotFound(params)
+	testListByDOIInvalid(params)
+}

@@ -166,6 +166,72 @@ func testCreateValidFeature(params *testParams) {
 	})
 }
 
+func testListByDOIValid(params *testParams) {
+	params.t.Helper()
+	params.t.Run("ListByDOIValid", func(t *testing.T) {
+		t.Parallel()
+		doi := "10.1234/j.abcd.2023.01.001"
+		// Create features associated with the DOI
+		feat1 := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G0285430",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:         "Feature DOI 1",
+				Publications: []string{doi},
+			},
+		}
+		feat2 := &feature.NewFeatureAnnotation{
+			Id:        "DDB_G0285431",
+			CreatedBy: "testuser@dictybase.org",
+			CreatedAt: timestamppb.Now(),
+			Attributes: &feature.FeatureAnnotationAttributes{
+				Name:         "Feature DOI 2",
+				Publications: []string{doi},
+			},
+		}
+		_, err := params.client.CreateFeatureAnnotation(params.ctx, feat1)
+		params.assert.NoError(err)
+		_, err = params.client.CreateFeatureAnnotation(params.ctx, feat2)
+		params.assert.NoError(err)
+
+		// List features by DOI
+		req := &feature.DOI{Id: doi}
+		resp, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
+		params.assert.NoError(err)
+		params.assert.Len(resp.Data, 2)
+		foundIds := []string{resp.Data[0].Id, resp.Data[1].Id}
+		params.assert.Contains(foundIds, feat1.Id)
+		params.assert.Contains(foundIds, feat2.Id)
+	})
+}
+
+func testListByDOINotFound(params *testParams) {
+	params.t.Helper()
+	params.t.Run("ListByDOINotFound", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.DOI{Id: "10.9999/non.existent.doi"} // Non-existent DOI
+		_, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.NotFound, st.Code())
+	})
+}
+
+func testListByDOIInvalid(params *testParams) {
+	params.t.Helper()
+	params.t.Run("ListByDOIInvalid", func(t *testing.T) {
+		t.Parallel()
+		req := &feature.DOI{Id: ""} // Invalid (empty) DOI
+		_, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
+		params.assert.Error(err)
+		st, ok := status.FromError(err)
+		params.assert.True(ok)
+		params.assert.Equal(codes.InvalidArgument, st.Code())
+	})
+}
+
 func testListByPubmedIdValid(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByPubmedIdValid", func(t *testing.T) {
