@@ -177,7 +177,6 @@ func testListByPublicationHelper(
 	featureNamePrefix string,
 ) {
 	params.t.Helper()
-	// Create features associated with the publication ID
 	feat1 := &feature.NewFeatureAnnotation{
 		Id:        featureID1,
 		CreatedBy: "testuser@dictybase.org",
@@ -219,7 +218,10 @@ func testListByPublicationHelper(
 		resp, err = params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
 	case "pubmed":
 		req := &feature.PubmedId{Id: publicationID}
-		resp, err = params.client.ListFeatureAnnotationsByPubmedId(params.ctx, req)
+		resp, err = params.client.ListFeatureAnnotationsByPubmedId(
+			params.ctx,
+			req,
+		)
 	}
 
 	params.assert.NoError(err)
