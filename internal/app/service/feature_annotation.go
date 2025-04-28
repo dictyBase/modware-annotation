@@ -164,7 +164,6 @@ func (srv *FeatureAnnotationService) AddTag(
 		srv.Topics["featureAnnotationUpdate"],
 		featProto,
 	); err != nil {
-		// Log the publish error but return the successful update response
 		return nil, aphgrpc.HandleUpdateError(ctx, err)
 	}
 
