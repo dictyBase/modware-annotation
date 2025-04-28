@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"slices"
@@ -166,43 +167,84 @@ func testCreateValidFeature(params *testParams) {
 	})
 }
 
+// testListByPublicationHelper is a helper function to test listing features by publication ID (DOI or Pubmed).
+func testListByPublicationHelper(
+	params *testParams,
+	publicationType string, // "doi" or "pubmed"
+	publicationID string,
+	featureID1 string,
+	featureID2 string,
+	featureNamePrefix string,
+) {
+	params.t.Helper()
+	// Create features associated with the publication ID
+	feat1 := &feature.NewFeatureAnnotation{
+		Id:        featureID1,
+		CreatedBy: "testuser@dictybase.org",
+		CreatedAt: timestamppb.Now(),
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: fmt.Sprintf("%s 1", featureNamePrefix),
+		},
+	}
+	feat2 := &feature.NewFeatureAnnotation{
+		Id:        featureID2,
+		CreatedBy: "testuser@dictybase.org",
+		CreatedAt: timestamppb.Now(),
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: fmt.Sprintf("%s 2", featureNamePrefix),
+		},
+	}
+
+	switch publicationType {
+	case "doi":
+		feat1.Attributes.Publications = []string{publicationID}
+		feat2.Attributes.Publications = []string{publicationID}
+	case "pubmed":
+		feat1.Attributes.Pubmed = []string{publicationID}
+		feat2.Attributes.Pubmed = []string{publicationID}
+	default:
+		params.t.Fatalf("invalid publication type: %s", publicationType)
+	}
+
+	_, err := params.client.CreateFeatureAnnotation(params.ctx, feat1)
+	params.assert.NoError(err)
+	_, err = params.client.CreateFeatureAnnotation(params.ctx, feat2)
+	params.assert.NoError(err)
+
+	var resp *feature.FeatureAnnotationCollection
+	// List features by publication ID
+	switch publicationType {
+	case "doi":
+		req := &feature.DOI{Id: publicationID}
+		resp, err = params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
+	case "pubmed":
+		req := &feature.PubmedId{Id: publicationID}
+		resp, err = params.client.ListFeatureAnnotationsByPubmedId(params.ctx, req)
+	}
+
+	params.assert.NoError(err)
+	params.assert.Len(resp.Data, 2)
+	// Check if the returned features match the created ones (order might vary)
+	foundIDs := []string{
+		resp.Data[0].Id,
+		resp.Data[1].Id,
+	} // Fix var-naming here
+	params.assert.Contains(foundIDs, feat1.Id)
+	params.assert.Contains(foundIDs, feat2.Id)
+}
+
 func testListByDOIValid(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByDOIValid", func(t *testing.T) {
 		t.Parallel()
-		doi := "10.1234/j.abcd.2023.01.001"
-		// Create features associated with the DOI
-		feat1 := &feature.NewFeatureAnnotation{
-			Id:        "DDB_G0285430",
-			CreatedBy: "testuser@dictybase.org",
-			CreatedAt: timestamppb.Now(),
-			Attributes: &feature.FeatureAnnotationAttributes{
-				Name:         "Feature DOI 1",
-				Publications: []string{doi},
-			},
-		}
-		feat2 := &feature.NewFeatureAnnotation{
-			Id:        "DDB_G0285431",
-			CreatedBy: "testuser@dictybase.org",
-			CreatedAt: timestamppb.Now(),
-			Attributes: &feature.FeatureAnnotationAttributes{
-				Name:         "Feature DOI 2",
-				Publications: []string{doi},
-			},
-		}
-		_, err := params.client.CreateFeatureAnnotation(params.ctx, feat1)
-		params.assert.NoError(err)
-		_, err = params.client.CreateFeatureAnnotation(params.ctx, feat2)
-		params.assert.NoError(err)
-
-		// List features by DOI
-		req := &feature.DOI{Id: doi}
-		resp, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
-		params.assert.NoError(err)
-		params.assert.Len(resp.Data, 2)
-		foundIds := []string{resp.Data[0].Id, resp.Data[1].Id}
-		params.assert.Contains(foundIds, feat1.Id)
-		params.assert.Contains(foundIds, feat2.Id)
+		testListByPublicationHelper(
+			params,
+			"doi",
+			"10.1234/j.abcd.2023.01.001",
+			"DDB_G0285430",
+			"DDB_G0285431",
+			"Feature DOI",
+		)
 	})
 }
 
@@ -236,43 +278,14 @@ func testListByPubmedIdValid(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByPubmedIdValid", func(t *testing.T) {
 		t.Parallel()
-		pubmedId := "12345678"
-		// Create features associated with the pubmed ID
-		feat1 := &feature.NewFeatureAnnotation{
-			Id:        "DDB_G0285428",
-			CreatedBy: "testuser@dictybase.org",
-			CreatedAt: timestamppb.Now(),
-			Attributes: &feature.FeatureAnnotationAttributes{
-				Name:   "Feature 1",
-				Pubmed: []string{pubmedId},
-			},
-		}
-		feat2 := &feature.NewFeatureAnnotation{
-			Id:        "DDB_G0285429",
-			CreatedBy: "testuser@dictybase.org",
-			CreatedAt: timestamppb.Now(),
-			Attributes: &feature.FeatureAnnotationAttributes{
-				Name:   "Feature 2",
-				Pubmed: []string{pubmedId},
-			},
-		}
-		_, err := params.client.CreateFeatureAnnotation(params.ctx, feat1)
-		params.assert.NoError(err)
-		_, err = params.client.CreateFeatureAnnotation(params.ctx, feat2)
-		params.assert.NoError(err)
-
-		// List features by pubmed ID
-		req := &feature.PubmedId{Id: pubmedId}
-		resp, err := params.client.ListFeatureAnnotationsByPubmedId(
-			params.ctx,
-			req,
+		testListByPublicationHelper(
+			params,
+			"pubmed",
+			"12345678",
+			"DDB_G0285428",
+			"DDB_G0285429",
+			"Feature Pubmed",
 		)
-		params.assert.NoError(err)
-		params.assert.Len(resp.Data, 2)
-		// Check if the returned features match the created ones (order might vary)
-		foundIds := []string{resp.Data[0].Id, resp.Data[1].Id}
-		params.assert.Contains(foundIds, feat1.Id)
-		params.assert.Contains(foundIds, feat2.Id)
 	})
 }
 
