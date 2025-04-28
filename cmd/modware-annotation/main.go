@@ -104,6 +104,21 @@ func getFeatureServerFlags() []cli.Flag {
 			Usage: "arangodb collection for storing feature annotations",
 			Value: "feature",
 		},
+		cli.StringFlag{
+			Name:  "pub-collection",
+			Usage: "arangodb collection for storing publications linked to features",
+			Value: "publication",
+		},
+		cli.StringFlag{
+			Name:  "edge-collection",
+			Usage: "arangodb edge collection linking features and publications",
+			Value: "feature_publication",
+		},
+		cli.StringFlag{
+			Name:  "feature-graph",
+			Usage: "arangodb graph name connecting features and publications",
+			Value: "feature_pub_graph",
+		},
 	}
 	flg = append(flg, arangoflag.ArangoFlags()...)
 
