@@ -80,6 +80,9 @@ func allFeatureParams(
 			Istls:    clt.Bool("is-secure"),
 		}, &arangodb.FeatureCollectionParams{
 			Feature: clt.String("feature-collection"),
+			Pub:     clt.String("pub-collection"),
+			Edge:    clt.String("edge-collection"),
+			Graph:   clt.String("feature-graph"),
 		}
 }
 
