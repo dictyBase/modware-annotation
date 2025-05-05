@@ -106,6 +106,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotationByName(
 		featAnnoGetByNameQ,
 		map[string]interface{}{
 			"@collection": fann.feature.Name(),
+			"graph":       fann.featPub.Name(), // Add graph name
 			"name":        name,
 		},
 	)
