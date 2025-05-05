@@ -245,15 +245,15 @@ const (
 			RETURN org
 	`
 	annGroupListFilterQ = `
-      LET filterannos = (
-          FOR ann IN %s
-              FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
-                  FOR cv IN %s
-                      FILTER ann.is_obsolete == false
-                      FILTER cvt.graph_id == cv._id
-                      %s
-                      RETURN ann._key
-      )
+	      LET filterannos = (
+		  FOR ann IN %s
+		      FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
+			  FOR cv IN %s
+			      FILTER ann.is_obsolete == false
+			      FILTER cvt.graph_id == cv._id
+			      %s
+			      RETURN ann._key
+	      )
       FOR ag in %s
           LET annotations = (
               FOR aid in ag.group

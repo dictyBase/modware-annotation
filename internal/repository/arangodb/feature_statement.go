@@ -71,6 +71,25 @@ const (
 	    RETURN MERGE(f, {pubmed: pubmed, publications: doi})
     `
 
+	// featAnnoGetByNameQ retrieves a feature annotation by its name
+	featAnnoGetByNameQ = `
+	FOR f IN @@collection 
+	    FILTER f.feature_id == @name 
+	    FILTER f.is_obsolete == false 
+	    LIMIT 1
+	    LET pubmed = (
+		FOR v,e IN 1..1 OUTBOUND f GRAPH @graph 
+		FILTER e.source == 'pubmed'
+		RETURN v.id	
+	    )
+	    LET doi = (
+		FOR v,e IN 1..1 OUTBOUND f GRAPH @graph 
+		FILTER e.source == 'doi'
+		RETURN v.id	
+	    )
+	    RETURN MERGE(f, {pubmed: pubmed, publications: doi})
+	`
+
 	featureByPublicationIdQ = `
 	FOR pub IN @@collection
     		FOR v,e IN 1..1 INBOUND pub GRAPH @graph
