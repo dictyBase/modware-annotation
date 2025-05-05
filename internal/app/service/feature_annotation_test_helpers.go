@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"slices"
@@ -200,7 +199,7 @@ func testListByPublicationHelper(
 		CreatedBy: "testuser@dictybase.org",
 		CreatedAt: timestamppb.Now(),
 		Attributes: &feature.FeatureAnnotationAttributes{
-			Name: fmt.Sprintf("%s 1", featureNamePrefix),
+			Name: featureNamePrefix,
 		},
 	}
 	feat2 := &feature.NewFeatureAnnotation{
@@ -208,7 +207,7 @@ func testListByPublicationHelper(
 		CreatedBy: "testuser@dictybase.org",
 		CreatedAt: timestamppb.Now(),
 		Attributes: &feature.FeatureAnnotationAttributes{
-			Name: fmt.Sprintf("%s 2", featureNamePrefix),
+			Name: featureNamePrefix,
 		},
 	}
 
@@ -275,9 +274,9 @@ func testListByDOINotFound(params *testParams) {
 		req := &feature.DOI{Id: "10.9999/non.existent.doi"} // Non-existent DOI
 		_, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.NotFound, st.Code())
+		params.assert.Equal(codes.NotFound, sts.Code())
 	})
 }
 
@@ -288,9 +287,9 @@ func testListByDOIInvalid(params *testParams) {
 		req := &feature.DOI{Id: ""} // Invalid (empty) DOI
 		_, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.InvalidArgument, st.Code())
+		params.assert.Equal(codes.InvalidArgument, sts.Code())
 	})
 }
 
@@ -319,9 +318,9 @@ func testListByPubmedIdNotFound(params *testParams) {
 			req,
 		)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.NotFound, st.Code())
+		params.assert.Equal(codes.NotFound, sts.Code())
 	})
 }
 
@@ -335,9 +334,9 @@ func testListByPubmedIdInvalid(params *testParams) {
 			req,
 		)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.InvalidArgument, st.Code())
+		params.assert.Equal(codes.InvalidArgument, sts.Code())
 	})
 }
 
@@ -352,9 +351,9 @@ func testCreateMissingFields(params *testParams) {
 		}
 		_, err := params.client.CreateFeatureAnnotation(params.ctx, req)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.InvalidArgument, st.Code())
+		params.assert.Equal(codes.InvalidArgument, sts.Code())
 	})
 }
 
@@ -374,9 +373,9 @@ func testCreateDuplicateFeature(params *testParams) {
 		params.assert.NoError(firstErr)
 		_, dupErr := params.client.CreateFeatureAnnotation(params.ctx, req)
 		params.assert.Error(dupErr)
-		st, ok := status.FromError(dupErr)
+		sts, ok := status.FromError(dupErr)
 		params.assert.True(ok)
-		params.assert.Equal(codes.AlreadyExists, st.Code())
+		params.assert.Equal(codes.AlreadyExists, sts.Code())
 	})
 }
 
@@ -422,9 +421,9 @@ func testGetNonExistentFeature(params *testParams) {
 		}
 		_, err := params.client.GetFeatureAnnotation(params.ctx, req)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.NotFound, st.Code())
+		params.assert.Equal(codes.NotFound, sts.Code())
 	})
 }
 
@@ -437,9 +436,9 @@ func testGetFeatureWithInvalidID(params *testParams) {
 		}
 		_, err := params.client.GetFeatureAnnotation(params.ctx, req)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.InvalidArgument, st.Code())
+		params.assert.Equal(codes.InvalidArgument, sts.Code())
 	})
 }
 
@@ -501,10 +500,10 @@ func testUpdateNonExistentFeature(params *testParams) {
 		}
 		_, err := params.client.UpdateFeatureAnnotation(params.ctx, req)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		t.Log(st.Code().String())
-		params.assert.Equal(codes.Internal, st.Code())
+		t.Log(sts.Code().String())
+		params.assert.Equal(codes.Internal, sts.Code())
 	})
 }
 
@@ -520,9 +519,9 @@ func testUpdateWithInvalidData(params *testParams) {
 		}
 		_, err := params.client.UpdateFeatureAnnotation(params.ctx, req)
 		params.assert.Error(err)
-		st, ok := status.FromError(err)
+		sts, ok := status.FromError(err)
 		params.assert.True(ok)
-		params.assert.Equal(codes.InvalidArgument, st.Code())
+		params.assert.Equal(codes.InvalidArgument, sts.Code())
 	})
 }
 
@@ -587,26 +586,22 @@ func testGetNonExistentFeatureByName(params *testParams) {
 // and optionally contains the expected message substring.
 func assertGrpcError(params assertGrpcErrorParams) {
 	params.assert.Error(params.err, "expected a gRPC error")
-	st, ok := status.FromError(params.err)
+	sts, ok := status.FromError(params.err)
 	params.assert.True(ok, "error should be a gRPC status error")
 	params.assert.Equal(
 		params.expectedCode,
-		st.Code(),
-		fmt.Sprintf(
-			"expected gRPC code %s, but got %s",
-			params.expectedCode,
-			st.Code(),
-		),
+		sts.Code(),
+		"expected gRPC code %s, but got %s",
+		params.expectedCode,
+		sts.Code(),
 	)
 	if params.expectedMsgSubstring != "" {
 		params.assert.Contains(
-			strings.ToLower(st.Message()), // Case-insensitive check
+			strings.ToLower(sts.Message()), // Case-insensitive check
 			strings.ToLower(params.expectedMsgSubstring),
-			fmt.Sprintf(
-				"expected gRPC error message to contain '%s', but got '%s'",
-				params.expectedMsgSubstring,
-				st.Message(),
-			),
+			"expected gRPC error message to contain '%s', but got '%s'",
+			params.expectedMsgSubstring,
+			sts.Message(),
 		)
 	}
 }

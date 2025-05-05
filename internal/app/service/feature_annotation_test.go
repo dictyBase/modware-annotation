@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"testing"
-	// Assuming assertGrpcError uses this
 )
 
 func TestCreateFeatureAnnotation(t *testing.T) {
