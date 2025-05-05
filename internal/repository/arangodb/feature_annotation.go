@@ -98,6 +98,40 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 	return doc, nil
 }
 
+// GetFeatureAnnotationByName retrieves a feature annotation by its name.
+func (fann *featureAnnoRepo) GetFeatureAnnotationByName(
+	name string,
+) (*model.FeatureAnnotationDoc, error) {
+	res, err := fann.database.GetRow(
+		featAnnoGetByNameQ,
+		map[string]interface{}{
+			"@collection": fann.feature.Name(),
+			"name":        name,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"error executing query for name %s: %w",
+			name,
+			err,
+		)
+	}
+	if res.IsEmpty() {
+		// Return the specific error for not found by name
+		return nil, &repository.FeatureNameNotFoundError{Name: name}
+	}
+	doc := &model.FeatureAnnotationDoc{}
+	if err := res.Read(doc); err != nil {
+		return nil, fmt.Errorf(
+			"error reading document for name %s: %w",
+			name,
+			err,
+		)
+	}
+
+	return doc, nil
+}
+
 // AddFeatureAnnotation creates a new feature annotation.
 func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	doc *feature.NewFeatureAnnotation,
