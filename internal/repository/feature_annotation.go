@@ -11,6 +11,8 @@ import (
 type FeatureAnnotationRepository interface {
 	// GetFeatureAnnotation retrieves a feature annotation by ID
 	GetFeatureAnnotation(id string) (*model.FeatureAnnotationDoc, error)
+	// GetFeatureAnnotationByName retrieves a feature annotation by name
+	GetFeatureAnnotationByName(name string) (*model.FeatureAnnotationDoc, error)
 	// AddFeatureAnnotation creates a new feature annotation
 	AddFeatureAnnotation(
 		doc *feature.NewFeatureAnnotation,
