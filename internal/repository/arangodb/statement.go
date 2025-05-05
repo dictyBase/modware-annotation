@@ -245,7 +245,7 @@ const (
 			RETURN org
 	`
 	annGroupListFilterQ = `
-	      LET filterannos = (
+      LET filterannos = (
 		  FOR ann IN %s
 		      FOR cvt IN 1..1 OUTBOUND ann GRAPH '%s'
 			  FOR cv IN %s

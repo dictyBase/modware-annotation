@@ -71,10 +71,9 @@ const (
 	    RETURN MERGE(f, {pubmed: pubmed, publications: doi})
     `
 
-	// featAnnoGetByNameQ retrieves a feature annotation by its name
 	featAnnoGetByNameQ = `
 	FOR f IN @@collection 
-	    FILTER f.feature_id == @name 
+	    FILTER f.name == @name 
 	    FILTER f.is_obsolete == false 
 	    LIMIT 1
 	    LET pubmed = (
