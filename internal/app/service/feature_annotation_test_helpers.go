@@ -525,3 +525,101 @@ func testUpdateWithInvalidData(params *testParams) {
 		params.assert.Equal(codes.InvalidArgument, st.Code())
 	})
 }
+
+func testGetExistingFeatureByName(params *testParams) {
+	testFeatureData := newTestFeature() // Assuming this helper exists and provides the data used in testCreateValidFeature
+	testCreateValidFeature(
+		params,
+	) // Call this to ensure the feature is in the DB, ignore return
+
+	// 2. Retrieve the feature by its known name.
+	featureName := testFeatureData.Attributes.Name
+	req := &feature.FeatureName{Name: featureName}
+	gotFeat, err := params.client.GetFeatureAnnotationByName(params.ctx, req)
+
+	params.assert.NoError(
+		err,
+		"should retrieve existing feature by name without error",
+	)
+	params.assert.Equal(
+		featureName,
+		gotFeat.Attributes.Name,
+		"retrieved feature name should match the known name",
+	)
+	params.assert.Equal(
+		testFeatureData.Id,
+		gotFeat.Id,
+		"retrieved feature entry_id should match",
+	)
+	slices.SortFunc(
+		testFeatureData.Attributes.Properties,
+		sortTagPropertiesByTag,
+	)
+	slices.SortFunc(gotFeat.Attributes.Properties, sortTagPropertiesByTag)
+	params.assert.ElementsMatch(
+		collection.Map(
+			testFeatureData.Attributes.Properties,
+			extractTagAndValue,
+		),
+		collection.Map(gotFeat.Attributes.Properties, extractTagAndValue),
+		"should have matching properties",
+	)
+}
+
+func testGetNonExistentFeatureByName(params *testParams) {
+	nonExistentName := "this_feature_does_not_exist_12345"
+	req := &feature.FeatureName{Name: nonExistentName}
+	_, err := params.client.GetFeatureAnnotationByName(params.ctx, req)
+
+	params.assert.Error(
+		err,
+		"should return an error for non-existent feature name",
+	)
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.NotFound,
+		expectedMsgSubstring: "not found",
+	})
+}
+
+// assertGrpcError checks if the given error is a gRPC error with the expected code
+// and optionally contains the expected message substring.
+func assertGrpcError(params assertGrpcErrorParams) {
+	params.assert.Error(params.err, "expected a gRPC error")
+	st, ok := status.FromError(params.err)
+	params.assert.True(ok, "error should be a gRPC status error")
+	params.assert.Equal(
+		params.expectedCode,
+		st.Code(),
+		fmt.Sprintf(
+			"expected gRPC code %s, but got %s",
+			params.expectedCode,
+			st.Code(),
+		),
+	)
+	if params.expectedMsgSubstring != "" {
+		params.assert.Contains(
+			strings.ToLower(st.Message()), // Case-insensitive check
+			strings.ToLower(params.expectedMsgSubstring),
+			fmt.Sprintf(
+				"expected gRPC error message to contain '%s', but got '%s'",
+				params.expectedMsgSubstring,
+				st.Message(),
+			),
+		)
+	}
+}
+
+func testGetFeatureWithEmptyName(params *testParams) {
+	req := &feature.FeatureName{Name: ""} // Empty name
+	_, err := params.client.GetFeatureAnnotationByName(params.ctx, req)
+
+	params.assert.Error(err, "should return an error for empty feature name")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.InvalidArgument,
+		expectedMsgSubstring: "validation",
+	})
+}
