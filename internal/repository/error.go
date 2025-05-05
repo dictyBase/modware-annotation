@@ -20,12 +20,28 @@ func (ge *GroupNotFoundError) Error() string {
 	return fmt.Sprintf("group id %s not found", ge.Id)
 }
 
+// FeatureNameNotFoundError indicates that a feature annotation with the given name was not found.
+type FeatureNameNotFoundError struct {
+	Name string
+}
+
+// Error returns the error message for FeatureNameNotFoundError.
+func (fnf *FeatureNameNotFoundError) Error() string {
+	return fmt.Sprintf("feature annotation with name %s not found", fnf.Name)
+}
+
 func IsAnnotationNotFound(err error) bool {
 	if _, ok := err.(*AnnoNotFoundError); ok {
 		return true
 	}
 
 	return false
+}
+
+// IsFeatureNameNotFound checks if the error is a FeatureNameNotFoundError.
+func IsFeatureNameNotFound(err error) bool {
+	_, ok := err.(*FeatureNameNotFoundError)
+	return ok
 }
 
 type PublicationAnnotationNotFoundError struct {
