@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"testing"
+	// Assuming assertGrpcError uses this
 )
 
 func TestCreateFeatureAnnotation(t *testing.T) {
@@ -35,7 +36,22 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	testGetFeatureWithInvalidID(params)
 }
 
-func TestUpdateFeatureAnnotationX(t *testing.T) {
+func TestGetFeatureAnnotationByName(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testGetExistingFeatureByName(params)
+	testGetNonExistentFeatureByName(params)
+	testGetFeatureWithEmptyName(params)
+}
+
+func TestUpdateFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	client, assert := setup(t)
 	ctx := context.Background()
