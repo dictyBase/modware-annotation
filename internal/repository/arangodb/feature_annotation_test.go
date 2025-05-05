@@ -49,6 +49,57 @@ func TestGetFeatureAnnotation(t *testing.T) {
 	)
 }
 
+func TestGetFeatureAnnotationByName(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// 1. Success Case
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(
+		err,
+		"expected no error adding test feature annotation for name lookup",
+	)
+
+	// Retrieve by name
+	gotByName, err := repo.GetFeatureAnnotationByName(feat.Attributes.Name)
+	asrt.NoError(
+		err,
+		"expected no error getting feature annotation by name",
+	)
+	// Verify the retrieved document matches the added one (using ID for simplicity)
+	asrt.Equal(
+		added.AnnoId,
+		gotByName.AnnoId,
+		"retrieved document ID should match added document ID",
+	)
+	asrt.Equal(
+		feat.Attributes.Name,
+		gotByName.Name,
+		"retrieved document name should match",
+	)
+	// Optionally, use the full validation helper if needed
+	validateCompleteFeatureAnnotation(validateCompleteFeatureParams{
+		t:          t,
+		assertions: asrt,
+		got:        gotByName,
+		expected:   feat,
+	})
+
+	// 2. Not Found Case
+	nonExistentName := "non_existent_feature_name"
+	_, err = repo.GetFeatureAnnotationByName(nonExistentName)
+	asrt.Error(
+		err,
+		"expected error for non-existent feature annotation name",
+	)
+	asrt.True(
+		repository.IsFeatureNameNotFound(err),
+		"should be FeatureNameNotFoundError",
+	)
+}
+
 func TestAddFeatureAnnotationBasic(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
