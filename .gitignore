@@ -4,3 +4,5 @@ vendor/
 loader
 repomix-output.md
 .mcp.json
+
+**/.claude/settings.local.json
