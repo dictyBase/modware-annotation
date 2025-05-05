@@ -23,6 +23,14 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// assertGrpcErrorParams holds the parameters for the assertGrpcError function.
+type assertGrpcErrorParams struct {
+	assert               *require.Assertions
+	err                  error
+	expectedCode         codes.Code
+	expectedMsgSubstring string
+}
+
 type testParams struct {
 	t      *testing.T
 	ctx    context.Context
@@ -122,32 +130,42 @@ func setup(
 	return feature.NewFeatureAnnotationServiceClient(conn), assert
 }
 
+// newTestFeature provides a consistent *feature.NewFeatureAnnotation for testing.
+func newTestFeature() *feature.NewFeatureAnnotation {
+	return &feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285425", // Use the ID from testCreateValidFeature
+		CreatedBy: "testuser@dictybase.org",
+		CreatedAt: timestamppb.Now(), // Note: Timestamp will differ slightly on each call
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name:     "Test Feature", // Use the name from testCreateValidFeature
+			Synonyms: []string{"test1", "test2"},
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "description",
+					Value:     "Test description",
+					CreatedBy: "testuser@dictybase.org",
+				},
+				{
+					Tag:       "note",
+					Value:     "Test note",
+					CreatedBy: "testuser@dictybase.org",
+				},
+			},
+			// Add other fields if necessary to match testCreateValidFeature's intent
+		},
+	}
+}
+
 func testCreateValidFeature(params *testParams) {
 	params.t.Helper()
 	params.t.Run("CreateValidFeatureAnnotation", func(t *testing.T) {
-		t.Parallel()
-		req := &feature.NewFeatureAnnotation{
-			Id:        "DDB_G0285425",
-			CreatedBy: "testuser@dictybase.org",
-			CreatedAt: timestamppb.Now(),
-			Attributes: &feature.FeatureAnnotationAttributes{
-				Name:     "Test Feature",
-				Synonyms: []string{"test1", "test2"},
-				// Add properties
-				Properties: []*feature.TagProperty{
-					{
-						Tag:       "description",
-						Value:     "Test description",
-						CreatedBy: "testuser@dictybase.org",
-					},
-					{
-						Tag:       "note",
-						Value:     "Test note",
-						CreatedBy: "testuser@dictybase.org",
-					},
-				},
-			},
-		}
+		// Removed t.Parallel() to ensure creation completes before subsequent steps
+		// t.Parallel()
+		// Use the helper function to get the test data
+		req := newTestFeature()
+		// Adjust CreatedAt if precise matching is needed later, otherwise Now() is fine for creation
+		req.CreatedAt = timestamppb.Now()
+
 		resp, err := params.client.CreateFeatureAnnotation(params.ctx, req)
 		params.assert.NoError(err)
 		params.assert.Equal(req.Id, resp.Id)
