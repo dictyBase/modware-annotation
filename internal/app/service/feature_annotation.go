@@ -82,6 +82,30 @@ func (srv *FeatureAnnotationService) GetFeatureAnnotation(
 	return convertToProto(feat), nil
 }
 
+// GetFeatureAnnotationByName retrieves a feature annotation by its name.
+func (srv *FeatureAnnotationService) GetFeatureAnnotationByName(
+	ctx context.Context,
+	req *feature.FeatureName,
+) (*feature.FeatureAnnotation, error) {
+	// Validate the request using protovalidate (assuming FeatureName has rules)
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+
+	feat, err := srv.repo.GetFeatureAnnotationByName(req.Name)
+	if err != nil {
+		// Check for both ID not found and Name not found errors
+		if repository.IsAnnotationNotFound(err) ||
+			repository.IsFeatureNameNotFound(err) {
+			// Pass the original error for context
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return nil, aphgrpc.HandleGetError(ctx, err)
+	}
+
+	return convertToProto(feat), nil
+}
+
 func (srv *FeatureAnnotationService) CreateFeatureAnnotation(
 	ctx context.Context,
 	req *feature.NewFeatureAnnotation,
