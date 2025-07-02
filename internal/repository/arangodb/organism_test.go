@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+//nolint:tparallel
 func TestAddOrganism(t *testing.T) {
 	t.Parallel()
 	baseOrg := &organism.NewOrganism{
