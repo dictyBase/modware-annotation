@@ -118,3 +118,101 @@ func TestPartition(t *testing.T) {
 		assert.ElementsMatch(input, odds)
 	})
 }
+
+func TestFind(t *testing.T) {
+	t.Parallel()
+
+	t.Run("integer slice element found", testFindIntegerFound)
+	t.Run("integer slice element not found", testFindIntegerNotFound)
+	t.Run("string slice first of multiple matches", testFindStringMultipleMatches)
+	t.Run("struct slice element found", testFindStruct)
+	t.Run("empty slice", testFindEmptySlice)
+	t.Run("nil slice", testFindNilSlice)
+}
+
+func testFindIntegerFound(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	slice := []int{1, 2, 3, 4, 5}
+	predicate := func(n int) bool { return n == 3 }
+
+	found, ok := Find(slice, predicate)
+
+	assert.True(ok, "should find the element")
+	assert.NotNil(found, "pointer to found element should not be nil")
+	assert.Equal(3, *found, "the found element should be 3")
+	assert.Equal(&slice[2], found, "should return a pointer to the correct element")
+}
+
+func testFindIntegerNotFound(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	slice := []int{1, 2, 3, 4, 5}
+	predicate := func(n int) bool { return n == 6 }
+
+	found, ok := Find(slice, predicate)
+
+	assert.False(ok, "should not find the element")
+	assert.Nil(found, "pointer should be nil when element not found")
+}
+
+func testFindStringMultipleMatches(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	slice := []string{"apple", "banana", "cherry", "banana"}
+	predicate := func(s string) bool { return s == "banana" }
+
+	found, ok := Find(slice, predicate)
+
+	assert.True(ok, "should find the element")
+	assert.NotNil(found, "pointer to found element should not be nil")
+	assert.Equal("banana", *found, "the found element should be 'banana'")
+	assert.Equal(&slice[1], found, "should return a pointer to the first matching element")
+}
+
+func testFindStruct(t *testing.T) {
+	t.Parallel()
+	type person struct {
+		name string
+		age  int
+	}
+	assert := require.New(t)
+	slice := []person{
+		{name: "Alice", age: 30},
+		{name: "Bob", age: 25},
+		{name: "Charlie", age: 35},
+	}
+	predicate := func(p person) bool { return p.name == "Bob" }
+
+	found, ok := Find(slice, predicate)
+
+	assert.True(ok, "should find the struct element")
+	assert.NotNil(found, "pointer to found element should not be nil")
+	assert.Equal("Bob", found.name)
+	assert.Equal(25, found.age)
+	assert.Equal(&slice[1], found, "should return a pointer to the correct struct instance")
+}
+
+func testFindEmptySlice(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	slice := []int{}
+	predicate := func(n int) bool { return n == 1 }
+
+	found, ok := Find(slice, predicate)
+
+	assert.False(ok, "should not find anything in an empty slice")
+	assert.Nil(found, "should return nil for an empty slice")
+}
+
+func testFindNilSlice(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	var slice []int // nil slice
+	predicate := func(n int) bool { return n == 1 }
+
+	found, ok := Find(slice, predicate)
+
+	assert.False(ok, "should not find anything in a nil slice")
+	assert.Nil(found, "should return nil for a nil slice")
+}
