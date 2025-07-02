@@ -7,6 +7,7 @@ import (
 
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
+	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -652,34 +653,6 @@ func TestAddTagToNonExistentFeature(t *testing.T) {
 	asrt.True(repository.IsAnnotationNotFound(err), "should be not found error")
 }
 
-func TestUpdateExistingTag(t *testing.T) {
-	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	// Setup initial feature with tag
-	feat := getCompleteFeatureDoc()
-	added, err := repo.AddFeatureAnnotation(feat)
-	asrt.NoError(err, "should create test feature")
-
-	tagReq := &feature.AddTagRequest{
-		Id: added.AnnoId,
-		Tag: &feature.TagPropertyCreate{
-			Tag:       "update_test",
-			Value:     "initial",
-			CreatedBy: "tester@example.org",
-		},
-	}
-	tagged, err := repo.AddTag(tagReq)
-	asrt.NoError(err, "should add initial tag")
-
-	// Update request
-	updateReq := &feature.UpdateTagRequest{
-		Id: added.AnnoId,
-		Tag: &feature.TagPropertyUpdate{
-			Tag:       "update_test",
-			Value:     "updated",
-			UpdatedBy: "updater@example.org",
 func seedAnnotationWithTags(
 	t *testing.T,
 	repo repository.FeatureAnnotationRepository,
@@ -704,55 +677,123 @@ func seedAnnotationWithTags(
 				},
 			},
 		},
-
-	// Execute update
-	updated, err := repo.UpdateTag(updateReq)
-	asrt.NoError(err, "should successfully update tag")
-
-	// Verify changes
-	var found bool
-	for _, prop := range updated.Properties {
-		if prop.Tag == "update_test" {
-			found = true
-			asrt.Equal("updated", prop.Value, "should update value")
-			asrt.Equal(
-				"updater@example.org",
-				prop.UpdatedBy,
-				"should update modifier",
-			)
-			asrt.Equal(
-				"tester@example.org",
-				prop.CreatedBy,
-				"should preserve creator",
-			)
-			asrt.False(prop.UpdatedAt.IsZero(), "should set update timestamp")
-		}
-	}
-	asrt.True(found, "should find updated tag")
-	asrt.Equal(tagged.Name, updated.Name, "should preserve feature name")
+	})
+	assert.NoError(err)
+	model, err := repo.GetFeatureAnnotation(newFeat.AnnoId)
+	assert.NoError(err)
+	return model
 }
 
-func TestUpdateNonExistentTag(t *testing.T) {
+func TestUpdateTag(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(cleanupDB(repo))
 
-	// Create feature without tags
-	feat := getCompleteFeatureDoc()
-	added, err := repo.AddFeatureAnnotation(feat)
-	asrt.NoError(err, "should create test feature")
-
-	// Attempt to update missing tag
-	_, err = repo.UpdateTag(&feature.UpdateTagRequest{
-		Id: added.AnnoId,
-		Tag: &feature.TagPropertyUpdate{
-			Tag:       "ghost_tag",
-			Value:     "new_value",
-			UpdatedBy: "tester@example.org",
+	// Seed a feature with tags
+	feat := seedAnnotationWithTags(t, repo)
+	foundTag, otk := collection.Find(
+		feat.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == "foo"
 		},
+	)
+	asrt.True(otk, "tag 'foo' should be found in the seeded properties")
+	createdTag := *foundTag
+
+	t.Run("successful update with default timestamp", func(t *testing.T) {
+		assert := require.New(t)
+		updReq := &feature.UpdateTagRequest{
+			Id: feat.AnnoId,
+			Tag: &feature.TagPropertyUpdate{
+				Tag:       "foo",
+				Value:     "new-bar",
+				UpdatedBy: "update@test.com",
+			},
+		}
+		updatedFeat, err := repo.UpdateTag(updReq)
+		assert.NoError(err)
+		assert.NotNil(updatedFeat)
+		assert.Len(updatedFeat.Properties, 2)
+
+		foundUpdatedTag, otk := collection.Find(
+			updatedFeat.Properties,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == "foo"
+			},
+		)
+		assert.True(otk, "could not find tag foo in updated feature")
+		updatedTag := *foundUpdatedTag
+
+		assert.Equal("new-bar", updatedTag.Value)
+		assert.Equal("update@test.com", updatedTag.UpdatedBy)
+		assert.Equal(createdTag.CreatedBy, updatedTag.CreatedBy)
+		assert.Equal(createdTag.CreatedAt, updatedTag.CreatedAt)
+		assert.WithinDuration(
+			time.Now(),
+			updatedTag.UpdatedAt,
+			12*time.Second,
+		)
+		assert.NotEqual(createdTag.UpdatedAt, updatedTag.UpdatedAt)
 	})
 
-	asrt.Error(err, "should return error for missing tag")
+	t.Run("successful update with explicit timestamp", func(t *testing.T) {
+		assert := require.New(t)
+		customTime := time.Now().Add(-24 * time.Hour).UTC()
+		updReq := &feature.UpdateTagRequest{
+			Id: feat.AnnoId,
+			Tag: &feature.TagPropertyUpdate{
+				Tag:       "baz",
+				Value:     "new-quax",
+				UpdatedBy: "update2@test.com",
+				UpdatedAt: timestamppb.New(customTime),
+			},
+		}
+		updatedFeat, err := repo.UpdateTag(updReq)
+		assert.NoError(err)
+		assert.NotNil(updatedFeat)
+
+		foundUpdatedTag, otk := collection.Find(
+			updatedFeat.Properties,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == "baz"
+			},
+		)
+		assert.True(otk, "could not find tag baz in updated feature")
+		updatedTag := *foundUpdatedTag
+		// Round to microseconds because of precision differences
+		// between DB and Go
+		assert.Equal(
+			customTime.Round(time.Microsecond),
+			updatedTag.UpdatedAt.Round(time.Microsecond),
+		)
+	})
+
+	t.Run("fail with non-existent tag", func(t *testing.T) {
+		assert := require.New(t)
+		updReq := &feature.UpdateTagRequest{
+			Id: feat.AnnoId,
+			Tag: &feature.TagPropertyUpdate{
+				Tag: "non-existent-tag",
+			},
+		}
+		_, err := repo.UpdateTag(updReq)
+		assert.Error(err)
+		assert.ErrorContains(err, "tag non-existent-tag not found")
+	})
+
+	t.Run("fail with non-existent feature", func(t *testing.T) {
+		assert := require.New(t)
+		updReq := &feature.UpdateTagRequest{
+			Id: "non-existent-id",
+			Tag: &feature.TagPropertyUpdate{
+				Tag: "foo",
+			},
+		}
+		_, err := repo.UpdateTag(updReq)
+		assert.Error(err)
+		var nfErr *repository.AnnoNotFoundError
+		assert.ErrorAs(err, &nfErr)
+	})
 }
 
 func TestRemoveTag(t *testing.T) {
