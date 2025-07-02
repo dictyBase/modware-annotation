@@ -476,13 +476,17 @@ func (fann *featureAnnoRepo) UpdateTag(
 	// Create updated properties slice
 	newProps := make([]model.TagPropertyDoc, len(doc.Properties))
 	copy(newProps, doc.Properties)
+	updatedAt := time.Now()
+	if req.Tag.UpdatedAt.IsValid() {
+		updatedAt = req.Tag.UpdatedAt.AsTime()
+	}
 	newProps[idx] = model.TagPropertyDoc{
 		Tag:       req.Tag.Tag,
 		Value:     req.Tag.Value,
 		CreatedBy: doc.Properties[idx].CreatedBy, // Preserve original creator
 		CreatedAt: doc.Properties[idx].CreatedAt, // Preserve creation time
 		UpdatedBy: req.Tag.UpdatedBy,
-		UpdatedAt: time.Now(),
+		UpdatedAt: updatedAt,
 	}
 
 	// Perform partial update and return new document
