@@ -18,7 +18,6 @@ func TestAddOrganism(t *testing.T) {
 	}
 	for _, tcs := range getOrganismTestCases(baseOrg) {
 		t.Run(tcs.name, func(t *testing.T) {
-			t.Parallel()
 			asrt, repo := setUpOrganismTest(t)
 			t.Cleanup(func() { _ = repo.Dbh().Drop() })
 			baseOrg.Attributes = tcs.attrs

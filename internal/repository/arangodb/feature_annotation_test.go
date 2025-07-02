@@ -614,13 +614,13 @@ func TestAddTag_WithProvidedTimestamp(t *testing.T) {
 	)
 
 	// Verify added tag
-	found, ok := collection.Find(
+	found, otk := collection.Find(
 		updated.Properties,
 		func(p model.TagPropertyDoc) bool {
 			return p.Tag == tagReq.Tag.Tag
 		},
 	)
-	asrt.True(ok, "should find the newly added tag")
+	asrt.True(otk, "should find the newly added tag")
 	asrt.Equal(tagReq.Tag.Value, found.Value, "should match tag value")
 	asrt.Equal(
 		specTs,
