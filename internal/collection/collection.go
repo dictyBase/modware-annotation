@@ -6,6 +6,18 @@ import (
 	"slices"
 )
 
+// Find searches for an element in a slice that satisfies the predicate. It
+// returns a pointer to the first element found and true, or nil and false if no
+// element is found.
+func Find[T any](slice []T, predicate func(T) bool) (*T, bool) {
+	for i := range slice {
+		if predicate(slice[i]) {
+			return &slice[i], true
+		}
+	}
+	return nil, false
+}
+
 // Map returns the slice obtained after applying the given function over every
 // element in the given slice.
 func Map[T1, T2 any](slc []T1, fnc func(T1) T2) []T2 {
