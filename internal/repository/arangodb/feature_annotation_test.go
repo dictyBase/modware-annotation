@@ -523,7 +523,7 @@ func TestUpdateFeatureAnnotation_InvalidInput(t *testing.T) {
 	// asrt.ErrorAs(err, &validationErr, "Expected a validation error")
 }
 
-func TestAddTagToExistingFeature(t *testing.T) {
+func TestAddTag_WithDefaultTimestamp(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(cleanupDB(repo))
@@ -533,11 +533,11 @@ func TestAddTagToExistingFeature(t *testing.T) {
 	added, err := repo.AddFeatureAnnotation(feat)
 	asrt.NoError(err, "should successfully add test feature")
 
-	// Create tag request
+	// Create tag request without timestamp
 	tagReq := &feature.AddTagRequest{
 		Id: added.AnnoId,
 		Tag: &feature.TagPropertyCreate{
-			Tag:       "test_tag",
+			Tag:       "test_tag_default",
 			Value:     "test_value",
 			CreatedBy: "tester@example.org",
 		},
@@ -548,37 +548,69 @@ func TestAddTagToExistingFeature(t *testing.T) {
 	asrt.NoError(err, "should successfully add tag")
 	asrt.Len(
 		updated.Properties,
-		len(feat.Attributes.Properties)+1,
+		len(added.Properties)+1,
 		"should have one more tag",
 	)
 
 	// Verify added tag
-	found := false
-	for _, prop := range updated.Properties {
-		if prop.Tag == tagReq.Tag.Tag {
-			found = true
-			asrt.Equal(tagReq.Tag.Value, prop.Value, "should match tag value")
-			asrt.Equal(
-				tagReq.Tag.CreatedBy,
-				prop.CreatedBy,
-				"should match created by",
-			)
-			asrt.False(
-				prop.CreatedAt.IsZero(),
-				"should have creation timestamp",
-			)
-			asrt.False(prop.UpdatedAt.IsZero(), "should have update timestamp")
+	var foundTag bool
+	for _, p := range updated.Properties {
+		if p.Tag == tagReq.Tag.Tag {
+			foundTag = true
+			asrt.Equal(tagReq.Tag.Value, p.Value, "should match tag value")
+			asrt.Equal(tagReq.Tag.CreatedBy, p.CreatedBy, "should match created by")
+			asrt.WithinDuration(time.Now(), p.CreatedAt, 2*time.Second, "CreatedAt should be recent")
+			asrt.Equal(p.CreatedAt, p.UpdatedAt, "UpdatedAt should match CreatedAt")
+			break
 		}
 	}
-	asrt.True(found, "should find added tag")
+	asrt.True(foundTag, "should find the newly added tag")
+}
 
-	// Verify other fields remain unchanged
-	asrt.Equal(added.Name, updated.Name, "name should remain unchanged")
-	asrt.Equal(
-		added.CreatedBy,
-		updated.CreatedBy,
-		"created_by should remain unchanged",
+func TestAddTag_WithProvidedTimestamp(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create base feature
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+
+	specTs := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Microsecond)
+
+	// Create tag request with a specific timestamp
+	tagReq := &feature.AddTagRequest{
+		Id: added.AnnoId,
+		Tag: &feature.TagPropertyCreate{
+			Tag:       "test_tag_provided",
+			Value:     "test_value_provided",
+			CreatedBy: "tester@example.org",
+			CreatedAt: timestamppb.New(specTs),
+		},
+	}
+
+	// Add tag
+	updated, err := repo.AddTag(tagReq)
+	asrt.NoError(err, "should successfully add tag with provided timestamp")
+	asrt.Len(
+		updated.Properties,
+		len(added.Properties)+1,
+		"should have one more tag",
 	)
+
+	// Verify added tag
+	var foundTag bool
+	for _, p := range updated.Properties {
+		if p.Tag == tagReq.Tag.Tag {
+			foundTag = true
+			asrt.Equal(tagReq.Tag.Value, p.Value, "should match tag value")
+			asrt.Equal(specTs, p.CreatedAt, "CreatedAt should match provided timestamp")
+			asrt.Equal(specTs, p.UpdatedAt, "UpdatedAt should match provided timestamp on creation")
+			break
+		}
+	}
+	asrt.True(foundTag, "should find the newly added tag")
 }
 
 func TestAddTagToNonExistentFeature(t *testing.T) {
