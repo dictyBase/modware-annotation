@@ -8,6 +8,7 @@ import (
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/repository"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -553,18 +554,30 @@ func TestAddTag_WithDefaultTimestamp(t *testing.T) {
 	)
 
 	// Verify added tag
-	var foundTag bool
-	for _, p := range updated.Properties {
-		if p.Tag == tagReq.Tag.Tag {
-			foundTag = true
-			asrt.Equal(tagReq.Tag.Value, p.Value, "should match tag value")
-			asrt.Equal(tagReq.Tag.CreatedBy, p.CreatedBy, "should match created by")
-			asrt.WithinDuration(time.Now(), p.CreatedAt, 2*time.Second, "CreatedAt should be recent")
-			asrt.Equal(p.CreatedAt, p.UpdatedAt, "UpdatedAt should match CreatedAt")
-			break
-		}
-	}
-	asrt.True(foundTag, "should find the newly added tag")
+	found, otk := collection.Find(
+		updated.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == tagReq.Tag.Tag
+		},
+	)
+	asrt.True(otk, "should find the newly added tag")
+	asrt.Equal(tagReq.Tag.Value, found.Value, "should match tag value")
+	asrt.Equal(
+		tagReq.Tag.CreatedBy,
+		found.CreatedBy,
+		"should match created by",
+	)
+	asrt.WithinDuration(
+		time.Now(),
+		found.CreatedAt,
+		2*time.Second,
+		"CreatedAt should be recent",
+	)
+	asrt.Equal(
+		found.CreatedAt,
+		found.UpdatedAt,
+		"UpdatedAt should match CreatedAt",
+	)
 }
 
 func TestAddTag_WithProvidedTimestamp(t *testing.T) {
@@ -600,17 +613,24 @@ func TestAddTag_WithProvidedTimestamp(t *testing.T) {
 	)
 
 	// Verify added tag
-	var foundTag bool
-	for _, p := range updated.Properties {
-		if p.Tag == tagReq.Tag.Tag {
-			foundTag = true
-			asrt.Equal(tagReq.Tag.Value, p.Value, "should match tag value")
-			asrt.Equal(specTs, p.CreatedAt, "CreatedAt should match provided timestamp")
-			asrt.Equal(specTs, p.UpdatedAt, "UpdatedAt should match provided timestamp on creation")
-			break
-		}
-	}
-	asrt.True(foundTag, "should find the newly added tag")
+	found, ok := collection.Find(
+		updated.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == tagReq.Tag.Tag
+		},
+	)
+	asrt.True(ok, "should find the newly added tag")
+	asrt.Equal(tagReq.Tag.Value, found.Value, "should match tag value")
+	asrt.Equal(
+		specTs,
+		found.CreatedAt,
+		"CreatedAt should match provided timestamp",
+	)
+	asrt.Equal(
+		specTs,
+		found.UpdatedAt,
+		"UpdatedAt should match provided timestamp on creation",
+	)
 }
 
 func TestAddTagToNonExistentFeature(t *testing.T) {
