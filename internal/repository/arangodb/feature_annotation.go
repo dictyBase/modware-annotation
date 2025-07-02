@@ -193,8 +193,6 @@ func (fann *featureAnnoRepo) AddFeatureAnnotation(
 	return newDoc, nil
 }
 
-// createFeatureAnnotationDoc creates a new feature annotation document from the input.
-
 // storeFeatureAnnotation stores the feature annotation in the database and returns the new document.
 func (fann *featureAnnoRepo) storeFeatureAnnotation(
 	txr *manager.TransactionHandler,
@@ -431,15 +429,20 @@ func (fann *featureAnnoRepo) AddTag(
 		return nil, err
 	}
 
+	createdAt := time.Now()
+	if req.Tag.CreatedAt.IsValid() {
+		createdAt = req.Tag.CreatedAt.AsTime()
+	}
+
 	// Append new tag
 	newTags := doc.Properties
 	newTags = append(newTags, model.TagPropertyDoc{
 		Tag:       req.Tag.Tag,
 		Value:     req.Tag.Value,
 		CreatedBy: req.Tag.CreatedBy,
-		CreatedAt: time.Now(),
+		CreatedAt: createdAt,
 		UpdatedBy: req.Tag.CreatedBy,
-		UpdatedAt: time.Now(),
+		UpdatedAt: createdAt,
 	})
 	newDoc := &model.FeatureAnnotationDoc{}
 	ctx := driver.WithReturnNew(context.Background(), newDoc)
