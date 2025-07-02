@@ -468,9 +468,7 @@ func (fann *featureAnnoRepo) UpdateTag(
 	}
 
 	// Find tag index using IndexFunc
-	idx := slices.IndexFunc(doc.Properties, func(p model.TagPropertyDoc) bool {
-		return p.Tag == req.Tag.Tag
-	})
+	idx := slices.IndexFunc(doc.Properties, findTagPredicate(req.Tag.Tag))
 	if idx == -1 {
 		return nil, fmt.Errorf("tag %s not found", req.Tag.Tag)
 	}
@@ -511,9 +509,7 @@ func (fann *featureAnnoRepo) RemoveTag(
 		return err
 	}
 	// Find tag index using IndexFunc
-	idx := slices.IndexFunc(doc.Properties, func(p model.TagPropertyDoc) bool {
-		return p.Tag == req.Tag
-	})
+	idx := slices.IndexFunc(doc.Properties, findTagPredicate(req.Tag))
 	if idx == -1 {
 		return fmt.Errorf("tag %s not found", req.Tag)
 	}
@@ -593,6 +589,12 @@ func (fann *featureAnnoRepo) createPublicationEdgesTx(
 	}
 
 	return nil
+}
+
+func findTagPredicate(tag string) func(p model.TagPropertyDoc) bool {
+	return func(p model.TagPropertyDoc) bool {
+		return p.Tag == tag
+	}
 }
 
 func createFeatureAnnotationDoc(
