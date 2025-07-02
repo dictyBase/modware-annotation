@@ -680,8 +680,30 @@ func TestUpdateExistingTag(t *testing.T) {
 			Tag:       "update_test",
 			Value:     "updated",
 			UpdatedBy: "updater@example.org",
+func seedAnnotationWithTags(
+	t *testing.T,
+	repo repository.FeatureAnnotationRepository,
+) *model.FeatureAnnotationDoc {
+	t.Helper()
+	assert := require.New(t)
+	newFeat, err := repo.AddFeatureAnnotation(&feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285921",
+		CreatedBy: "test@test.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: "pkaR",
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "baz",
+					Value:     "quax",
+					CreatedBy: "test@test.com",
+				},
+				{
+					Tag:       "foo",
+					Value:     "bar",
+					CreatedBy: "test@test.com",
+				},
+			},
 		},
-	}
 
 	// Execute update
 	updated, err := repo.UpdateTag(updateReq)
