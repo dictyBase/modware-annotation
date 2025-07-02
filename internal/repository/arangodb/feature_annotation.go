@@ -392,7 +392,7 @@ func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
 	}
 
 	if purge {
-		err := fann.database.Do(featurePurgeQ, bindVars)
+		err = fann.database.Do(featurePurgeQ, bindVars)
 		if err != nil {
 			return fmt.Errorf("error executing purge query: %w", err)
 		}
