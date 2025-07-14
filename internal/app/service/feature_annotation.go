@@ -13,8 +13,6 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -194,32 +192,6 @@ func (srv *FeatureAnnotationService) AddTag(
 	}
 
 	return featProto, nil
-}
-
-//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
-func (srv *FeatureAnnotationService) UpdateTag(
-	ctx context.Context,
-	req *feature.UpdateTagRequest,
-) (*feature.FeatureAnnotation, error) {
-	//nolint:wrapcheck // gRPC status errors should not be wrapped
-	return nil, status.Error(
-		codes.Unimplemented,
-		"UpdateTag method is deprecated and no longer supported. "+
-			"Use RemoveTags followed by AddTags, or SetTags for complete tag replacement",
-	)
-}
-
-//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
-func (srv *FeatureAnnotationService) RemoveTag(
-	ctx context.Context,
-	//nolint
-	req *feature.RemoveTagRequest,
-) (*feature.FeatureAnnotation, error) {
-	//nolint:wrapcheck // gRPC status errors should not be wrapped
-	return nil, status.Error(
-		codes.Unimplemented,
-		"RemoveTag method is deprecated and no longer supported. Use RemoveTags method instead",
-	)
 }
 
 func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
