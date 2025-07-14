@@ -28,7 +28,16 @@ type FeatureAnnotationRepository interface {
 	// Dbh returns the underlying database handler
 	Dbh() *manager.Database
 	// Tag management methods
+	// AddTag adds a single tag to an existing feature annotation
 	AddTag(req *feature.AddTagRequest) (*model.FeatureAnnotationDoc, error)
+	// AddTags adds multiple tags to an existing feature annotation
+	AddTags(req *feature.AddTagsRequest) (*model.FeatureAnnotationDoc, error)
+	// SetTags replaces all tags for a feature annotation with the provided set
+	SetTags(req *feature.SetTagsRequest) (*model.FeatureAnnotationDoc, error)
+	// RemoveTags removes tags from a feature annotation by tag and value
+	RemoveTags(req *feature.RemoveTagsRequest) (*model.FeatureAnnotationDoc, error)
+
+	// Publication-based queries
 	// ListByPublicationId retrieves all feature annotations associated with the given publication ID and source
 	ListByPublicationId(id string, source string) ([]*model.FeatureAnnotationDoc, error)
 
