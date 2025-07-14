@@ -1,10 +1,10 @@
-This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
 The content has been processed where comments have been removed, content has been compressed (code blocks are separated by ⋮---- delimiter).
 
 # File Summary
 
 ## Purpose
-This file contains a packed representation of the entire repository's contents.
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
 
@@ -29,6 +29,7 @@ The content is organized as follows:
 ## Notes
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/**organism**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Code comments have been removed from supported file types
@@ -37,54 +38,10 @@ The content is organized as follows:
 
 # Directory Structure
 ```
-feature_annotation_organism.proto
 feature_annotation.proto
 ```
 
 # Files
-
-## File: feature_annotation_organism.proto
-```protobuf
-syntax = "proto3";
-
-package dictybase.feature_annotation;
-
-import "buf/validate/validate.proto";
-import "dictybase/feature_annotation/feature_annotation.proto";
-import "dictybase/organism/organism.proto";
-import "google/protobuf/empty.proto";
-
-option cc_enable_arenas = true;
-option go_package = "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation;feature_annotation";
-option java_multiple_files = true;
-option java_outer_classname = "OrganismFeatureProto";
-option java_package = "org.dictybase.feature";
-option objc_class_prefix = "DICTYAPI";
-
-// The organism-feature relationship service specification
-service OrganismFeatureService {
-  // Link a feature annotation to an organism
-  rpc LinkFeatureToOrganism(OrganismFeatureLink) returns (google.protobuf.Empty) {}
-  // Get organism for a feature
-  rpc GetFeatureOrganism(FeatureAnnotationId) returns (dictybase.organism.Organism) {}
-  // Update feature's organism link
-  rpc UpdateFeatureOrganism(OrganismFeatureUpdate) returns (google.protobuf.Empty) {}
-  // Remove feature's organism link
-  rpc RemoveFeatureOrganism(FeatureAnnotationId) returns (google.protobuf.Empty) {}
-}
-
-// Message for linking feature to organism
-message OrganismFeatureLink {
-  int64 organism_id = 1 [(buf.validate.field).required = true];
-  string feature_id = 2 [(buf.validate.field).required = true];
-}
-
-// Message for updating organism-feature relationship
-message OrganismFeatureUpdate {
-  string feature_id = 1 [(buf.validate.field).required = true];
-  int64 new_organism_id = 2 [(buf.validate.field).required = true];
-}
-```
 
 ## File: feature_annotation.proto
 ```protobuf
@@ -111,16 +68,27 @@ service FeatureAnnotationService {
   rpc GetFeatureAnnotation(FeatureAnnotationId) returns (FeatureAnnotation) {}
   // Retrieves the specified feature annotation by its name
   rpc GetFeatureAnnotationByName(FeatureName) returns (FeatureAnnotation) {}
-  // Update an existing feature annotation. Any given tag will be appended to the existing tags
+  // Update an existing feature annotation. Any included tags will replace all
+  // existing tags (identical behavior to SetTags)
   rpc UpdateFeatureAnnotation(FeatureAnnotationUpdate) returns (FeatureAnnotation) {}
   // Delete an existing feature annotation
   rpc DeleteFeatureAnnotation(DeleteFeatureAnnotationRequest) returns (google.protobuf.Empty) {}
   // Add tag to an existing feature annotation
   rpc AddTag(AddTagRequest) returns (FeatureAnnotation) {}
+  // Add multiple tags to an existing feature annotation
+  rpc AddTags(AddTagsRequest) returns (FeatureAnnotation) {}
+  // Replace all tags for a feature annotation (idempotent full-update)
+  rpc SetTags(SetTagsRequest) returns (FeatureAnnotation) {}
   // Update an existing tag in a feature annotation
-  rpc UpdateTag(UpdateTagRequest) returns (FeatureAnnotation) {}
+  rpc UpdateTag(UpdateTagRequest) returns (FeatureAnnotation) {
+    option deprecated = true;
+  }
   // Remove a tag from a feature annotation
-  rpc RemoveTag(RemoveTagRequest) returns (FeatureAnnotation) {}
+  rpc RemoveTag(RemoveTagRequest) returns (FeatureAnnotation) {
+    option deprecated = true;
+  }
+  // Remove a tag from a feature annotation
+  rpc RemoveTags(RemoveTagsRequest) returns (FeatureAnnotation) {}
   // Retrieves a list of feature annotations by PubMed ID
   rpc ListFeatureAnnotationsByPubmedId(PubmedId) returns (FeatureAnnotationCollection) {}
   // Retrieves a list of feature annotations by DOI (Digital Object Identifier)
@@ -303,15 +271,25 @@ message TagPropertyCreate {
 // TagPropertyUpdate contains the information needed to update an existing tag
 // property.
 message TagPropertyUpdate {
-  string tag = 1 [(buf.validate.field).required = true];
-  string value = 2 [(buf.validate.field).required = true];
+  option deprecated = true;
+  string tag = 1 [
+    deprecated = true,
+    (buf.validate.field).required = true
+  ];
+  string value = 2 [
+    deprecated = true,
+    (buf.validate.field).required = true
+  ];
   // email id of the user who created the tag
-  string updated_by = 3 [(buf.validate.field).cel = {
-    id: "valid_email"
-    message: "email must be a valid email"
-    expression: "this.isEmail()"
-  }];
-  google.protobuf.Timestamp updated_at = 4;
+  string updated_by = 3 [
+    deprecated = true,
+    (buf.validate.field).cel = {
+      id: "valid_email"
+      message: "email must be a valid email"
+      expression: "this.isEmail()"
+    }
+  ];
+  google.protobuf.Timestamp updated_at = 4 [deprecated = true];
 }
 
 // Dbxref represents a deprecated cross-reference to an external database.
@@ -331,20 +309,55 @@ message AddTagRequest {
   TagPropertyCreate tag = 2 [(buf.validate.field).required = true];
 }
 
-// UpdateTagRequest specifies a feature annotation and updated tag values.
-message UpdateTagRequest {
+// AddTagsRequest specifies a feature annotation and multiple tags to add to it.
+message AddTagsRequest {
   // ID of feature annotation to modify
   string id = 1 [(buf.validate.field).required = true];
+  // Tags to be added
+  repeated TagPropertyCreate tags = 2 [(buf.validate.field).required = true];
+}
+
+// SetTagsRequest specifies a feature annotation and the complete set of tags to
+// replace all existing tags.
+message SetTagsRequest {
+  // ID of feature annotation to modify
+  string id = 1 [(buf.validate.field).required = true];
+  // Complete set of tags to replace all existing tags
+  repeated TagPropertyCreate tags = 2 [(buf.validate.field).required = true];
+}
+
+// UpdateTagRequest specifies a feature annotation and updated tag values.
+message UpdateTagRequest {
+  option deprecated = true;
+  // ID of feature annotation to modify
+  string id = 1 [
+    deprecated = true,
+    (buf.validate.field).required = true
+  ];
   // Updated tag values
-  TagPropertyUpdate tag = 2 [(buf.validate.field).required = true];
+  TagPropertyUpdate tag = 2 [
+    deprecated = true,
+    (buf.validate.field).required = true
+  ];
 }
 
 // RemoveTagRequest specifies a feature annotation and a tag to remove from it.
 message RemoveTagRequest {
+  option deprecated = true;
+  // ID of feature annotation to modify
+  string id = 1 [deprecated = true];
+  // Tag to remove
+  string tag = 2 [deprecated = true];
+}
+
+// RemoveTagsRequest specifies a feature annotation and a tag to remove from it.
+message RemoveTagsRequest {
   // ID of feature annotation to modify
   string id = 1 [(buf.validate.field).required = true];
-  // Tag to remove
+  // Tag name to remove
   string tag = 2 [(buf.validate.field).required = true];
+  // Tag value to remove
+  string value = 3 [(buf.validate.field).required = true];
 }
 
 // PubmedId is used to specify a PubMed ID for retrieving feature annotations.
