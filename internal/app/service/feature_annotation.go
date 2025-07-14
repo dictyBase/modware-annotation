@@ -13,6 +13,8 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -194,80 +196,30 @@ func (srv *FeatureAnnotationService) AddTag(
 	return featProto, nil
 }
 
+//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
 func (srv *FeatureAnnotationService) UpdateTag(
 	ctx context.Context,
 	req *feature.UpdateTagRequest,
 ) (*feature.FeatureAnnotation, error) {
-	if err := protovalidate.Validate(req); err != nil {
-		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
-	}
-	feat, err := srv.repo.UpdateTag(req)
-	if err != nil {
-		if repository.IsAnnotationNotFound(err) {
-			return nil, aphgrpc.HandleNotFoundError(ctx, err)
-		}
-		return nil, aphgrpc.HandleUpdateError(ctx, err)
-	}
-	featProto := convertToProto(feat)
-	if err := srv.publisher.Publish(
-		srv.Topics["featureAnnotationUpdate"],
-		featProto,
-	); err != nil {
-		return nil, aphgrpc.HandleUpdateError(ctx, err)
-	}
-
-	return featProto, nil
+	//nolint:wrapcheck // gRPC status errors should not be wrapped
+	return nil, status.Error(
+		codes.Unimplemented,
+		"UpdateTag method is deprecated and no longer supported. "+
+			"Use RemoveTags followed by AddTags, or SetTags for complete tag replacement",
+	)
 }
 
+//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
 func (srv *FeatureAnnotationService) RemoveTag(
 	ctx context.Context,
+	//nolint
 	req *feature.RemoveTagRequest,
 ) (*feature.FeatureAnnotation, error) {
-	if err := protovalidate.Validate(req); err != nil {
-		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
-	}
-	// First, attempt to remove the tag
-	err := srv.repo.RemoveTag(req)
-	if err != nil {
-		if repository.IsAnnotationNotFound(err) {
-			return nil, aphgrpc.HandleNotFoundError(ctx, err)
-		}
-		return nil, aphgrpc.HandleDeleteError(ctx, err)
-	}
-
-	// If removal is successful, fetch the updated annotation
-	feat, err := srv.repo.GetFeatureAnnotation(req.Id)
-	if err != nil {
-		// This case should ideally not happen if the RemoveTag
-		// succeeded, but handle defensively
-		if repository.IsAnnotationNotFound(err) {
-			return nil, aphgrpc.HandleNotFoundError(
-				ctx,
-				fmt.Errorf(
-					"annotation not found after tag removal: %w",
-					err,
-				),
-			)
-		}
-		return nil, aphgrpc.HandleGetError(
-			ctx,
-			fmt.Errorf(
-				"failed to fetch annotation after tag removal: %w",
-				err,
-			),
-		)
-	}
-
-	// Convert and publish the updated annotation state
-	featProto := convertToProto(feat)
-	if err := srv.publisher.Publish(
-		srv.Topics["featureAnnotationUpdate"],
-		featProto,
-	); err != nil {
-		return nil, aphgrpc.HandleUpdateError(ctx, err)
-	}
-
-	return featProto, nil
+	//nolint:wrapcheck // gRPC status errors should not be wrapped
+	return nil, status.Error(
+		codes.Unimplemented,
+		"RemoveTag method is deprecated and no longer supported. Use RemoveTags method instead",
+	)
 }
 
 func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
