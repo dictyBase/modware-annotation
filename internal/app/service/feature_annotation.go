@@ -13,6 +13,8 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -192,6 +194,48 @@ func (srv *FeatureAnnotationService) AddTag(
 	}
 
 	return featProto, nil
+}
+
+func (srv *FeatureAnnotationService) AddTags(
+	ctx context.Context,
+	req *feature.AddTagsRequest,
+) (*feature.FeatureAnnotation, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	//nolint:wrapcheck // gRPC status errors should not be wrapped
+	return nil, status.Error(
+		codes.Unimplemented,
+		"AddTags method is not yet implemented",
+	)
+}
+
+func (srv *FeatureAnnotationService) SetTags(
+	ctx context.Context,
+	req *feature.SetTagsRequest,
+) (*feature.FeatureAnnotation, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	//nolint:wrapcheck // gRPC status errors should not be wrapped
+	return nil, status.Error(
+		codes.Unimplemented,
+		"SetTags method is not yet implemented",
+	)
+}
+
+func (srv *FeatureAnnotationService) RemoveTags(
+	ctx context.Context,
+	req *feature.RemoveTagsRequest,
+) (*feature.FeatureAnnotation, error) {
+	if err := protovalidate.Validate(req); err != nil {
+		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+	}
+	//nolint:wrapcheck // gRPC status errors should not be wrapped
+	return nil, status.Error(
+		codes.Unimplemented,
+		"RemoveTags method is not yet implemented",
+	)
 }
 
 func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
