@@ -546,6 +546,27 @@ func (fann *featureAnnoRepo) RemoveTag(
 	return nil
 }
 
+// AddTags adds multiple tags to an existing feature annotation.
+func (fann *featureAnnoRepo) AddTags(
+	req *feature.AddTagsRequest,
+) (*model.FeatureAnnotationDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// SetTags replaces all tags for a feature annotation with the provided set.
+func (fann *featureAnnoRepo) SetTags(
+	req *feature.SetTagsRequest,
+) (*model.FeatureAnnotationDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// RemoveTags removes tags from a feature annotation by tag and value.
+func (fann *featureAnnoRepo) RemoveTags(
+	req *feature.RemoveTagsRequest,
+) (*model.FeatureAnnotationDoc, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 // Dbh returns the underlying database handler.
 func (fann *featureAnnoRepo) Dbh() *manager.Database {
 	return fann.database
