@@ -697,8 +697,10 @@ func TestUpdateTag_SuccessDefaultTimestamp(t *testing.T) {
 	)
 	asrt.True(otk, "tag 'foo' should be found in the seeded properties")
 
+	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 	updReq := &feature.UpdateTagRequest{
 		Id: feat.AnnoId,
+		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 		Tag: &feature.TagPropertyUpdate{
 			Tag:       "foo",
 			Value:     "new-bar",
@@ -731,8 +733,10 @@ func TestUpdateTag_SuccessExplicitTimestamp(t *testing.T) {
 
 	feat := seedAnnotationWithTags(t, repo)
 	customTime := time.Now().Add(-24 * time.Hour).UTC()
+	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 	updReq := &feature.UpdateTagRequest{
 		Id: feat.AnnoId,
+		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 		Tag: &feature.TagPropertyUpdate{
 			Tag:       "baz",
 			Value:     "new-quax",
@@ -762,8 +766,10 @@ func TestUpdateTag_FailNonExistentTag(t *testing.T) {
 	t.Cleanup(cleanupDB(repo))
 
 	feat := seedAnnotationWithTags(t, repo)
+	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 	updReq := &feature.UpdateTagRequest{
 		Id: feat.AnnoId,
+		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 		Tag: &feature.TagPropertyUpdate{
 			Tag: "non-existent-tag",
 		},
@@ -778,8 +784,10 @@ func TestUpdateTag_FailNonExistentFeature(t *testing.T) {
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(cleanupDB(repo))
 
+	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 	updReq := &feature.UpdateTagRequest{
 		Id: "non-existent-id",
+		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 		Tag: &feature.TagPropertyUpdate{
 			Tag: "foo",
 		},
@@ -818,6 +826,7 @@ func TestRemoveTag(t *testing.T) {
 	)
 
 	// Remove tag
+	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 	err = repo.RemoveTag(&feature.RemoveTagRequest{
 		Id:  added.AnnoId,
 		Tag: "remove_me",
@@ -855,6 +864,7 @@ func TestRemoveNonExistentTag(t *testing.T) {
 	asrt.NoError(err, "should create test feature")
 
 	// Attempt to remove tag
+	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
 	err = repo.RemoveTag(&feature.RemoveTagRequest{
 		Id:  added.AnnoId,
 		Tag: "ghost_tag",

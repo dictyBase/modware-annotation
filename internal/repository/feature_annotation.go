@@ -29,9 +29,11 @@ type FeatureAnnotationRepository interface {
 	Dbh() *manager.Database
 	// Tag management methods
 	AddTag(req *feature.AddTagRequest) (*model.FeatureAnnotationDoc, error)
+	//nolint:staticcheck // SA1019: Interface methods for deprecated functionality during transition period
 	UpdateTag(
 		req *feature.UpdateTagRequest,
 	) (*model.FeatureAnnotationDoc, error)
+	//nolint:staticcheck // SA1019: Interface methods for deprecated functionality during transition period
 	RemoveTag(
 		req *feature.RemoveTagRequest,
 	) error
