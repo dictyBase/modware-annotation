@@ -490,19 +490,68 @@ func (fann *featureAnnoRepo) AddTags(
 		}
 		return nil, fmt.Errorf("error adding tags: %w", err)
 	}
+
 	newDoc := &model.FeatureAnnotationDoc{}
 	if err := result.Read(newDoc); err != nil {
 		return nil, fmt.Errorf("error reading result: %w", err)
+	}
+
+	// Commit the transaction
+	if err := txr.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %w", err)
 	}
 
 	return newDoc, nil
 }
 
 // SetTags replaces all tags for a feature annotation with the provided set.
+// This method completely replaces the existing properties array with the new
+// tags, unlike AddTags which appends to the existing properties.
 func (fann *featureAnnoRepo) SetTags(
 	req *feature.SetTagsRequest,
 ) (*model.FeatureAnnotationDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	doc, err := fann.GetFeatureAnnotation(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Begin transaction with context
+	txr, err := fann.database.BeginTransaction(
+		context.Background(),
+		&manager.TransactionOptions{
+			WriteCollections: []string{fann.feature.Name()},
+		})
+	if err != nil {
+		return nil, fmt.Errorf("error beginning transaction: %w", err)
+	}
+
+	result, err := txr.DoRun(featurePropsSetQ, map[string]interface{}{
+		"@collection": fann.feature.Name(),
+		"key":         doc.Key,
+		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
+	})
+	if err != nil {
+		if abortErr := txr.Abort(); abortErr != nil {
+			return nil, fmt.Errorf(
+				"error in aborting transaction after %v: %w",
+				err,
+				abortErr,
+			)
+		}
+		return nil, fmt.Errorf("error setting tags: %w", err)
+	}
+
+	newDoc := &model.FeatureAnnotationDoc{}
+	if err := result.Read(newDoc); err != nil {
+		return nil, fmt.Errorf("error reading result: %w", err)
+	}
+
+	// Commit the transaction
+	if err := txr.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %w", err)
+	}
+
+	return newDoc, nil
 }
 
 // RemoveTags removes tags from a feature annotation by tag and value.
