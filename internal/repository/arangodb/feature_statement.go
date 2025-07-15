@@ -96,5 +96,14 @@ const (
         	FILTER e.source == @source
         	FILTER v.is_obsolete == false
         	RETURN v
-   `
+   	`
+
+	featurePropsAppendQ = `
+	FOR doc IN @@collection
+		FILTER doc._key == @key
+		UPDATE doc WITH {
+			properties: APPEND(doc.properties, @newprops)
+		} IN @@collection 
+		RETURN NEW
+	`
 )
