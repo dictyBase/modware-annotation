@@ -462,7 +462,26 @@ func (fann *featureAnnoRepo) AddTag(
 func (fann *featureAnnoRepo) AddTags(
 	req *feature.AddTagsRequest,
 ) (*model.FeatureAnnotationDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	doc, err := fann.GetFeatureAnnotation(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	newDoc := &model.FeatureAnnotationDoc{}
+	ctx := driver.WithReturnNew(context.Background(), newDoc)
+	meta, err := fann.feature.UpdateDocument(
+		driver.WithMergeObjects(ctx, true),
+		doc.Key,
+		map[string]interface{}{"properties": collection.Map(
+			req.Tags,
+			convertNewTagToModel,
+		)})
+	if err != nil {
+		return nil, fmt.Errorf("error adding tags: %w", err)
+	}
+	newDoc.DocumentMeta = meta
+
+	return newDoc, nil
 }
 
 // SetTags replaces all tags for a feature annotation with the provided set.
