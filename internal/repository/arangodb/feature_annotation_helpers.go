@@ -2,6 +2,7 @@ package arangodb
 
 import (
 	"fmt"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 	manager "github.com/dictyBase/arangomanager"
@@ -268,6 +269,21 @@ func convertProperty(prop *feature.TagProperty) model.TagPropertyDoc {
 	}
 
 	return mprop
+}
+
+func convertNewTagToModel(tag *feature.TagPropertyCreate) model.TagPropertyDoc {
+	createdAt := time.Now()
+	if tag.CreatedAt.IsValid() {
+		createdAt = tag.CreatedAt.AsTime()
+	}
+	return model.TagPropertyDoc{
+		Tag:       tag.Tag,
+		Value:     tag.Value,
+		CreatedBy: tag.CreatedBy,
+		CreatedAt: createdAt,
+		UpdatedBy: tag.CreatedBy,
+		UpdatedAt: createdAt,
+	}
 }
 
 func setOptionalFields(
