@@ -1045,6 +1045,17 @@ func createAddTagsRequest(
 	}
 }
 
+// createSetTagsRequest creates a SetTagsRequest with the provided tags for testing purposes.
+func createSetTagsRequest(
+	featureId string,
+	tags []*feature.TagPropertyCreate,
+) *feature.SetTagsRequest {
+	return &feature.SetTagsRequest{
+		Id:   featureId,
+		Tags: tags,
+	}
+}
+
 // createTestTag creates a TagPropertyCreate for testing with optional timestamp.
 func createTestTag(
 	tag, value, createdBy string,
@@ -1123,6 +1134,7 @@ func TestAddTags_Success(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Intentional duplication with TestSetTags_DefaultTimestamps - both need to test same timestamp behavior
 func TestAddTags_DefaultTimestamps(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -1406,6 +1418,7 @@ func TestAddTags_EmptyRequest(t *testing.T) {
 	)
 }
 
+//nolint:dupl // Intentional duplication with TestSetTags_VerifyTagProperties - both need to test same property validation
 func TestAddTags_VerifyTagProperties(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -1531,4 +1544,332 @@ func TestAddTags_VerifyTimestamps(t *testing.T) {
 		providedTag.CreatedAt,
 		"provided timestamp should match exactly",
 	)
+}
+
+// verifyNoOriginalTagsRemain checks that none of the original tags are present in the result.
+func verifyNoOriginalTagsRemain(
+	t *testing.T,
+	asrt *require.Assertions,
+	result []model.TagPropertyDoc,
+	originalTags []model.TagPropertyDoc,
+) {
+	t.Helper()
+	for _, originalTag := range originalTags {
+		_, found := collection.Find(
+			result,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
+			},
+		)
+		asrt.False(
+			found,
+			"original tag %s should not be present after SetTags",
+			originalTag.Tag,
+		)
+	}
+}
+
+// verifyTagsCompletelyReplaced checks that original tags are gone and new tags are present.
+func verifyTagsCompletelyReplaced(
+	t *testing.T,
+	asrt *require.Assertions,
+	result []model.TagPropertyDoc,
+	originalTags []model.TagPropertyDoc,
+	newTags []*feature.TagPropertyCreate,
+) {
+	t.Helper()
+
+	// Verify original tags are completely removed
+	verifyNoOriginalTagsRemain(t, asrt, result, originalTags)
+
+	// Verify new tags are all present
+	verifyNewTagsAdded(t, asrt, result, newTags)
+
+	// Verify exact count
+	asrt.Len(
+		result,
+		len(newTags),
+		"should have exactly the number of new tags",
+	)
+}
+
+func TestSetTags_Success(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create base feature with existing tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	asrt.NotEmpty(added.Properties, "feature should have initial properties")
+	originalTags := make([]model.TagPropertyDoc, len(added.Properties))
+	copy(originalTags, added.Properties)
+
+	// Create new tags to replace existing ones
+	newTags := []*feature.TagPropertyCreate{
+		createTestTag("category", "enzyme", "setter@example.org", nil),
+		createTestTag("priority", "high", "setter@example.org", nil),
+	}
+
+	// Replace tags
+	updated, err := repo.SetTags(createSetTagsRequest(
+		added.AnnoId,
+		newTags,
+	))
+	asrt.NoError(err, "should successfully set tags")
+
+	// Verify complete replacement
+	verifyTagsCompletelyReplaced(t, asrt, updated.Properties, originalTags, newTags)
+}
+
+func TestSetTags_ReplaceExistingTags(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with multiple existing tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+
+	// Add more tags first
+	moreTagsAdded, err := repo.AddTags(createAddTagsRequest(
+		added.AnnoId,
+		[]*feature.TagPropertyCreate{
+			createTestTag("extra1", "value1", "extra@example.org", nil),
+			createTestTag("extra2", "value2", "extra@example.org", nil),
+		},
+	))
+	asrt.NoError(err, "should add extra tags")
+	asrt.Greater(len(moreTagsAdded.Properties), 2, "should have multiple tags")
+	originalTags := make([]model.TagPropertyDoc, len(moreTagsAdded.Properties))
+	copy(originalTags, moreTagsAdded.Properties)
+
+	// Create completely different new tags
+	newTags := []*feature.TagPropertyCreate{
+		createTestTag("organism", "dictyostelium", "replacer@example.org", nil),
+		createTestTag("method", "experimental", "replacer@example.org", nil),
+		createTestTag("confidence", "high", "replacer@example.org", nil),
+	}
+
+	// Replace all tags
+	updated, err := repo.SetTags(createSetTagsRequest(
+		moreTagsAdded.AnnoId,
+		newTags,
+	))
+	asrt.NoError(err, "should successfully replace all tags")
+
+	// Verify complete replacement
+	verifyTagsCompletelyReplaced(t, asrt, updated.Properties, originalTags, newTags)
+}
+
+func TestSetTags_EmptyTagSet(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with existing tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	asrt.NotEmpty(added.Properties, "feature should have initial properties")
+
+	// Replace with empty tag set
+	updated, err := repo.SetTags(createSetTagsRequest(
+		added.AnnoId,
+		[]*feature.TagPropertyCreate{},
+	))
+	asrt.NoError(err, "should successfully set empty tags")
+	asrt.Empty(updated.Properties, "should have no tags after setting empty array")
+}
+
+//nolint:dupl // Intentional duplication with TestAddTags_DefaultTimestamps - both need to test same timestamp behavior
+func TestSetTags_DefaultTimestamps(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create base feature
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+
+	// Create tags without timestamps
+	newTags := []*feature.TagPropertyCreate{
+		createTestTag("auto_timestamp1", "value1", "setter@example.org", nil),
+		createTestTag("auto_timestamp2", "value2", "setter@example.org", nil),
+	}
+
+	// Set tags
+	updated, err := repo.SetTags(createSetTagsRequest(
+		added.AnnoId,
+		newTags,
+	))
+	asrt.NoError(err, "should successfully set tags with default timestamps")
+
+	// Verify timestamps are auto-generated and recent
+	for _, expectedTag := range newTags {
+		found, otk := collection.Find(
+			updated.Properties,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == expectedTag.Tag
+			},
+		)
+		asrt.True(otk, "should find tag %s", expectedTag.Tag)
+		asrt.WithinDuration(
+			time.Now(),
+			found.CreatedAt,
+			2*time.Second,
+			"CreatedAt should be recent for tag %s",
+			expectedTag.Tag,
+		)
+		asrt.Equal(
+			found.CreatedAt,
+			found.UpdatedAt,
+			"UpdatedAt should match CreatedAt for new tag %s",
+			expectedTag.Tag,
+		)
+	}
+}
+
+func TestSetTags_ProvidedTimestamps(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+
+	// Create tags with specific timestamps
+	specTs1 := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Microsecond)
+	specTs2 := time.Now().Add(-24 * time.Hour).UTC().Truncate(time.Microsecond)
+	newTags := []*feature.TagPropertyCreate{
+		createTestTag("provided_timestamp1", "value1", "setter@example.org", &specTs1),
+		createTestTag("provided_timestamp2", "value2", "setter@example.org", &specTs2),
+	}
+
+	updated, err := repo.SetTags(createSetTagsRequest(
+		added.AnnoId,
+		newTags,
+	))
+	asrt.NoError(err, "should successfully set tags with provided timestamps")
+
+	// Verify provided timestamps are preserved
+	expectedTimestamps := []time.Time{specTs1, specTs2}
+	for idx, expectedTag := range newTags {
+		found, otk := collection.Find(
+			updated.Properties,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == expectedTag.Tag
+			},
+		)
+		asrt.True(otk, "should find tag %s", expectedTag.Tag)
+		asrt.Equal(
+			expectedTimestamps[idx],
+			found.CreatedAt,
+			"CreatedAt should match provided timestamp for tag %s",
+			expectedTag.Tag,
+		)
+		asrt.Equal(
+			expectedTimestamps[idx],
+			found.UpdatedAt,
+			"UpdatedAt should match provided timestamp for tag %s",
+			expectedTag.Tag,
+		)
+	}
+}
+
+func TestSetTags_NonExistentFeature(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Attempt to set tags on non-existent feature
+	_, err := repo.SetTags(createSetTagsRequest("DDB_G0000000",
+		[]*feature.TagPropertyCreate{
+			createTestTag("test_tag", "test_value", "setter@example.org", nil),
+		}))
+	asrt.Error(err, "should return error for non-existent feature")
+	asrt.True(
+		repository.IsAnnotationNotFound(err),
+		"should be annotation not found error",
+	)
+}
+
+//nolint:dupl // Intentional duplication with TestAddTags_VerifyTagProperties - both need to test same property validation
+func TestSetTags_VerifyTagProperties(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+
+	// Create tags with all properties specified
+	specTs := time.Now().Add(-12 * time.Hour).UTC().Truncate(time.Microsecond)
+	newTags := []*feature.TagPropertyCreate{
+		{
+			Tag:       "comprehensive_tag",
+			Value:     "comprehensive_value",
+			CreatedBy: "comprehensive_setter@example.org",
+			CreatedAt: timestamppb.New(specTs),
+		},
+	}
+
+	updated, err := repo.SetTags(createSetTagsRequest(
+		added.AnnoId,
+		newTags,
+	))
+	asrt.NoError(err, "should successfully set comprehensive tag")
+
+	// Verify all tag properties are correctly stored
+	found, otk := collection.Find(
+		updated.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == "comprehensive_tag"
+		},
+	)
+	asrt.True(otk, "should find comprehensive tag")
+	asrt.Equal("comprehensive_tag", found.Tag, "should store tag name correctly")
+	asrt.Equal("comprehensive_value", found.Value, "should store tag value correctly")
+	asrt.Equal("comprehensive_setter@example.org", found.CreatedBy, "should store created by correctly")
+	asrt.Equal(specTs, found.CreatedAt, "should store created at correctly")
+	asrt.Equal("comprehensive_setter@example.org", found.UpdatedBy, "should set updated by to created by")
+	asrt.Equal(specTs, found.UpdatedAt, "should set updated at to created at")
+}
+
+func TestSetTags_SingleTag(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with multiple existing tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	asrt.NotEmpty(added.Properties, "feature should have initial properties")
+
+	// Replace with single tag
+	updated, err := repo.SetTags(createSetTagsRequest(
+		added.AnnoId,
+		[]*feature.TagPropertyCreate{
+			createTestTag("single_tag", "single_value", "setter@example.org", nil),
+		},
+	))
+	asrt.NoError(err, "should successfully set single tag")
+	asrt.Len(updated.Properties, 1, "should have exactly one tag")
+
+	// Verify single tag was set correctly
+	found, otk := collection.Find(
+		updated.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == "single_tag"
+		},
+	)
+	asrt.True(otk, "should find the single tag")
+	asrt.Equal("single_value", found.Value, "should match tag value")
+	asrt.Equal("setter@example.org", found.CreatedBy, "should match created by")
 }
