@@ -466,20 +466,34 @@ func (fann *featureAnnoRepo) AddTags(
 	if err != nil {
 		return nil, err
 	}
-
-	newDoc := &model.FeatureAnnotationDoc{}
-	ctx := driver.WithReturnNew(context.Background(), newDoc)
-	meta, err := fann.feature.UpdateDocument(
-		driver.WithMergeObjects(ctx, true),
-		doc.Key,
-		map[string]interface{}{"properties": collection.Map(
-			req.Tags,
-			convertNewTagToModel,
-		)})
+	// Begin transaction with context
+	txr, err := fann.database.BeginTransaction(
+		context.Background(),
+		&manager.TransactionOptions{
+			WriteCollections: []string{fann.feature.Name()},
+		})
 	if err != nil {
+		return nil, fmt.Errorf("error beginning transaction: %w", err)
+	}
+	result, err := txr.DoRun(featurePropsAppendQ, map[string]interface{}{
+		"@collection": fann.feature.Name(),
+		"key":         doc.Key,
+		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
+	})
+	if err != nil {
+		if abortErr := txr.Abort(); abortErr != nil {
+			return nil, fmt.Errorf(
+				"error in aborting transaction after %v: %w",
+				err,
+				abortErr,
+			)
+		}
 		return nil, fmt.Errorf("error adding tags: %w", err)
 	}
-	newDoc.DocumentMeta = meta
+	newDoc := &model.FeatureAnnotationDoc{}
+	if err := result.Read(newDoc); err != nil {
+		return nil, fmt.Errorf("error reading result: %w", err)
+	}
 
 	return newDoc, nil
 }
