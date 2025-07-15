@@ -106,4 +106,13 @@ const (
 		} IN @@collection 
 		RETURN NEW
 	`
+
+	featurePropsSetQ = `
+	FOR doc IN @@collection
+		FILTER doc._key == @key
+		UPDATE doc WITH {
+			properties: @newprops
+		} IN @@collection 
+		RETURN NEW
+	`
 )
