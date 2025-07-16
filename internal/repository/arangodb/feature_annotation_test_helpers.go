@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/dictyBase/arangomanager/testarango"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
@@ -455,9 +456,15 @@ func getRemoveTestCases() []removeFeatureTestCase {
 	}
 }
 
-func assertListByPublicationResults(params assertListByPublicationResultsParams) {
+func assertListByPublicationResults(
+	params assertListByPublicationResultsParams,
+) {
 	params.t.Helper()
-	params.asrt.Len(params.results, 2, "Should retrieve exactly 2 feature annotations")
+	params.asrt.Len(
+		params.results,
+		2,
+		"Should retrieve exactly 2 feature annotations",
+	)
 	retrievedIDs := collection.Map(
 		params.results,
 		func(doc *model.FeatureAnnotationDoc) string {
@@ -733,19 +740,22 @@ func createRemoveTagsRequest(id, tag, value string) *feature.RemoveTagsRequest {
 	}
 }
 
-// verifyTagRemoved checks that a specific tag/value pair has been removed from the properties.
+// verifyTagRemoved checks that a specific tag/value pair has been removed from
+// the properties.
 func verifyTagRemoved(params verifyTagRemovedParams) {
 	params.t.Helper()
-	_, found := collection.Find(
-		params.properties,
-		func(p model.TagPropertyDoc) bool {
-			return p.Tag == params.tag && p.Value == params.value
-		},
+	tagSet := mapset.NewSet(
+		collection.Map(params.properties, propertyDocToTag)...)
+	valueSet := mapset.NewSet(
+		collection.Map(params.properties, propertyDocToValue)...)
+	params.asrt.False(
+		tagSet.ContainsOne(params.tag),
+		"tag %s should be removed",
+		params.tag,
 	)
 	params.asrt.False(
-		found,
-		"tag '%s' with value '%s' should be removed",
-		params.tag,
+		valueSet.ContainsOne(params.value),
+		"value %s should be removed",
 		params.value,
 	)
 }
@@ -764,7 +774,8 @@ func verifyOtherTagsPreserved(params verifyOtherTagsPreservedParams) {
 
 	// Verify each non-removed tag is still present
 	for _, originalTag := range params.original {
-		if originalTag.Tag == params.removedTag && originalTag.Value == params.removedValue {
+		if originalTag.Tag == params.removedTag &&
+			originalTag.Value == params.removedValue {
 			continue // Skip the tag that should be removed
 		}
 
