@@ -105,6 +105,23 @@ type verifyTagsCompletelyReplacedParams struct {
 	newTags      []*feature.TagPropertyCreate
 }
 
+type verifyTagRemovedParams struct {
+	t          *testing.T
+	asrt       *require.Assertions
+	properties []model.TagPropertyDoc
+	tag        string
+	value      string
+}
+
+type verifyOtherTagsPreservedParams struct {
+	t            *testing.T
+	asrt         *require.Assertions
+	original     []model.TagPropertyDoc
+	updated      []model.TagPropertyDoc
+	removedTag   string
+	removedValue string
+}
+
 type featFn func() *feature.NewFeatureAnnotation
 
 func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
@@ -704,5 +721,72 @@ func verifyTagsCompletelyReplaced(params verifyTagsCompletelyReplacedParams) {
 		params.result,
 		len(params.newTags),
 		"should have exactly the number of new tags",
+	)
+}
+
+// createRemoveTagsRequest creates a RemoveTagsRequest for testing purposes.
+func createRemoveTagsRequest(id, tag, value string) *feature.RemoveTagsRequest {
+	return &feature.RemoveTagsRequest{
+		Id:    id,
+		Tag:   tag,
+		Value: value,
+	}
+}
+
+// verifyTagRemoved checks that a specific tag/value pair has been removed from the properties.
+func verifyTagRemoved(params verifyTagRemovedParams) {
+	params.t.Helper()
+	_, found := collection.Find(
+		params.properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == params.tag && p.Value == params.value
+		},
+	)
+	params.asrt.False(
+		found,
+		"tag '%s' with value '%s' should be removed",
+		params.tag,
+		params.value,
+	)
+}
+
+// verifyOtherTagsPreserved checks that all tags except the removed one are preserved.
+func verifyOtherTagsPreserved(params verifyOtherTagsPreservedParams) {
+	params.t.Helper()
+
+	// Count tags that should remain (original minus the removed one)
+	expectedCount := 0
+	for _, originalTag := range params.original {
+		if !(originalTag.Tag == params.removedTag && originalTag.Value == params.removedValue) {
+			expectedCount++
+		}
+	}
+
+	// Verify each non-removed tag is still present
+	for _, originalTag := range params.original {
+		if originalTag.Tag == params.removedTag && originalTag.Value == params.removedValue {
+			continue // Skip the tag that should be removed
+		}
+
+		_, found := collection.Find(
+			params.updated,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
+			},
+		)
+		params.asrt.True(
+			found,
+			"tag '%s' with value '%s' should be preserved",
+			originalTag.Tag,
+			originalTag.Value,
+		)
+	}
+
+	// Verify total count is correct
+	params.asrt.Len(
+		params.updated,
+		expectedCount,
+		"should have %d tags after removal",
+		expectedCount,
 	)
 }
