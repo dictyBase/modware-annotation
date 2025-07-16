@@ -1001,7 +1001,28 @@ func verifyOriginalTagsPreserved(
 	}
 }
 
-// verifyNewTagsAdded checks if new tags were correctly added to the properties list.
+// propertyDocToTag extracts the tag name from a TagPropertyDoc.
+func propertyDocToTag(p model.TagPropertyDoc) string {
+	return p.Tag
+}
+
+// tagCreateToTag extracts the tag name from a TagPropertyCreate.
+func tagCreateToTag(p *feature.TagPropertyCreate) string {
+	return p.Tag
+}
+
+// propertyDocToValue extracts the value from a TagPropertyDoc.
+func propertyDocToValue(p model.TagPropertyDoc) string {
+	return p.Value
+}
+
+// tagCreateToValue extracts the value from a TagPropertyCreate.
+func tagCreateToValue(p *feature.TagPropertyCreate) string {
+	return p.Value
+}
+
+// verifyNewTagsAdded checks if new tags were correctly added to the properties
+// list.
 func verifyNewTagsAdded(
 	t *testing.T,
 	asrt *require.Assertions,
@@ -1009,29 +1030,39 @@ func verifyNewTagsAdded(
 	newTags []*feature.TagPropertyCreate,
 ) {
 	t.Helper()
-	for _, expectedTag := range newTags {
-		found, otk := collection.Find(
-			allProperties,
-			func(p model.TagPropertyDoc) bool {
-				return p.Tag == expectedTag.Tag
-			},
-		)
-		asrt.True(
-			otk,
-			"should find new tag %s",
-			expectedTag.Tag,
-		)
-		asrt.Equal(
-			expectedTag.Value,
-			found.Value,
-			"should match new tag value",
-		)
-		asrt.Equal(
-			expectedTag.CreatedBy,
-			found.CreatedBy,
-			"should match new tag created by",
-		)
-	}
+	expectedTags := collection.Pipe2(
+		newTags,
+		collection.CurriedMap(tagCreateToTag),
+		collection.Sorted,
+	)
+	actualTags := collection.Pipe2(
+		allProperties,
+		collection.CurriedMap(propertyDocToTag),
+		collection.Sorted,
+	)
+
+	expectedValues := collection.Pipe2(
+		newTags,
+		collection.CurriedMap(tagCreateToValue),
+		collection.Sorted,
+	)
+	actualValues := collection.Pipe2(
+		allProperties,
+		collection.CurriedMap(propertyDocToValue),
+		collection.Sorted,
+	)
+
+	asrt.True(
+		collection.AllExist(actualTags, expectedTags),
+		"newly added tags should match expected",
+	)
+	asrt.True(
+		collection.AllExist(
+			actualValues,
+			expectedValues,
+		),
+		"newly added values should match expected",
+	)
 }
 
 // createAddTagsRequest creates an AddTagsRequest with the provided tags for testing purposes.
@@ -1620,7 +1651,13 @@ func TestSetTags_Success(t *testing.T) {
 	asrt.NoError(err, "should successfully set tags")
 
 	// Verify complete replacement
-	verifyTagsCompletelyReplaced(t, asrt, updated.Properties, originalTags, newTags)
+	verifyTagsCompletelyReplaced(
+		t,
+		asrt,
+		updated.Properties,
+		originalTags,
+		newTags,
+	)
 }
 
 func TestSetTags_ReplaceExistingTags(t *testing.T) {
@@ -1661,7 +1698,13 @@ func TestSetTags_ReplaceExistingTags(t *testing.T) {
 	asrt.NoError(err, "should successfully replace all tags")
 
 	// Verify complete replacement
-	verifyTagsCompletelyReplaced(t, asrt, updated.Properties, originalTags, newTags)
+	verifyTagsCompletelyReplaced(
+		t,
+		asrt,
+		updated.Properties,
+		originalTags,
+		newTags,
+	)
 }
 
 func TestSetTags_EmptyTagSet(t *testing.T) {
@@ -1681,7 +1724,10 @@ func TestSetTags_EmptyTagSet(t *testing.T) {
 		[]*feature.TagPropertyCreate{},
 	))
 	asrt.NoError(err, "should successfully set empty tags")
-	asrt.Empty(updated.Properties, "should have no tags after setting empty array")
+	asrt.Empty(
+		updated.Properties,
+		"should have no tags after setting empty array",
+	)
 }
 
 //nolint:dupl // Intentional duplication with TestAddTags_DefaultTimestamps - both need to test same timestamp behavior
@@ -1746,8 +1792,18 @@ func TestSetTags_ProvidedTimestamps(t *testing.T) {
 	specTs1 := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Microsecond)
 	specTs2 := time.Now().Add(-24 * time.Hour).UTC().Truncate(time.Microsecond)
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag("provided_timestamp1", "value1", "setter@example.org", &specTs1),
-		createTestTag("provided_timestamp2", "value2", "setter@example.org", &specTs2),
+		createTestTag(
+			"provided_timestamp1",
+			"value1",
+			"setter@example.org",
+			&specTs1,
+		),
+		createTestTag(
+			"provided_timestamp2",
+			"value2",
+			"setter@example.org",
+			&specTs2,
+		),
 	}
 
 	updated, err := repo.SetTags(createSetTagsRequest(
@@ -1833,11 +1889,27 @@ func TestSetTags_VerifyTagProperties(t *testing.T) {
 		},
 	)
 	asrt.True(otk, "should find comprehensive tag")
-	asrt.Equal("comprehensive_tag", found.Tag, "should store tag name correctly")
-	asrt.Equal("comprehensive_value", found.Value, "should store tag value correctly")
-	asrt.Equal("comprehensive_setter@example.org", found.CreatedBy, "should store created by correctly")
+	asrt.Equal(
+		"comprehensive_tag",
+		found.Tag,
+		"should store tag name correctly",
+	)
+	asrt.Equal(
+		"comprehensive_value",
+		found.Value,
+		"should store tag value correctly",
+	)
+	asrt.Equal(
+		"comprehensive_setter@example.org",
+		found.CreatedBy,
+		"should store created by correctly",
+	)
 	asrt.Equal(specTs, found.CreatedAt, "should store created at correctly")
-	asrt.Equal("comprehensive_setter@example.org", found.UpdatedBy, "should set updated by to created by")
+	asrt.Equal(
+		"comprehensive_setter@example.org",
+		found.UpdatedBy,
+		"should set updated by to created by",
+	)
 	asrt.Equal(specTs, found.UpdatedAt, "should set updated at to created at")
 }
 
@@ -1856,7 +1928,12 @@ func TestSetTags_SingleTag(t *testing.T) {
 	updated, err := repo.SetTags(createSetTagsRequest(
 		added.AnnoId,
 		[]*feature.TagPropertyCreate{
-			createTestTag("single_tag", "single_value", "setter@example.org", nil),
+			createTestTag(
+				"single_tag",
+				"single_value",
+				"setter@example.org",
+				nil,
+			),
 		},
 	))
 	asrt.NoError(err, "should successfully set single tag")
