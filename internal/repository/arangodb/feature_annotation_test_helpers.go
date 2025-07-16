@@ -62,11 +62,11 @@ type testListByPublicationIdSuccessParams struct {
 }
 
 type assertListByPublicationResultsParams struct {
-	t        *testing.T
-	asrt     *require.Assertions
-	results  []*model.FeatureAnnotationDoc
-	added1   *model.FeatureAnnotationDoc
-	added2   *model.FeatureAnnotationDoc
+	t       *testing.T
+	asrt    *require.Assertions
+	results []*model.FeatureAnnotationDoc
+	added1  *model.FeatureAnnotationDoc
+	added2  *model.FeatureAnnotationDoc
 }
 
 type verifyOriginalTagsPreservedParams struct {
