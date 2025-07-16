@@ -1783,3 +1783,333 @@ func TestSetTags_SingleTag(t *testing.T) {
 	asrt.Equal("single_value", found.Value, "should match tag value")
 	asrt.Equal("setter@example.org", found.CreatedBy, "should match created by")
 }
+
+func TestRemoveTags_Success(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with multiple tags
+	feat := getBaseFeatureDoc()
+	feat.Attributes.Properties = []*feature.TagProperty{
+		{
+			Tag:       "category",
+			Value:     "enzyme",
+			CreatedBy: "creator@example.org",
+		},
+		{
+			Tag:       "priority",
+			Value:     "high",
+			CreatedBy: "creator@example.org",
+		},
+		{
+			Tag:       "status",
+			Value:     "active",
+			CreatedBy: "creator@example.org",
+		},
+	}
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	originalTagCount := len(added.Properties)
+	asrt.Equal(
+		3,
+		originalTagCount,
+		"feature should have three tags for this test",
+	)
+
+	// Find a tag to remove
+	tagToRemove := added.Properties[0]
+
+	// Remove the tag
+	updated, err := repo.RemoveTags(createRemoveTagsRequest(
+		added.AnnoId,
+		tagToRemove.Tag,
+		tagToRemove.Value,
+	))
+	asrt.NoError(err, "should successfully remove tag")
+
+	// Verify tag was removed
+	verifyTagRemoved(verifyTagRemovedParams{
+		t:          t,
+		asrt:       asrt,
+		properties: updated.Properties,
+		tag:        tagToRemove.Tag,
+		value:      tagToRemove.Value,
+	})
+
+	// Verify other tags were preserved
+	verifyOtherTagsPreserved(verifyOtherTagsPreservedParams{
+		t:            t,
+		asrt:         asrt,
+		original:     added.Properties,
+		updated:      updated.Properties,
+		removedTag:   tagToRemove.Tag,
+		removedValue: tagToRemove.Value,
+	})
+}
+
+func TestRemoveTags_RemoveLastTag(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with a single tag
+	feat := getBaseFeatureDoc()
+	feat.Attributes.Properties = []*feature.TagProperty{
+		{
+			Tag:       "only_tag",
+			Value:     "only_value",
+			CreatedBy: "creator@example.org",
+		},
+	}
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	asrt.Len(added.Properties, 1, "feature should have exactly one tag")
+
+	// Remove the only tag
+	updated, err := repo.RemoveTags(createRemoveTagsRequest(
+		added.AnnoId,
+		"only_tag",
+		"only_value",
+	))
+	asrt.NoError(err, "should successfully remove last tag")
+	asrt.Empty(updated.Properties, "feature should have no tags after removal")
+}
+
+func TestRemoveTags_RemoveMultipleMatches(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with duplicate tag/value pairs
+	feat := getBaseFeatureDoc()
+	feat.Attributes.Properties = []*feature.TagProperty{
+		{
+			Tag:       "duplicate",
+			Value:     "value",
+			CreatedBy: "creator1@example.org",
+		},
+		{
+			Tag:       "duplicate",
+			Value:     "value",
+			CreatedBy: "creator2@example.org",
+		},
+		{
+			Tag:       "other",
+			Value:     "different",
+			CreatedBy: "creator3@example.org",
+		},
+	}
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	asrt.Len(added.Properties, 3, "feature should have three tags")
+
+	// Remove all instances of duplicate tag/value
+	updated, err := repo.RemoveTags(createRemoveTagsRequest(
+		added.AnnoId,
+		"duplicate",
+		"value",
+	))
+	asrt.NoError(err, "should successfully remove duplicate tags")
+
+	// Verify all duplicate tags were removed
+	verifyTagRemoved(verifyTagRemovedParams{
+		t:          t,
+		asrt:       asrt,
+		properties: updated.Properties,
+		tag:        "duplicate",
+		value:      "value",
+	})
+
+	// Verify the other tag remains
+	asrt.Len(updated.Properties, 1, "should have one tag remaining")
+	_, found := collection.Find(
+		updated.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == "other" && p.Value == "different"
+		},
+	)
+	asrt.True(found, "other tag should be preserved")
+}
+
+func TestRemoveTags_NonExistentFeature(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Attempt to remove tags from non-existent feature
+	_, err := repo.RemoveTags(createRemoveTagsRequest(
+		"DDB_G0000000",
+		"any_tag",
+		"any_value",
+	))
+	asrt.Error(err, "should return error for non-existent feature")
+	asrt.True(
+		repository.IsAnnotationNotFound(err),
+		"should be annotation not found error",
+	)
+}
+
+func TestRemoveTags_TagNotFound(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with some tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	originalProperties := slices.Clone(added.Properties)
+
+	// Try to remove a tag that doesn't exist
+	updated, err := repo.RemoveTags(createRemoveTagsRequest(
+		added.AnnoId,
+		"nonexistent_tag",
+		"nonexistent_value",
+	))
+	asrt.NoError(err, "should succeed even when tag doesn't exist")
+
+	// Verify all original tags are still present
+	asrt.Len(
+		updated.Properties,
+		len(originalProperties),
+		"should have same number of tags",
+	)
+	for _, originalTag := range originalProperties {
+		_, found := collection.Find(
+			updated.Properties,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
+			},
+		)
+		asrt.True(
+			found,
+			"original tag '%s' should be preserved",
+			originalTag.Tag,
+		)
+	}
+}
+
+func TestRemoveTags_PartialMatch(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with specific tags
+	feat := getBaseFeatureDoc()
+	feat.Attributes.Properties = []*feature.TagProperty{
+		{
+			Tag:       "category",
+			Value:     "enzyme",
+			CreatedBy: "creator@example.org",
+		},
+		{
+			Tag:       "category",
+			Value:     "protein",
+			CreatedBy: "creator@example.org",
+		},
+	}
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	asrt.Len(added.Properties, 2, "feature should have two tags")
+
+	// Try to remove tag with correct name but wrong value
+	updated, err := repo.RemoveTags(createRemoveTagsRequest(
+		added.AnnoId,
+		"category",
+		"wrong_value",
+	))
+	asrt.NoError(err, "should succeed even with partial match")
+
+	// Verify all original tags are still present (no match found)
+	asrt.Len(updated.Properties, 2, "should still have both tags")
+
+	// Verify specific tags are preserved
+	_, foundEnzyme := collection.Find(
+		updated.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == "category" && p.Value == "enzyme"
+		},
+	)
+	asrt.True(foundEnzyme, "enzyme tag should be preserved")
+
+	_, foundProtein := collection.Find(
+		updated.Properties,
+		func(p model.TagPropertyDoc) bool {
+			return p.Tag == "category" && p.Value == "protein"
+		},
+	)
+	asrt.True(foundProtein, "protein tag should be preserved")
+}
+
+func TestRemoveTags_EmptyProperties(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with no properties
+	feat := getBaseFeatureDoc()
+	feat.Attributes.Properties = []*feature.TagProperty{}
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	asrt.Empty(added.Properties, "feature should have no tags")
+
+	// Try to remove a tag from empty properties
+	updated, err := repo.RemoveTags(createRemoveTagsRequest(
+		added.AnnoId,
+		"any_tag",
+		"any_value",
+	))
+	asrt.NoError(err, "should succeed with empty properties")
+	asrt.Empty(updated.Properties, "should still have no tags")
+}
+
+func TestRemoveTags_NoChange(t *testing.T) {
+	t.Parallel()
+	asrt, repo := setUpFeatureTest(t)
+	t.Cleanup(cleanupDB(repo))
+
+	// Create feature with known tags
+	feat := getCompleteFeatureDoc()
+	added, err := repo.AddFeatureAnnotation(feat)
+	asrt.NoError(err, "should successfully add test feature")
+	originalProperties := slices.Clone(added.Properties)
+
+	// Try to remove a tag that doesn't exist (should be a no-op)
+	updated, err := repo.RemoveTags(createRemoveTagsRequest(
+		added.AnnoId,
+		"definitely_not_there",
+		"definitely_not_this_value",
+	))
+	asrt.NoError(err, "should succeed with no changes")
+
+	// Verify properties are identical
+	asrt.Len(
+		updated.Properties,
+		len(originalProperties),
+		"should have same number of tags",
+	)
+
+	// Verify each original tag is still present and unchanged
+	for _, originalTag := range originalProperties {
+		found, otk := collection.Find(
+			updated.Properties,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == originalTag.Tag &&
+					p.Value == originalTag.Value &&
+					p.CreatedBy == originalTag.CreatedBy
+			},
+		)
+		asrt.True(otk, "original tag '%s' should be found", originalTag.Tag)
+		asrt.Equal(
+			originalTag.CreatedAt,
+			found.CreatedAt,
+			"created at should be unchanged",
+		)
+		asrt.Equal(
+			originalTag.UpdatedAt,
+			found.UpdatedAt,
+			"updated at should be unchanged",
+		)
+	}
+}
