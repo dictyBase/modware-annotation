@@ -121,7 +121,7 @@ const (
 		FILTER doc._key == @key
 		UPDATE doc WITH {
 			properties: (
-				FOR prop IN doc.properties
+				FOR prop IN (doc.properties || [])
 					FILTER NOT (prop.tag == @tag AND prop.value == @value)
 					RETURN prop
 			)
