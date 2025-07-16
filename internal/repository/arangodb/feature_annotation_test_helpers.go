@@ -760,44 +760,36 @@ func verifyTagRemoved(params verifyTagRemovedParams) {
 	)
 }
 
-// verifyOtherTagsPreserved checks that all tags except the removed one are preserved.
+// verifyOtherTagsPreserved checks that all tags except the removed one are
+// preserved.
 func verifyOtherTagsPreserved(params verifyOtherTagsPreservedParams) {
 	params.t.Helper()
-
-	// Count tags that should remain (original minus the removed one)
-	expectedCount := 0
-	for _, originalTag := range params.original {
-		if !(originalTag.Tag == params.removedTag && originalTag.Value == params.removedValue) {
-			expectedCount++
-		}
-	}
-
-	// Verify each non-removed tag is still present
-	for _, originalTag := range params.original {
-		if originalTag.Tag == params.removedTag &&
-			originalTag.Value == params.removedValue {
-			continue // Skip the tag that should be removed
-		}
-
-		_, found := collection.Find(
-			params.updated,
-			func(p model.TagPropertyDoc) bool {
-				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
-			},
-		)
-		params.asrt.True(
-			found,
-			"tag '%s' with value '%s' should be preserved",
-			originalTag.Tag,
-			originalTag.Value,
-		)
-	}
-
-	// Verify total count is correct
-	params.asrt.Len(
-		params.updated,
-		expectedCount,
-		"should have %d tags after removal",
-		expectedCount,
+	origFilTags := collection.Pipe3(
+		params.original,
+		collection.CurriedMap(propertyDocToTag),
+		collection.CurriedFilter(func(tag string) bool {
+			return tag != params.removedTag
+		}),
+		collection.Sorted,
 	)
+	updTags := collection.Pipe2(
+		params.updated,
+		collection.CurriedMap(propertyDocToTag),
+		collection.Sorted,
+	)
+	origFilVals := collection.Pipe3(
+		params.original,
+		collection.CurriedMap(propertyDocToValue),
+		collection.CurriedFilter(func(val string) bool {
+			return val != params.removedValue
+		}),
+		collection.Sorted,
+	)
+	updVals := collection.Pipe2(
+		params.updated,
+		collection.CurriedMap(propertyDocToValue),
+		collection.Sorted,
+	)
+	params.asrt.ElementsMatch(origFilTags, updTags)
+	params.asrt.ElementsMatch(origFilVals, updVals)
 }
