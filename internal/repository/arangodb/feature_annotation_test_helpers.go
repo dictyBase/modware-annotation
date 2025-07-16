@@ -462,3 +462,217 @@ func cleanupDB(repo repository.FeatureAnnotationRepository) func() {
 		_ = repo.Dbh().Drop()
 	}
 }
+
+func seedAnnotationWithTags(
+	t *testing.T,
+	repo repository.FeatureAnnotationRepository,
+) *model.FeatureAnnotationDoc {
+	t.Helper()
+	assert := require.New(t)
+	newFeat, err := repo.AddFeatureAnnotation(&feature.NewFeatureAnnotation{
+		Id:        "DDB_G0285921",
+		CreatedBy: "test@test.com",
+		Attributes: &feature.FeatureAnnotationAttributes{
+			Name: "pkaR",
+			Properties: []*feature.TagProperty{
+				{
+					Tag:       "baz",
+					Value:     "quax",
+					CreatedBy: "test@test.com",
+				},
+				{
+					Tag:       "foo",
+					Value:     "bar",
+					CreatedBy: "test@test.com",
+				},
+			},
+		},
+	})
+	assert.NoError(err)
+	model, err := repo.GetFeatureAnnotation(newFeat.AnnoId)
+	assert.NoError(err)
+	return model
+}
+
+func verifyOriginalTagsPreserved(
+	t *testing.T,
+	asrt *require.Assertions,
+	allProperties []model.TagPropertyDoc,
+	originalTags []model.TagPropertyDoc,
+) {
+	t.Helper()
+	for _, originalTag := range originalTags {
+		found, otk := collection.Find(
+			allProperties,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
+			},
+		)
+		asrt.True(
+			otk,
+			"should preserve original tag %s",
+			originalTag.Tag,
+		)
+		asrt.Equal(
+			originalTag.CreatedBy,
+			found.CreatedBy,
+			"should preserve original created by",
+		)
+		asrt.Equal(
+			originalTag.CreatedAt,
+			found.CreatedAt,
+			"should preserve original created at",
+		)
+	}
+}
+
+// propertyDocToTag extracts the tag name from a TagPropertyDoc.
+func propertyDocToTag(p model.TagPropertyDoc) string {
+	return p.Tag
+}
+
+// tagCreateToTag extracts the tag name from a TagPropertyCreate.
+func tagCreateToTag(p *feature.TagPropertyCreate) string {
+	return p.Tag
+}
+
+// propertyDocToValue extracts the value from a TagPropertyDoc.
+func propertyDocToValue(p model.TagPropertyDoc) string {
+	return p.Value
+}
+
+// tagCreateToValue extracts the value from a TagPropertyCreate.
+func tagCreateToValue(p *feature.TagPropertyCreate) string {
+	return p.Value
+}
+
+// verifyNewTagsAdded checks if new tags were correctly added to the properties
+// list.
+func verifyNewTagsAdded(
+	t *testing.T,
+	asrt *require.Assertions,
+	allProperties []model.TagPropertyDoc,
+	newTags []*feature.TagPropertyCreate,
+) {
+	t.Helper()
+	expectedTags := collection.Pipe2(
+		newTags,
+		collection.CurriedMap(tagCreateToTag),
+		collection.Sorted,
+	)
+	actualTags := collection.Pipe2(
+		allProperties,
+		collection.CurriedMap(propertyDocToTag),
+		collection.Sorted,
+	)
+
+	expectedValues := collection.Pipe2(
+		newTags,
+		collection.CurriedMap(tagCreateToValue),
+		collection.Sorted,
+	)
+	actualValues := collection.Pipe2(
+		allProperties,
+		collection.CurriedMap(propertyDocToValue),
+		collection.Sorted,
+	)
+
+	asrt.True(
+		collection.AllExist(actualTags, expectedTags),
+		"newly added tags should match expected",
+	)
+	asrt.True(
+		collection.AllExist(
+			actualValues,
+			expectedValues,
+		),
+		"newly added values should match expected",
+	)
+}
+
+// createAddTagsRequest creates an AddTagsRequest with the provided tags for testing purposes.
+func createAddTagsRequest(
+	featureId string,
+	tags []*feature.TagPropertyCreate,
+) *feature.AddTagsRequest {
+	return &feature.AddTagsRequest{
+		Id:   featureId,
+		Tags: tags,
+	}
+}
+
+// createSetTagsRequest creates a SetTagsRequest with the provided tags for testing purposes.
+func createSetTagsRequest(
+	featureId string,
+	tags []*feature.TagPropertyCreate,
+) *feature.SetTagsRequest {
+	return &feature.SetTagsRequest{
+		Id:   featureId,
+		Tags: tags,
+	}
+}
+
+// createTestTag creates a TagPropertyCreate for testing with optional timestamp.
+func createTestTag(
+	tag, value, createdBy string,
+	timestamp *time.Time,
+) *feature.TagPropertyCreate {
+	tagCreate := &feature.TagPropertyCreate{
+		Tag:       tag,
+		Value:     value,
+		CreatedBy: createdBy,
+	}
+
+	if timestamp != nil {
+		tagCreate.CreatedAt = timestamppb.New(*timestamp)
+	}
+
+	return tagCreate
+}
+
+// verifyNoOriginalTagsRemain checks that none of the original tags are present in the result.
+func verifyNoOriginalTagsRemain(
+	t *testing.T,
+	asrt *require.Assertions,
+	result []model.TagPropertyDoc,
+	originalTags []model.TagPropertyDoc,
+) {
+	t.Helper()
+	for _, originalTag := range originalTags {
+		_, found := collection.Find(
+			result,
+			func(p model.TagPropertyDoc) bool {
+				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
+			},
+		)
+		asrt.False(
+			found,
+			"original tag %s should not be present after SetTags",
+			originalTag.Tag,
+		)
+	}
+}
+
+// verifyTagsCompletelyReplaced checks that original tags are gone and new tags are present.
+func verifyTagsCompletelyReplaced(
+	t *testing.T,
+	asrt *require.Assertions,
+	result []model.TagPropertyDoc,
+	originalTags []model.TagPropertyDoc,
+	newTags []*feature.TagPropertyCreate,
+) {
+	t.Helper()
+
+	// Verify original tags are completely removed
+	verifyNoOriginalTagsRemain(t, asrt, result, originalTags)
+
+	// Verify new tags are all present
+	verifyNewTagsAdded(t, asrt, result, newTags)
+
+	// Verify exact count
+	asrt.Len(
+		result,
+		len(newTags),
+		"should have exactly the number of new tags",
+	)
+}
