@@ -41,12 +41,22 @@ func CurriedMap[T1, T2 any](fnc func(T1) T2) func([]T1) []T2 {
 // Include determines whether the given element is present in the slice.
 // The slice is sorted before searching.
 func Include[T cmp.Ordered](slice []T, element T) bool {
-	if !slices.IsSorted(slice) {
-		slices.Sort(slice)
-	}
-	_, found := slices.BinarySearch(slice, element)
+	return slices.Contains(slice, element)
+}
 
-	return found
+// AllExist checks if all elements of a subset slice are present in a superset
+// slice.
+func AllExist[T comparable](superset, subset []T) bool {
+	if len(subset) > len(superset) {
+		return false
+	}
+	for _, item := range subset {
+		if !slices.Contains(superset, item) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // RemoveStringItems removes elements from a that are present in
