@@ -61,6 +61,50 @@ type testListByPublicationIdSuccessParams struct {
 	errorMsgSuffix       string
 }
 
+type assertListByPublicationResultsParams struct {
+	t        *testing.T
+	asrt     *require.Assertions
+	results  []*model.FeatureAnnotationDoc
+	added1   *model.FeatureAnnotationDoc
+	added2   *model.FeatureAnnotationDoc
+}
+
+type verifyOriginalTagsPreservedParams struct {
+	t             *testing.T
+	asrt          *require.Assertions
+	allProperties []model.TagPropertyDoc
+	originalTags  []model.TagPropertyDoc
+}
+
+type verifyNewTagsAddedParams struct {
+	t             *testing.T
+	asrt          *require.Assertions
+	allProperties []model.TagPropertyDoc
+	newTags       []*feature.TagPropertyCreate
+}
+
+type createTestTagParams struct {
+	tag       string
+	value     string
+	createdBy string
+	timestamp *time.Time
+}
+
+type verifyNoOriginalTagsRemainParams struct {
+	t            *testing.T
+	asrt         *require.Assertions
+	result       []model.TagPropertyDoc
+	originalTags []model.TagPropertyDoc
+}
+
+type verifyTagsCompletelyReplacedParams struct {
+	t            *testing.T
+	asrt         *require.Assertions
+	result       []model.TagPropertyDoc
+	originalTags []model.TagPropertyDoc
+	newTags      []*feature.TagPropertyCreate
+}
+
 type featFn func() *feature.NewFeatureAnnotation
 
 func getBaseFeatureDoc() *feature.NewFeatureAnnotation {
@@ -394,25 +438,19 @@ func getRemoveTestCases() []removeFeatureTestCase {
 	}
 }
 
-func assertListByPublicationResults(
-	t *testing.T,
-	asrt *require.Assertions,
-	results []*model.FeatureAnnotationDoc,
-	added1 *model.FeatureAnnotationDoc,
-	added2 *model.FeatureAnnotationDoc,
-) {
-	t.Helper()
-	asrt.Len(results, 2, "Should retrieve exactly 2 feature annotations")
+func assertListByPublicationResults(params assertListByPublicationResultsParams) {
+	params.t.Helper()
+	params.asrt.Len(params.results, 2, "Should retrieve exactly 2 feature annotations")
 	retrievedIDs := collection.Map(
-		results,
+		params.results,
 		func(doc *model.FeatureAnnotationDoc) string {
 			return doc.AnnoId
 		},
 	)
-	expectedIDs := []string{added1.AnnoId, added2.AnnoId}
+	expectedIDs := []string{params.added1.AnnoId, params.added2.AnnoId}
 	slices.Sort(retrievedIDs)
 	slices.Sort(expectedIDs)
-	asrt.Equal(
+	params.asrt.Equal(
 		expectedIDs,
 		retrievedIDs,
 		"Retrieved feature IDs should match the linked ones",
@@ -454,7 +492,13 @@ func testListByPublicationIdSuccess(
 	asrt.NoError(err, "Expected no error retrieving by "+params.errorMsgSuffix)
 
 	// Assertions (common logic extracted)
-	assertListByPublicationResults(params.t, asrt, results, added1, added2)
+	assertListByPublicationResults(assertListByPublicationResultsParams{
+		t:       params.t,
+		asrt:    asrt,
+		results: results,
+		added1:  added1,
+		added2:  added2,
+	})
 }
 
 func cleanupDB(repo repository.FeatureAnnotationRepository) func() {
@@ -494,31 +538,26 @@ func seedAnnotationWithTags(
 	return model
 }
 
-func verifyOriginalTagsPreserved(
-	t *testing.T,
-	asrt *require.Assertions,
-	allProperties []model.TagPropertyDoc,
-	originalTags []model.TagPropertyDoc,
-) {
-	t.Helper()
-	for _, originalTag := range originalTags {
+func verifyOriginalTagsPreserved(params verifyOriginalTagsPreservedParams) {
+	params.t.Helper()
+	for _, originalTag := range params.originalTags {
 		found, otk := collection.Find(
-			allProperties,
+			params.allProperties,
 			func(p model.TagPropertyDoc) bool {
 				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
 			},
 		)
-		asrt.True(
+		params.asrt.True(
 			otk,
 			"should preserve original tag %s",
 			originalTag.Tag,
 		)
-		asrt.Equal(
+		params.asrt.Equal(
 			originalTag.CreatedBy,
 			found.CreatedBy,
 			"should preserve original created by",
 		)
-		asrt.Equal(
+		params.asrt.Equal(
 			originalTag.CreatedAt,
 			found.CreatedAt,
 			"should preserve original created at",
@@ -548,40 +587,35 @@ func tagCreateToValue(p *feature.TagPropertyCreate) string {
 
 // verifyNewTagsAdded checks if new tags were correctly added to the properties
 // list.
-func verifyNewTagsAdded(
-	t *testing.T,
-	asrt *require.Assertions,
-	allProperties []model.TagPropertyDoc,
-	newTags []*feature.TagPropertyCreate,
-) {
-	t.Helper()
+func verifyNewTagsAdded(params verifyNewTagsAddedParams) {
+	params.t.Helper()
 	expectedTags := collection.Pipe2(
-		newTags,
+		params.newTags,
 		collection.CurriedMap(tagCreateToTag),
 		collection.Sorted,
 	)
 	actualTags := collection.Pipe2(
-		allProperties,
+		params.allProperties,
 		collection.CurriedMap(propertyDocToTag),
 		collection.Sorted,
 	)
 
 	expectedValues := collection.Pipe2(
-		newTags,
+		params.newTags,
 		collection.CurriedMap(tagCreateToValue),
 		collection.Sorted,
 	)
 	actualValues := collection.Pipe2(
-		allProperties,
+		params.allProperties,
 		collection.CurriedMap(propertyDocToValue),
 		collection.Sorted,
 	)
 
-	asrt.True(
+	params.asrt.True(
 		collection.AllExist(actualTags, expectedTags),
 		"newly added tags should match expected",
 	)
-	asrt.True(
+	params.asrt.True(
 		collection.AllExist(
 			actualValues,
 			expectedValues,
@@ -613,39 +647,31 @@ func createSetTagsRequest(
 }
 
 // createTestTag creates a TagPropertyCreate for testing with optional timestamp.
-func createTestTag(
-	tag, value, createdBy string,
-	timestamp *time.Time,
-) *feature.TagPropertyCreate {
+func createTestTag(params createTestTagParams) *feature.TagPropertyCreate {
 	tagCreate := &feature.TagPropertyCreate{
-		Tag:       tag,
-		Value:     value,
-		CreatedBy: createdBy,
+		Tag:       params.tag,
+		Value:     params.value,
+		CreatedBy: params.createdBy,
 	}
 
-	if timestamp != nil {
-		tagCreate.CreatedAt = timestamppb.New(*timestamp)
+	if params.timestamp != nil {
+		tagCreate.CreatedAt = timestamppb.New(*params.timestamp)
 	}
 
 	return tagCreate
 }
 
 // verifyNoOriginalTagsRemain checks that none of the original tags are present in the result.
-func verifyNoOriginalTagsRemain(
-	t *testing.T,
-	asrt *require.Assertions,
-	result []model.TagPropertyDoc,
-	originalTags []model.TagPropertyDoc,
-) {
-	t.Helper()
-	for _, originalTag := range originalTags {
+func verifyNoOriginalTagsRemain(params verifyNoOriginalTagsRemainParams) {
+	params.t.Helper()
+	for _, originalTag := range params.originalTags {
 		_, found := collection.Find(
-			result,
+			params.result,
 			func(p model.TagPropertyDoc) bool {
 				return p.Tag == originalTag.Tag && p.Value == originalTag.Value
 			},
 		)
-		asrt.False(
+		params.asrt.False(
 			found,
 			"original tag %s should not be present after SetTags",
 			originalTag.Tag,
@@ -654,25 +680,29 @@ func verifyNoOriginalTagsRemain(
 }
 
 // verifyTagsCompletelyReplaced checks that original tags are gone and new tags are present.
-func verifyTagsCompletelyReplaced(
-	t *testing.T,
-	asrt *require.Assertions,
-	result []model.TagPropertyDoc,
-	originalTags []model.TagPropertyDoc,
-	newTags []*feature.TagPropertyCreate,
-) {
-	t.Helper()
+func verifyTagsCompletelyReplaced(params verifyTagsCompletelyReplacedParams) {
+	params.t.Helper()
 
 	// Verify original tags are completely removed
-	verifyNoOriginalTagsRemain(t, asrt, result, originalTags)
+	verifyNoOriginalTagsRemain(verifyNoOriginalTagsRemainParams{
+		t:            params.t,
+		asrt:         params.asrt,
+		result:       params.result,
+		originalTags: params.originalTags,
+	})
 
 	// Verify new tags are all present
-	verifyNewTagsAdded(t, asrt, result, newTags)
+	verifyNewTagsAdded(verifyNewTagsAddedParams{
+		t:             params.t,
+		asrt:          params.asrt,
+		allProperties: params.result,
+		newTags:       params.newTags,
+	})
 
 	// Verify exact count
-	asrt.Len(
-		result,
-		len(newTags),
+	params.asrt.Len(
+		params.result,
+		len(params.newTags),
 		"should have exactly the number of new tags",
 	)
 }

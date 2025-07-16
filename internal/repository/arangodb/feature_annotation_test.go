@@ -9,7 +9,6 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -950,14 +949,21 @@ func TestAddTags_Success(t *testing.T) {
 
 	// Create multiple tags request
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag("category", "enzyme", "tester1@example.org", nil),
-		createTestTag(
-			"organism",
-			"dictyostelium",
-			"tester2@example.org",
-			nil,
-		),
-		createTestTag("priority", "high", "tester1@example.org", nil),
+		createTestTag(createTestTagParams{
+			tag:       "category",
+			value:     "enzyme",
+			createdBy: "tester1@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "organism",
+			value:     "dictyostelium",
+			createdBy: "tester2@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "priority",
+			value:     "high",
+			createdBy: "tester1@example.org",
+		}),
 	}
 
 	// Add tags
@@ -1010,18 +1016,16 @@ func TestAddTags_DefaultTimestamps(t *testing.T) {
 
 	// Create tags without timestamps
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag(
-			"auto_timestamp1",
-			"value1",
-			"tester@example.org",
-			nil,
-		),
-		createTestTag(
-			"auto_timestamp2",
-			"value2",
-			"tester@example.org",
-			nil,
-		),
+		createTestTag(createTestTagParams{
+			tag:       "auto_timestamp1",
+			value:     "value1",
+			createdBy: "tester@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "auto_timestamp2",
+			value:     "value2",
+			createdBy: "tester@example.org",
+		}),
 	}
 
 	// Add tags
@@ -1074,18 +1078,18 @@ func TestAddTags_ProvidedTimestamps(t *testing.T) {
 		Add(-24 * time.Hour).
 		UTC().Truncate(time.Microsecond)
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag(
-			"provided_timestamp1",
-			"value1",
-			"tester@example.org",
-			&specTs1,
-		),
-		createTestTag(
-			"provided_timestamp2",
-			"value2",
-			"tester@example.org",
-			&specTs2,
-		),
+		createTestTag(createTestTagParams{
+			tag:       "provided_timestamp1",
+			value:     "value1",
+			createdBy: "tester@example.org",
+			timestamp: &specTs1,
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "provided_timestamp2",
+			value:     "value2",
+			createdBy: "tester@example.org",
+			timestamp: &specTs2,
+		}),
 	}
 
 	updated, err := repo.AddTags(createAddTagsRequest(
@@ -1138,12 +1142,11 @@ func TestAddTags_SingleTag(t *testing.T) {
 		createAddTagsRequest(
 			added.AnnoId,
 			[]*feature.TagPropertyCreate{
-				createTestTag(
-					"single_tag",
-					"single_value",
-					"tester@example.org",
-					nil,
-				),
+				createTestTag(createTestTagParams{
+					tag:       "single_tag",
+					value:     "single_value",
+					createdBy: "tester@example.org",
+				}),
 			},
 		),
 	)
@@ -1186,18 +1189,16 @@ func TestAddTags_AppendToExisting(t *testing.T) {
 
 	// Create new tags with different names to ensure no conflicts
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag(
-			"new_category",
-			"new_value",
-			"new_tester@example.org",
-			nil,
-		),
-		createTestTag(
-			"additional_info",
-			"extra_data",
-			"new_tester@example.org",
-			nil,
-		),
+		createTestTag(createTestTagParams{
+			tag:       "new_category",
+			value:     "new_value",
+			createdBy: "new_tester@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "additional_info",
+			value:     "extra_data",
+			createdBy: "new_tester@example.org",
+		}),
 	}
 
 	updated, err := repo.AddTags(createAddTagsRequest(
@@ -1215,10 +1216,20 @@ func TestAddTags_AppendToExisting(t *testing.T) {
 	)
 
 	// Verify original tags are preserved
-	verifyOriginalTagsPreserved(t, asrt, updated.Properties, originalTags)
+	verifyOriginalTagsPreserved(verifyOriginalTagsPreservedParams{
+		t:             t,
+		asrt:          asrt,
+		allProperties: updated.Properties,
+		originalTags:  originalTags,
+	})
 
 	// Verify new tags were added
-	verifyNewTagsAdded(t, asrt, updated.Properties, newTags)
+	verifyNewTagsAdded(verifyNewTagsAddedParams{
+		t:             t,
+		asrt:          asrt,
+		allProperties: updated.Properties,
+		newTags:       newTags,
+	})
 }
 
 func TestAddTags_NonExistentFeature(t *testing.T) {
@@ -1229,12 +1240,11 @@ func TestAddTags_NonExistentFeature(t *testing.T) {
 	// Attempt to add tags to non-existent feature
 	_, err := repo.AddTags(createAddTagsRequest("DDB_G0000000",
 		[]*feature.TagPropertyCreate{
-			createTestTag(
-				"test_tag",
-				"test_value",
-				"tester@example.org",
-				nil,
-			),
+			createTestTag(createTestTagParams{
+				tag:       "test_tag",
+				value:     "test_value",
+				createdBy: "tester@example.org",
+			}),
 		}))
 	asrt.Error(err, "should return error for non-existent feature")
 	asrt.True(
@@ -1359,18 +1369,17 @@ func TestAddTags_VerifyTimestamps(t *testing.T) {
 		UTC().Truncate(time.Microsecond)
 
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag(
-			"default_ts_tag",
-			"default_value",
-			"tester@example.org",
-			nil,
-		),
-		createTestTag(
-			"provided_ts_tag",
-			"provided_value",
-			"tester@example.org",
-			&specTs,
-		),
+		createTestTag(createTestTagParams{
+			tag:       "default_ts_tag",
+			value:     "default_value",
+			createdBy: "tester@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "provided_ts_tag",
+			value:     "provided_value",
+			createdBy: "tester@example.org",
+			timestamp: &specTs,
+		}),
 	}
 	updated, err := repo.AddTags(createAddTagsRequest(
 		added.AnnoId,
@@ -1424,8 +1433,16 @@ func TestSetTags_Success(t *testing.T) {
 
 	// Create new tags to replace existing ones
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag("category", "enzyme", "setter@example.org", nil),
-		createTestTag("priority", "high", "setter@example.org", nil),
+		createTestTag(createTestTagParams{
+			tag:       "category",
+			value:     "enzyme",
+			createdBy: "setter@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "priority",
+			value:     "high",
+			createdBy: "setter@example.org",
+		}),
 	}
 
 	// Replace tags
@@ -1436,13 +1453,13 @@ func TestSetTags_Success(t *testing.T) {
 	asrt.NoError(err, "should successfully set tags")
 
 	// Verify complete replacement
-	verifyTagsCompletelyReplaced(
-		t,
-		asrt,
-		updated.Properties,
-		originalTags,
-		newTags,
-	)
+	verifyTagsCompletelyReplaced(verifyTagsCompletelyReplacedParams{
+		t:            t,
+		asrt:         asrt,
+		result:       updated.Properties,
+		originalTags: originalTags,
+		newTags:      newTags,
+	})
 }
 
 func TestSetTags_ReplaceExistingTags(t *testing.T) {
@@ -1459,8 +1476,16 @@ func TestSetTags_ReplaceExistingTags(t *testing.T) {
 	moreTagsAdded, err := repo.AddTags(createAddTagsRequest(
 		added.AnnoId,
 		[]*feature.TagPropertyCreate{
-			createTestTag("extra1", "value1", "extra@example.org", nil),
-			createTestTag("extra2", "value2", "extra@example.org", nil),
+			createTestTag(createTestTagParams{
+				tag:       "extra1",
+				value:     "value1",
+				createdBy: "extra@example.org",
+			}),
+			createTestTag(createTestTagParams{
+				tag:       "extra2",
+				value:     "value2",
+				createdBy: "extra@example.org",
+			}),
 		},
 	))
 	asrt.NoError(err, "should add extra tags")
@@ -1470,9 +1495,21 @@ func TestSetTags_ReplaceExistingTags(t *testing.T) {
 
 	// Create completely different new tags
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag("organism", "dictyostelium", "replacer@example.org", nil),
-		createTestTag("method", "experimental", "replacer@example.org", nil),
-		createTestTag("confidence", "high", "replacer@example.org", nil),
+		createTestTag(createTestTagParams{
+			tag:       "organism",
+			value:     "dictyostelium",
+			createdBy: "replacer@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "method",
+			value:     "experimental",
+			createdBy: "replacer@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "confidence",
+			value:     "high",
+			createdBy: "replacer@example.org",
+		}),
 	}
 
 	// Replace all tags
@@ -1483,13 +1520,13 @@ func TestSetTags_ReplaceExistingTags(t *testing.T) {
 	asrt.NoError(err, "should successfully replace all tags")
 
 	// Verify complete replacement
-	verifyTagsCompletelyReplaced(
-		t,
-		asrt,
-		updated.Properties,
-		originalTags,
-		newTags,
-	)
+	verifyTagsCompletelyReplaced(verifyTagsCompletelyReplacedParams{
+		t:            t,
+		asrt:         asrt,
+		result:       updated.Properties,
+		originalTags: originalTags,
+		newTags:      newTags,
+	})
 }
 
 func TestSetTags_EmptyTagSet(t *testing.T) {
@@ -1528,8 +1565,16 @@ func TestSetTags_DefaultTimestamps(t *testing.T) {
 
 	// Create tags without timestamps
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag("auto_timestamp1", "value1", "setter@example.org", nil),
-		createTestTag("auto_timestamp2", "value2", "setter@example.org", nil),
+		createTestTag(createTestTagParams{
+			tag:       "auto_timestamp1",
+			value:     "value1",
+			createdBy: "setter@example.org",
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "auto_timestamp2",
+			value:     "value2",
+			createdBy: "setter@example.org",
+		}),
 	}
 
 	// Set tags
@@ -1577,18 +1622,18 @@ func TestSetTags_ProvidedTimestamps(t *testing.T) {
 	specTs1 := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Microsecond)
 	specTs2 := time.Now().Add(-24 * time.Hour).UTC().Truncate(time.Microsecond)
 	newTags := []*feature.TagPropertyCreate{
-		createTestTag(
-			"provided_timestamp1",
-			"value1",
-			"setter@example.org",
-			&specTs1,
-		),
-		createTestTag(
-			"provided_timestamp2",
-			"value2",
-			"setter@example.org",
-			&specTs2,
-		),
+		createTestTag(createTestTagParams{
+			tag:       "provided_timestamp1",
+			value:     "value1",
+			createdBy: "setter@example.org",
+			timestamp: &specTs1,
+		}),
+		createTestTag(createTestTagParams{
+			tag:       "provided_timestamp2",
+			value:     "value2",
+			createdBy: "setter@example.org",
+			timestamp: &specTs2,
+		}),
 	}
 
 	updated, err := repo.SetTags(createSetTagsRequest(
@@ -1630,7 +1675,11 @@ func TestSetTags_NonExistentFeature(t *testing.T) {
 	// Attempt to set tags on non-existent feature
 	_, err := repo.SetTags(createSetTagsRequest("DDB_G0000000",
 		[]*feature.TagPropertyCreate{
-			createTestTag("test_tag", "test_value", "setter@example.org", nil),
+			createTestTag(createTestTagParams{
+				tag:       "test_tag",
+				value:     "test_value",
+				createdBy: "setter@example.org",
+			}),
 		}))
 	asrt.Error(err, "should return error for non-existent feature")
 	asrt.True(
@@ -1713,12 +1762,11 @@ func TestSetTags_SingleTag(t *testing.T) {
 	updated, err := repo.SetTags(createSetTagsRequest(
 		added.AnnoId,
 		[]*feature.TagPropertyCreate{
-			createTestTag(
-				"single_tag",
-				"single_value",
-				"setter@example.org",
-				nil,
-			),
+			createTestTag(createTestTagParams{
+				tag:       "single_tag",
+				value:     "single_value",
+				createdBy: "setter@example.org",
+			}),
 		},
 	))
 	asrt.NoError(err, "should successfully set single tag")
