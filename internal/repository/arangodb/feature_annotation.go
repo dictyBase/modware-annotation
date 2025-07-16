@@ -564,7 +564,49 @@ func (fann *featureAnnoRepo) SetTags(
 func (fann *featureAnnoRepo) RemoveTags(
 	req *feature.RemoveTagsRequest,
 ) (*model.FeatureAnnotationDoc, error) {
-	return nil, fmt.Errorf("not implemented")
+	doc, err := fann.GetFeatureAnnotation(req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Begin transaction with context
+	txr, err := fann.database.BeginTransaction(
+		context.Background(),
+		&manager.TransactionOptions{
+			WriteCollections: []string{fann.feature.Name()},
+		})
+	if err != nil {
+		return nil, fmt.Errorf("error beginning transaction: %w", err)
+	}
+
+	result, err := txr.DoRun(featurePropsRemoveQ, map[string]interface{}{
+		"@collection": fann.feature.Name(),
+		"key":         doc.Key,
+		"tag":         req.Tag,
+		"value":       req.Value,
+	})
+	if err != nil {
+		if abortErr := txr.Abort(); abortErr != nil {
+			return nil, fmt.Errorf(
+				"error in aborting transaction after %v: %w",
+				err,
+				abortErr,
+			)
+		}
+		return nil, fmt.Errorf("error removing tags: %w", err)
+	}
+
+	newDoc := &model.FeatureAnnotationDoc{}
+	if err := result.Read(newDoc); err != nil {
+		return nil, fmt.Errorf("error reading result: %w", err)
+	}
+
+	// Commit the transaction
+	if err := txr.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %w", err)
+	}
+
+	return newDoc, nil
 }
 
 // Dbh returns the underlying database handler.
