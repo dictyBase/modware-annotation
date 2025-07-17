@@ -569,7 +569,7 @@ func (fann *featureAnnoRepo) RemoveTags(
 	if err != nil {
 		return nil, err
 	}
-	if len(doc.Properties) == 0 { // nothing to remove
+	if collection.IsEmpty(doc.Properties) {
 		return doc, nil
 	}
 	updProps := slices.DeleteFunc(
