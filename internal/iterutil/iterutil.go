@@ -94,3 +94,66 @@ func Filter[V any](
 		}
 	}
 }
+
+// Delete returns an iterator over seq that excludes
+// the values v for which f(v) is true.
+func Delete[V any](
+	f func(V) bool,
+	seq iter.Seq[V],
+) iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for v := range seq {
+			if !f(v) && !yield(v) {
+				return
+			}
+		}
+	}
+}
+
+// Any returns true if at least one of the elements in seq
+// matches the predicate f, false otherwise.
+func Any[V any](
+	f func(V) bool,
+	seq iter.Seq[V],
+) bool {
+	for v := range seq {
+		if f(v) {
+			return true
+		}
+	}
+	return false
+}
+
+// Concat returns an iterator over the concatenation of the sequences.
+func Concat[V any](seqs ...iter.Seq[V]) iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for _, seq := range seqs {
+			for e := range seq {
+				if !yield(e) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// Contains returns true if element is present in seq, false otherwise.
+func Contains[V comparable](
+	element V,
+	seq iter.Seq[V],
+) bool {
+	for v := range seq {
+		if v == element {
+			return true
+		}
+	}
+	return false
+}
+
+// Find is an alias for Contains.
+func Find[V comparable](
+	element V,
+	seq iter.Seq[V],
+) bool {
+	return Contains(element, seq)
+}
