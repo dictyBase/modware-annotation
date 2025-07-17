@@ -3,6 +3,7 @@ package arangodb
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
@@ -568,43 +569,26 @@ func (fann *featureAnnoRepo) RemoveTags(
 	if err != nil {
 		return nil, err
 	}
-
-	// Begin transaction with context
-	txr, err := fann.database.BeginTransaction(
-		context.Background(),
-		&manager.TransactionOptions{
-			WriteCollections: []string{fann.feature.Name()},
-		})
-	if err != nil {
-		return nil, fmt.Errorf("error beginning transaction: %w", err)
+	if len(doc.Properties) == 0 { // nothing to remove
+		return doc, nil
 	}
-
-	result, err := txr.DoRun(featurePropsRemoveQ, map[string]interface{}{
-		"@collection": fann.feature.Name(),
-		"key":         doc.Key,
-		"tag":         req.Tag,
-		"value":       req.Value,
-	})
-	if err != nil {
-		if abortErr := txr.Abort(); abortErr != nil {
-			return nil, fmt.Errorf(
-				"error in aborting transaction after %v: %w",
-				err,
-				abortErr,
-			)
-		}
-		return nil, fmt.Errorf("error removing tags: %w", err)
-	}
-
+	updProps := slices.DeleteFunc(
+		doc.Properties,
+		func(prop model.TagPropertyDoc) bool {
+			return prop.Tag == req.Tag && prop.Value == req.Value
+		},
+	)
 	newDoc := &model.FeatureAnnotationDoc{}
-	if err := result.Read(newDoc); err != nil {
-		return nil, fmt.Errorf("error reading result: %w", err)
+	ctx := driver.WithReturnNew(context.Background(), newDoc)
+	meta, err := fann.feature.UpdateDocument(
+		ctx,
+		doc.Key,
+		map[string]interface{}{"properties": updProps},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error adding tag: %w", err)
 	}
-
-	// Commit the transaction
-	if err := txr.Commit(); err != nil {
-		return nil, fmt.Errorf("error committing transaction: %w", err)
-	}
+	newDoc.DocumentMeta = meta
 
 	return newDoc, nil
 }
