@@ -157,3 +157,51 @@ func Find[V comparable](
 ) bool {
 	return Contains(element, seq)
 }
+
+// MapWith returns a curried version of Map that takes a transformation function
+// and returns a function that applies it to a sequence.
+func MapWith[In, Out any](f func(In) Out) func(iter.Seq[In]) iter.Seq[Out] {
+	return func(seq iter.Seq[In]) iter.Seq[Out] {
+		return Map(f, seq)
+	}
+}
+
+// FilterWith returns a curried version of Filter that takes a predicate function
+// and returns a function that filters a sequence.
+func FilterWith[V any](f func(V) bool) func(iter.Seq[V]) iter.Seq[V] {
+	return func(seq iter.Seq[V]) iter.Seq[V] {
+		return Filter(f, seq)
+	}
+}
+
+// DeleteWith returns a curried version of Delete that takes a predicate function
+// and returns a function that removes matching elements from a sequence.
+func DeleteWith[V any](f func(V) bool) func(iter.Seq[V]) iter.Seq[V] {
+	return func(seq iter.Seq[V]) iter.Seq[V] {
+		return Delete(f, seq)
+	}
+}
+
+// AnyWith returns a curried version of Any that takes a predicate function
+// and returns a function that checks if any element matches.
+func AnyWith[V any](f func(V) bool) func(iter.Seq[V]) bool {
+	return func(seq iter.Seq[V]) bool {
+		return Any(f, seq)
+	}
+}
+
+// ReduceWith returns a curried version of Reduce that takes a reducer function
+// and initial value, returning a function that reduces a sequence.
+func ReduceWith[Sum, V any](f func(Sum, V) Sum, sum Sum) func(iter.Seq[V]) Sum {
+	return func(seq iter.Seq[V]) Sum {
+		return Reduce(f, sum, seq)
+	}
+}
+
+// ContainsElement returns a curried version of Contains that takes an element
+// and returns a function that checks if the element is present in a sequence.
+func ContainsElement[V comparable](element V) func(iter.Seq[V]) bool {
+	return func(seq iter.Seq[V]) bool {
+		return Contains(element, seq)
+	}
+}
