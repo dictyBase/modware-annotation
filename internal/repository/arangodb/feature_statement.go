@@ -115,17 +115,4 @@ const (
 		} IN @@collection 
 		RETURN NEW
 	`
-
-	featurePropsRemoveQ = `
-	FOR doc IN @@collection
-		FILTER doc._key == @key
-		UPDATE doc WITH {
-			properties: (
-				FOR prop IN (doc.properties || [])
-					FILTER NOT (prop.tag == @tag AND prop.value == @value)
-					RETURN prop
-			)
-		} IN @@collection 
-		RETURN NEW
-	`
 )
