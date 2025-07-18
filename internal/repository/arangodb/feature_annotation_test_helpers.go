@@ -11,6 +11,7 @@ import (
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
+	"github.com/dictyBase/modware-annotation/internal/pipe"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -613,23 +614,23 @@ func tagCreateToValue(p *feature.TagPropertyCreate) string {
 // list.
 func verifyNewTagsAdded(params verifyNewTagsAddedParams) {
 	params.t.Helper()
-	expectedTags := collection.Pipe2(
+	expectedTags := pipe.Pipe2(
 		params.newTags,
 		collection.CurriedMap(tagCreateToTag),
 		collection.Sorted,
 	)
-	actualTags := collection.Pipe2(
+	actualTags := pipe.Pipe2(
 		params.allProperties,
 		collection.CurriedMap(propertyDocToTag),
 		collection.Sorted,
 	)
 
-	expectedValues := collection.Pipe2(
+	expectedValues := pipe.Pipe2(
 		params.newTags,
 		collection.CurriedMap(tagCreateToValue),
 		collection.Sorted,
 	)
-	actualValues := collection.Pipe2(
+	actualValues := pipe.Pipe2(
 		params.allProperties,
 		collection.CurriedMap(propertyDocToValue),
 		collection.Sorted,
@@ -764,7 +765,7 @@ func verifyTagRemoved(params verifyTagRemovedParams) {
 // preserved.
 func verifyOtherTagsPreserved(params verifyOtherTagsPreservedParams) {
 	params.t.Helper()
-	origFilTags := collection.Pipe3(
+	origFilTags := pipe.Pipe3(
 		params.original,
 		collection.CurriedMap(propertyDocToTag),
 		collection.CurriedFilter(func(tag string) bool {
@@ -772,12 +773,12 @@ func verifyOtherTagsPreserved(params verifyOtherTagsPreservedParams) {
 		}),
 		collection.Sorted,
 	)
-	updTags := collection.Pipe2(
+	updTags := pipe.Pipe2(
 		params.updated,
 		collection.CurriedMap(propertyDocToTag),
 		collection.Sorted,
 	)
-	origFilVals := collection.Pipe3(
+	origFilVals := pipe.Pipe3(
 		params.original,
 		collection.CurriedMap(propertyDocToValue),
 		collection.CurriedFilter(func(val string) bool {
@@ -785,7 +786,7 @@ func verifyOtherTagsPreserved(params verifyOtherTagsPreservedParams) {
 		}),
 		collection.Sorted,
 	)
-	updVals := collection.Pipe2(
+	updVals := pipe.Pipe2(
 		params.updated,
 		collection.CurriedMap(propertyDocToValue),
 		collection.Sorted,

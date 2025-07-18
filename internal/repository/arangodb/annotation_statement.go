@@ -7,6 +7,7 @@ import (
 
 	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/modware-annotation/internal/collection"
+	"github.com/dictyBase/modware-annotation/internal/pipe"
 )
 
 const (
@@ -202,7 +203,7 @@ func getListAnnoStatement(fstr string, cursor int64) PickStatementResult {
 		}
 	}
 	// Create a pipeline to process filters and generate statements
-	return collection.Pipe4(
+	return pipe.Pipe4(
 		FilterContext{
 			FilterString: fstr,
 			HasCursor:    cursor != 0,
