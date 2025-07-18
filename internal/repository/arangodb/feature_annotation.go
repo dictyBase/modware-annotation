@@ -11,6 +11,7 @@ import (
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
 	"github.com/dictyBase/modware-annotation/internal/collection"
 	"github.com/dictyBase/modware-annotation/internal/model"
+	"github.com/dictyBase/modware-annotation/internal/pipe"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
@@ -40,7 +41,7 @@ func NewFeatureAnnoRepo(
 	}
 
 	// Execute the initialization pipeline
-	finalState := collection.Pipe7(
+	finalState := pipe.Pipe7(
 		&repoInitState{
 			connP: connP,
 			collP: collP,
@@ -301,7 +302,7 @@ func (fann *featureAnnoRepo) EditFeatureAnnotation(
 	doc *feature.FeatureAnnotationUpdate,
 ) (*model.FeatureAnnotationDoc, error) {
 	// Execute the edit pipeline
-	finalState := collection.Pipe8(
+	finalState := pipe.Pipe8(
 		&editState{
 			fann: fann,
 			doc:  doc,
