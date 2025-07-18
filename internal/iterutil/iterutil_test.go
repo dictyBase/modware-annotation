@@ -1,10 +1,12 @@
 package iterutil
 
 import (
+	"iter"
 	"slices"
 	"strconv"
 	"testing"
 
+	"github.com/dictyBase/modware-annotation/internal/pipe"
 	"github.com/stretchr/testify/require"
 )
 
@@ -526,17 +528,13 @@ func TestFunctionComposition(t *testing.T) {
 
 	t.Run("chain multiple operations", func(t *testing.T) {
 		t.Parallel()
-		// Create a sequence of numbers 1-10
-		seq := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
-
-		// Filter even numbers, then double them
-		evenFilter := FilterWith(isEven)
-		doubleMapper := MapWith(double)
-
-		evenNumbers := evenFilter(seq)
-		doubledEvens := doubleMapper(evenNumbers)
-
-		result := slices.Collect(doubledEvens)
+		// Filter even numbers, then double them using Pipe2
+		result := pipe.Pipe3(
+			slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+			FilterWith(isEven),
+			MapWith(double),
+			slices.Collect,
+		)
 
 		require.Equal(t, []int{4, 8, 12, 16, 20}, result)
 	})
@@ -546,15 +544,105 @@ func TestFunctionComposition(t *testing.T) {
 		// Numbers from -5 to 5
 		seq := slices.Values([]int{-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5})
 
-		// Keep only positive numbers, double them, then sum
-		positiveFilter := FilterWith(isPositive)
-		doubleMapper := MapWith(double)
-		sumReducer := ReduceWith(add, 0)
-
-		positives := positiveFilter(seq)
-		doubled := doubleMapper(positives)
-		sum := sumReducer(doubled)
+		// Keep only positive numbers, double them, then sum using Pipe3
+		sum := pipe.Pipe3(
+			seq,
+			FilterWith(isPositive),
+			MapWith(double),
+			ReduceWith(add, 0),
+		)
 
 		require.Equal(t, 30, sum) // (1+2+3+4+5)*2 = 15*2 = 30
+	})
+}
+
+// Test comprehensive pipe composition patterns.
+func TestPipeComposition(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Pipe2 with filter and collect", func(t *testing.T) {
+		t.Parallel()
+		result := pipe.Pipe2(
+			slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+			FilterWith(isEven),
+			slices.Collect,
+		)
+
+		require.Equal(t, []int{2, 4, 6, 8, 10}, result)
+	})
+
+	t.Run("Pipe3 with filter, map, and reduce", func(t *testing.T) {
+		t.Parallel()
+		// Filter evens, double them, sum the result
+		sum := pipe.Pipe3(
+			slices.Values([]int{1, 2, 3, 4, 5}),
+			FilterWith(isEven),
+			MapWith(double),
+			ReduceWith(add, 0),
+		)
+
+		require.Equal(t, 12, sum) // (2+4)*2 = 12
+	})
+
+	t.Run("Pipe4 with complex transformation", func(t *testing.T) {
+		t.Parallel()
+		result := pipe.Pipe4(
+			slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+			FilterWith(isEven),
+			MapWith(double),
+			FilterWith(func(n int) bool { return n > 10 }),
+			slices.Collect,
+		)
+
+		require.Equal(t, []int{12, 16, 20}, result)
+	})
+}
+
+func TestPipeCompositionAdvanced(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Pipe2 with concatenation and contains check", func(t *testing.T) {
+		t.Parallel()
+		seq1 := slices.Values([]int{1, 2, 3})
+		seq2 := slices.Values([]int{4, 5, 6})
+
+		hasTarget := pipe.Pipe2(
+			[]iter.Seq[int]{seq1, seq2},
+			func(seqs []iter.Seq[int]) iter.Seq[int] { return Concat(seqs...) },
+			ContainsElement(5),
+		)
+
+		require.True(t, hasTarget)
+	})
+
+	t.Run("Pipe3 with delete, map, and any", func(t *testing.T) {
+		t.Parallel()
+		numbers := slices.Values([]int{-3, -2, -1, 0, 1, 2, 3})
+
+		// Delete negative numbers, double positives, check if any are > 4
+		hasLarge := pipe.Pipe3(
+			numbers,
+			DeleteWith(func(n int) bool { return n < 0 }),
+			MapWith(double),
+			AnyWith(func(n int) bool { return n > 4 }),
+		)
+
+		require.True(t, hasLarge) // 2*3=6 > 4
+	})
+
+	t.Run("Pipe4 with string transformation pipeline", func(t *testing.T) {
+		t.Parallel()
+		numbers := slices.Values([]int{1, 2, 3, 4, 5})
+
+		// Filter evens, convert to string, add prefix, collect
+		result := pipe.Pipe4(
+			numbers,
+			FilterWith(isEven),
+			MapWith(strconv.Itoa),
+			MapWith(func(s string) string { return "num_" + s }),
+			slices.Collect[string],
+		)
+
+		require.Equal(t, []string{"num_2", "num_4"}, result)
 	})
 }
