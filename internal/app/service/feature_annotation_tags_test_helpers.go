@@ -844,3 +844,493 @@ func testSetTagsInvalidRequest(params *testParams) {
 		expectedMsgSubstring: "validation",
 	})
 }
+
+// Helper functions for RemoveTags tests
+
+// createRemoveTagsServiceRequest creates a RemoveTagsRequest for service-level testing.
+func createRemoveTagsServiceRequest(
+	featureID string,
+	tag string,
+	value string,
+) *feature.RemoveTagsRequest {
+	return &feature.RemoveTagsRequest{
+		Id:    featureID,
+		Tag:   tag,
+		Value: value,
+	}
+}
+
+// verifyServiceTagRemoved verifies that a specific tag was removed from the feature.
+func verifyServiceTagRemoved(
+	params *testParams,
+	result *feature.FeatureAnnotation,
+	removedTag string,
+	removedValue string,
+	originalTagCount int,
+) {
+	params.t.Helper()
+
+	// Verify the removed tag is no longer present
+	found := slices.ContainsFunc(result.Attributes.Properties,
+		func(prop *feature.TagProperty) bool {
+			return prop.Tag == removedTag &&
+				prop.Value == removedValue
+		})
+	params.assert.False(
+		found,
+		"tag %s with value %s should be removed",
+		removedTag,
+		removedValue,
+	)
+
+	// Verify tag count decreased
+	params.assert.Equal(
+		originalTagCount-1,
+		len(result.Attributes.Properties),
+		"tag count should decrease by 1",
+	)
+}
+
+// verifyServiceTagPreserved verifies that other tags were preserved during removal.
+func verifyServiceTagPreserved(
+	params *testParams,
+	result *feature.FeatureAnnotation,
+	preservedTags []*feature.TagProperty,
+) {
+	params.t.Helper()
+
+	// Verify preserved tags are still present
+	for _, preservedTag := range preservedTags {
+		found := slices.ContainsFunc(result.Attributes.Properties,
+			func(prop *feature.TagProperty) bool {
+				return prop.Tag == preservedTag.Tag &&
+					prop.Value == preservedTag.Value &&
+					prop.CreatedBy == preservedTag.CreatedBy
+			})
+		params.assert.True(
+			found,
+			"tag %s with value %s should be preserved",
+			preservedTag.Tag,
+			preservedTag.Value,
+		)
+	}
+}
+
+func testRemoveTagsSuccess(params *testParams) {
+	params.t.Helper()
+	// Create a feature with multiple tags
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285701"
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Add additional tags first
+	additionalTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "remove_me",
+			value:     "remove_value",
+			createdBy: "tester@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "keep_me",
+			value:     "keep_value",
+			createdBy: "tester@example.org",
+		}),
+	}
+	addReq := createAddTagsServiceRequest(created.Id, additionalTags)
+	updated, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(err, "should successfully add tags")
+
+	originalTagCount := len(updated.Attributes.Properties)
+	preservedTags := make([]*feature.TagProperty, 0)
+	for _, prop := range updated.Attributes.Properties {
+		if prop.Tag != "remove_me" || prop.Value != "remove_value" {
+			preservedTags = append(preservedTags, prop)
+		}
+	}
+
+	// Remove specific tag
+	removeReq := createRemoveTagsServiceRequest(
+		updated.Id,
+		"remove_me",
+		"remove_value",
+	)
+	result, err := params.client.RemoveTags(params.ctx, removeReq)
+	params.assert.NoError(err, "should successfully remove tag")
+
+	// Verify tag was removed
+	verifyServiceTagRemoved(
+		params,
+		result,
+		"remove_me",
+		"remove_value",
+		originalTagCount,
+	)
+
+	// Verify other tags were preserved
+	verifyServiceTagPreserved(params, result, preservedTags)
+}
+
+func testRemoveTagsSingleTag(params *testParams) {
+	params.t.Helper()
+	// Create a feature with a single additional tag
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285702"
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Add a single tag to remove
+	additionalTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "single_remove",
+			value:     "single_value",
+			createdBy: "tester@example.org",
+		}),
+	}
+	addReq := createAddTagsServiceRequest(created.Id, additionalTags)
+	updated, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(err, "should successfully add tag")
+
+	originalTagCount := len(updated.Attributes.Properties)
+	preservedTags := make([]*feature.TagProperty, 0)
+	for _, prop := range updated.Attributes.Properties {
+		if prop.Tag != "single_remove" || prop.Value != "single_value" {
+			preservedTags = append(preservedTags, prop)
+		}
+	}
+
+	// Remove the tag
+	removeReq := createRemoveTagsServiceRequest(
+		updated.Id,
+		"single_remove",
+		"single_value",
+	)
+	result, err := params.client.RemoveTags(params.ctx, removeReq)
+	params.assert.NoError(err, "should successfully remove single tag")
+
+	// Verify tag was removed
+	verifyServiceTagRemoved(
+		params,
+		result,
+		"single_remove",
+		"single_value",
+		originalTagCount,
+	)
+
+	// Verify other tags were preserved
+	verifyServiceTagPreserved(params, result, preservedTags)
+}
+
+// createFeatureWithDuplicateTags creates a feature with duplicate tags for testing.
+func createFeatureWithDuplicateTags(
+	params *testParams,
+	featureID string,
+) (*feature.FeatureAnnotation, int) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = featureID
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Add multiple tags with same tag/value combination
+	additionalTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "duplicate_tag",
+			value:     "duplicate_value",
+			createdBy: "tester1@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "duplicate_tag",
+			value:     "duplicate_value",
+			createdBy: "tester2@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "unique_tag",
+			value:     "unique_value",
+			createdBy: "tester@example.org",
+		}),
+	}
+	addReq := createAddTagsServiceRequest(created.Id, additionalTags)
+	updated, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(err, "should successfully add tags")
+
+	return updated, len(updated.Attributes.Properties)
+}
+
+// verifyDuplicateTagsRemoval verifies that all duplicate tags were removed.
+func verifyDuplicateTagsRemoval(
+	params *testParams,
+	result *feature.FeatureAnnotation,
+	originalTagCount int,
+) {
+	params.t.Helper()
+	// Verify all duplicate tags were removed
+	duplicateCount := 0
+	for _, prop := range result.Attributes.Properties {
+		if prop.Tag == "duplicate_tag" && prop.Value == "duplicate_value" {
+			duplicateCount++
+		}
+	}
+	params.assert.Equal(
+		0,
+		duplicateCount,
+		"all duplicate tags should be removed",
+	)
+
+	// Verify tag count decreased by 2 (both duplicates removed)
+	params.assert.Equal(
+		originalTagCount-2,
+		len(result.Attributes.Properties),
+		"tag count should decrease by 2",
+	)
+
+	// Verify unique tag was preserved
+	uniqueFound := slices.ContainsFunc(result.Attributes.Properties,
+		func(prop *feature.TagProperty) bool {
+			return prop.Tag == "unique_tag" && prop.Value == "unique_value"
+		})
+	params.assert.True(uniqueFound, "unique tag should be preserved")
+}
+
+func testRemoveTagsMultipleTags(params *testParams) {
+	params.t.Helper()
+	updated, originalTagCount := createFeatureWithDuplicateTags(
+		params,
+		"DDB_G0285703",
+	)
+
+	// Remove duplicate tags (should remove all matching tag/value pairs)
+	removeReq := createRemoveTagsServiceRequest(
+		updated.Id,
+		"duplicate_tag",
+		"duplicate_value",
+	)
+	result, err := params.client.RemoveTags(params.ctx, removeReq)
+	params.assert.NoError(err, "should successfully remove duplicate tags")
+
+	// Verify duplicate tags removal
+	verifyDuplicateTagsRemoval(params, result, originalTagCount)
+}
+
+func testRemoveTagsPartialMatch(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285704"
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Add tags with same tag name but different values
+	additionalTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "partial_tag",
+			value:     "value1",
+			createdBy: "tester@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "partial_tag",
+			value:     "value2",
+			createdBy: "tester@example.org",
+		}),
+	}
+	addReq := createAddTagsServiceRequest(created.Id, additionalTags)
+	updated, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(err, "should successfully add tags")
+
+	originalTagCount := len(updated.Attributes.Properties)
+
+	// Remove only one specific tag/value combination
+	removeReq := createRemoveTagsServiceRequest(
+		updated.Id,
+		"partial_tag",
+		"value1",
+	)
+	result, err := params.client.RemoveTags(params.ctx, removeReq)
+	params.assert.NoError(err, "should successfully remove specific tag/value")
+
+	// Verify only the specific tag/value was removed
+	value1Found := slices.ContainsFunc(result.Attributes.Properties,
+		func(prop *feature.TagProperty) bool {
+			return prop.Tag == "partial_tag" && prop.Value == "value1"
+		})
+	params.assert.False(
+		value1Found,
+		"partial_tag with value1 should be removed",
+	)
+
+	// Verify the other tag with same name but different value is preserved
+	value2Found := slices.ContainsFunc(result.Attributes.Properties,
+		func(prop *feature.TagProperty) bool {
+			return prop.Tag == "partial_tag" && prop.Value == "value2"
+		})
+	params.assert.True(
+		value2Found,
+		"partial_tag with value2 should be preserved",
+	)
+
+	// Verify tag count decreased by 1
+	params.assert.Equal(
+		originalTagCount-1,
+		len(result.Attributes.Properties),
+		"tag count should decrease by 1",
+	)
+}
+
+func testRemoveTagsNonExistentTag(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285705"
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	originalTagCount := len(created.Attributes.Properties)
+
+	// Attempt to remove non-existent tag (should succeed gracefully)
+	removeReq := createRemoveTagsServiceRequest(
+		created.Id,
+		"nonexistent_tag",
+		"nonexistent_value",
+	)
+	result, err := params.client.RemoveTags(params.ctx, removeReq)
+	params.assert.NoError(err, "should succeed when removing non-existent tag")
+
+	// Verify tag count unchanged
+	params.assert.Equal(
+		originalTagCount,
+		len(result.Attributes.Properties),
+		"tag count should remain unchanged",
+	)
+
+	// Verify all original tags are preserved
+	for _, originalProp := range created.Attributes.Properties {
+		found := slices.ContainsFunc(result.Attributes.Properties,
+			func(prop *feature.TagProperty) bool {
+				return prop.Tag == originalProp.Tag &&
+					prop.Value == originalProp.Value
+			})
+		params.assert.True(
+			found,
+			"original tag %s should be preserved",
+			originalProp.Tag,
+		)
+	}
+}
+
+func testRemoveTagsEmptyProperties(params *testParams) {
+	params.t.Helper()
+	// Create a feature with no additional properties
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285706"
+	// Clear existing properties
+	createReq.Attributes.Properties = []*feature.TagProperty{}
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Attempt to remove tag from feature with no properties (should succeed gracefully)
+	removeReq := createRemoveTagsServiceRequest(
+		created.Id,
+		"any_tag",
+		"any_value",
+	)
+	result, err := params.client.RemoveTags(params.ctx, removeReq)
+	params.assert.NoError(
+		err,
+		"should succeed when removing from empty properties",
+	)
+
+	// Verify properties remain empty
+	params.assert.Empty(
+		result.Attributes.Properties,
+		"properties should remain empty",
+	)
+}
+
+func testRemoveTagsNonExistentFeature(params *testParams) {
+	params.t.Helper()
+	// Attempt to remove tag from non-existent feature
+	removeReq := createRemoveTagsServiceRequest(
+		"DDB_G0000000",
+		"any_tag",
+		"any_value",
+	)
+	_, err := params.client.RemoveTags(params.ctx, removeReq)
+
+	params.assert.Error(err, "should return error for non-existent feature")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.NotFound,
+		expectedMsgSubstring: "not found",
+	})
+}
+
+func testRemoveTagsInvalidRequest(params *testParams) {
+	params.t.Helper()
+	// Test with empty tag name
+	removeReq := createRemoveTagsServiceRequest(
+		"DDB_G0285425",
+		"",
+		"test_value",
+	)
+	_, err := params.client.RemoveTags(params.ctx, removeReq)
+
+	params.assert.Error(err, "should return error for empty tag name")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.InvalidArgument,
+		expectedMsgSubstring: "validation",
+	})
+
+	// Test with empty value
+	removeReq = createRemoveTagsServiceRequest(
+		"DDB_G0285425",
+		"test_tag",
+		"",
+	)
+	_, err = params.client.RemoveTags(params.ctx, removeReq)
+
+	params.assert.Error(err, "should return error for empty value")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.InvalidArgument,
+		expectedMsgSubstring: "validation",
+	})
+
+	// Test with empty feature ID
+	removeReq = createRemoveTagsServiceRequest(
+		"",
+		"test_tag",
+		"test_value",
+	)
+	_, err = params.client.RemoveTags(params.ctx, removeReq)
+
+	params.assert.Error(err, "should return error for empty feature ID")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.InvalidArgument,
+		expectedMsgSubstring: "validation",
+	})
+}
