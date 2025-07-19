@@ -94,3 +94,24 @@ func TestListFeatureAnnotationsByDOI(t *testing.T) {
 	testListByDOINotFound(params)
 	testListByDOIInvalid(params)
 }
+
+func TestAddTags(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testAddTagsSuccess(params)
+	testAddTagsSingleTag(params)
+	testAddTagsMultipleTags(params)
+	testAddTagsAppendToExisting(params)
+	testAddTagsEmptyRequest(params)
+	testAddTagsDefaultTimestamps(params)
+	testAddTagsProvidedTimestamps(params)
+	testAddTagsNonExistentFeature(params)
+	testAddTagsInvalidRequest(params)
+}
