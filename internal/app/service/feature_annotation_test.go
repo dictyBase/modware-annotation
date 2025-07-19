@@ -115,3 +115,24 @@ func TestAddTags(t *testing.T) {
 	testAddTagsNonExistentFeature(params)
 	testAddTagsInvalidRequest(params)
 }
+
+func TestSetTags(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testSetTagsSuccess(params)
+	testSetTagsSingleTag(params)
+	testSetTagsMultipleTags(params)
+	testSetTagsReplaceExisting(params)
+	testSetTagsEmptyRequest(params)
+	testSetTagsDefaultTimestamps(params)
+	testSetTagsProvidedTimestamps(params)
+	testSetTagsNonExistentFeature(params)
+	testSetTagsInvalidRequest(params)
+}
