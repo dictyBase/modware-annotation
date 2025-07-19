@@ -914,49 +914,6 @@ func testAddTagsDefaultTimestamps(params *testParams) {
 			return params.client.AddTags(params.ctx, addReq)
 		},
 	)
-	params.assert.NoError(err, "should successfully create test feature")
-
-	// Create tags without timestamps
-	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(
-			"auto_timestamp1",
-			"value1",
-			"tester@example.org",
-			nil,
-		),
-		createServiceTagPropertyCreate(
-			"auto_timestamp2",
-			"value2",
-			"tester@example.org",
-			nil,
-		),
-	}
-
-	// Add tags
-	addReq := createAddTagsServiceRequest(created.Id, newTags)
-	result, err := params.client.AddTags(params.ctx, addReq)
-	params.assert.NoError(
-		err,
-		"should successfully add tags with default timestamps",
-	)
-
-	// Verify timestamps are auto-generated and recent
-	for _, expectedTag := range newTags {
-		found, otk := collection.Find(
-			result.Attributes.Properties,
-			func(p *feature.TagProperty) bool {
-				return p.Tag == expectedTag.Tag
-			},
-		)
-		params.assert.True(otk, "should find tag %s", expectedTag.Tag)
-		params.assert.WithinDuration(
-			time.Now(),
-			(*found).CreatedAt.AsTime(),
-			5*time.Second,
-			"CreatedAt should be recent for tag %s",
-			expectedTag.Tag,
-		)
-	}
 }
 
 func testAddTagsProvidedTimestamps(params *testParams) {
@@ -970,57 +927,6 @@ func testAddTagsProvidedTimestamps(params *testParams) {
 			return params.client.AddTags(params.ctx, addReq)
 		},
 	)
-	params.assert.NoError(err, "should successfully create test feature")
-
-	// Create tags with specific timestamps
-	specTs1 := time.Now().
-		Add(-48 * time.Hour).
-		UTC().
-		Truncate(time.Microsecond)
-	specTs2 := time.Now().
-		Add(-24 * time.Hour).
-		UTC().
-		Truncate(time.Microsecond)
-	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(&tagPropertyCreateParams{
-			tag:       "provided_timestamp1",
-			value:     "value1",
-			createdBy: "tester@example.org",
-			timestamp: &specTs1,
-		}),
-		createServiceTagPropertyCreate(&tagPropertyCreateParams{
-			tag:       "provided_timestamp2",
-			value:     "value2",
-			createdBy: "tester@example.org",
-			timestamp: &specTs2,
-		}),
-	}
-
-	// Add tags
-	addReq := createAddTagsServiceRequest(created.Id, newTags)
-	result, err := params.client.AddTags(params.ctx, addReq)
-	params.assert.NoError(
-		err,
-		"should successfully add tags with provided timestamps",
-	)
-
-	// Verify provided timestamps are preserved
-	expectedTimestamps := []time.Time{specTs1, specTs2}
-	for idx, expectedTag := range newTags {
-		found, otk := collection.Find(
-			result.Attributes.Properties,
-			func(p *feature.TagProperty) bool {
-				return p.Tag == expectedTag.Tag
-			},
-		)
-		params.assert.True(otk, "should find tag %s", expectedTag.Tag)
-		params.assert.Equal(
-			expectedTimestamps[idx].Truncate(time.Second),
-			(*found).CreatedAt.AsTime().Truncate(time.Second),
-			"CreatedAt should match provided timestamp for tag %s",
-			expectedTag.Tag,
-		)
-	}
 }
 
 func testAddTagsNonExistentFeature(params *testParams) {
@@ -1171,8 +1077,18 @@ func createTestTagsWithTimestamps() ([]*feature.TagPropertyCreate, []time.Time) 
 	specTs2 := time.Now().Add(-24 * time.Hour).UTC().Truncate(time.Microsecond)
 	expectedTimestamps := []time.Time{specTs1, specTs2}
 	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate("provided_timestamp1", "value1", "tester@example.org", &specTs1),
-		createServiceTagPropertyCreate("provided_timestamp2", "value2", "tester@example.org", &specTs2),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "provided_timestamp1",
+			value:     "value1",
+			createdBy: "tester@example.org",
+			timestamp: &specTs1,
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "provided_timestamp2",
+			value:     "value2",
+			createdBy: "tester@example.org",
+			timestamp: &specTs2,
+		}),
 	}
 	return newTags, expectedTimestamps
 }
@@ -1180,8 +1096,16 @@ func createTestTagsWithTimestamps() ([]*feature.TagPropertyCreate, []time.Time) 
 // createTestTagsWithoutTimestamps creates test tags without timestamps.
 func createTestTagsWithoutTimestamps() []*feature.TagPropertyCreate {
 	return []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate("auto_timestamp1", "value1", "tester@example.org", nil),
-		createServiceTagPropertyCreate("auto_timestamp2", "value2", "tester@example.org", nil),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "auto_timestamp1",
+			value:     "value1",
+			createdBy: "tester@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "auto_timestamp2",
+			value:     "value2",
+			createdBy: "tester@example.org",
+		}),
 	}
 }
 
@@ -1238,18 +1162,16 @@ func testSetTagsSuccess(params *testParams) {
 
 	// Create tags to set (replace existing ones)
 	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(
-			"category",
-			"enzyme",
-			"tester@example.org",
-			nil,
-		),
-		createServiceTagPropertyCreate(
-			"priority",
-			"high",
-			"tester@example.org",
-			nil,
-		),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "category",
+			value:     "enzyme",
+			createdBy: "tester@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "priority",
+			value:     "high",
+			createdBy: "tester@example.org",
+		}),
 	}
 
 	// Set tags
@@ -1274,12 +1196,11 @@ func testSetTagsSingleTag(params *testParams) {
 
 	// Create single tag to set
 	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(
-			"single_tag",
-			"single_value",
-			"tester@example.org",
-			nil,
-		),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "single_tag",
+			value:     "single_value",
+			createdBy: "tester@example.org",
+		}),
 	}
 
 	// Set tags
@@ -1304,24 +1225,21 @@ func testSetTagsMultipleTags(params *testParams) {
 
 	// Create multiple tags to set
 	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(
-			"category",
-			"enzyme",
-			"tester1@example.org",
-			nil,
-		),
-		createServiceTagPropertyCreate(
-			"organism",
-			"dictyostelium",
-			"tester2@example.org",
-			nil,
-		),
-		createServiceTagPropertyCreate(
-			"priority",
-			"high",
-			"tester1@example.org",
-			nil,
-		),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "category",
+			value:     "enzyme",
+			createdBy: "tester1@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "organism",
+			value:     "dictyostelium",
+			createdBy: "tester2@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "priority",
+			value:     "high",
+			createdBy: "tester1@example.org",
+		}),
 	}
 
 	// Set tags
@@ -1353,18 +1271,16 @@ func testSetTagsReplaceExisting(params *testParams) {
 
 	// Create completely new set of tags
 	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(
-			"replacement_category",
-			"replacement_value",
-			"replacement_tester@example.org",
-			nil,
-		),
-		createServiceTagPropertyCreate(
-			"new_info",
-			"new_data",
-			"replacement_tester@example.org",
-			nil,
-		),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "replacement_category",
+			value:     "replacement_value",
+			createdBy: "replacement_tester@example.org",
+		}),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "new_info",
+			value:     "new_data",
+			createdBy: "replacement_tester@example.org",
+		}),
 	}
 
 	// Set tags (should replace all existing)
@@ -1462,12 +1378,11 @@ func testSetTagsNonExistentFeature(params *testParams) {
 	params.t.Helper()
 	// Create tags to set
 	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(
-			"test_tag",
-			"test_value",
-			"tester@example.org",
-			nil,
-		),
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "test_tag",
+			value:     "test_value",
+			createdBy: "tester@example.org",
+		}),
 	}
 
 	// Attempt to set tags on non-existent feature
@@ -1487,12 +1402,11 @@ func testSetTagsInvalidRequest(params *testParams) {
 	params.t.Helper()
 	// Create tags with invalid data
 	newTags := []*feature.TagPropertyCreate{
-		createServiceTagPropertyCreate(
-			"",
-			"test_value",
-			"tester@example.org",
-			nil,
-		), // Empty tag name
+		createServiceTagPropertyCreate(&tagPropertyCreateParams{
+			tag:       "",
+			value:     "test_value",
+			createdBy: "tester@example.org",
+		}), // Empty tag name
 	}
 
 	// Attempt to set invalid tags
