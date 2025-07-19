@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dictyBase/arangomanager/testarango"
 	feature "github.com/dictyBase/go-genproto/dictybaseapis/feature_annotation"
@@ -255,7 +256,6 @@ func testListByPublicationHelper(
 func testListByDOIValid(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByDOIValid", func(t *testing.T) {
-		t.Parallel()
 		testListByPublicationHelper(
 			params,
 			"doi",
@@ -270,7 +270,6 @@ func testListByDOIValid(params *testParams) {
 func testListByDOINotFound(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByDOINotFound", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.DOI{Id: "10.9999/non.existent.doi"} // Non-existent DOI
 		_, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
 		params.assert.Error(err)
@@ -283,7 +282,6 @@ func testListByDOINotFound(params *testParams) {
 func testListByDOIInvalid(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByDOIInvalid", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.DOI{Id: ""} // Invalid (empty) DOI
 		_, err := params.client.ListFeatureAnnotationsByDOI(params.ctx, req)
 		params.assert.Error(err)
@@ -296,7 +294,6 @@ func testListByDOIInvalid(params *testParams) {
 func testListByPubmedIdValid(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByPubmedIdValid", func(t *testing.T) {
-		t.Parallel()
 		testListByPublicationHelper(
 			params,
 			"pubmed",
@@ -311,7 +308,6 @@ func testListByPubmedIdValid(params *testParams) {
 func testListByPubmedIdNotFound(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByPubmedIdNotFound", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.PubmedId{Id: "99999999"} // Non-existent pubmed ID
 		_, err := params.client.ListFeatureAnnotationsByPubmedId(
 			params.ctx,
@@ -327,7 +323,6 @@ func testListByPubmedIdNotFound(params *testParams) {
 func testListByPubmedIdInvalid(params *testParams) {
 	params.t.Helper()
 	params.t.Run("ListByPubmedIdInvalid", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.PubmedId{Id: ""} // Invalid (empty) pubmed ID
 		_, err := params.client.ListFeatureAnnotationsByPubmedId(
 			params.ctx,
@@ -343,7 +338,6 @@ func testListByPubmedIdInvalid(params *testParams) {
 func testCreateMissingFields(params *testParams) {
 	params.t.Helper()
 	params.t.Run("CreateFailsMissingRequiredFields", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.NewFeatureAnnotation{
 			Attributes: &feature.FeatureAnnotationAttributes{
 				Name: "Invalid Feature",
@@ -360,7 +354,6 @@ func testCreateMissingFields(params *testParams) {
 func testCreateDuplicateFeature(params *testParams) {
 	params.t.Helper()
 	params.t.Run("CreateFailsDuplicateFeatureId", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.NewFeatureAnnotation{
 			Id:        "DDB_G02854297",
 			CreatedBy: "testuser@dictybase.org",
@@ -382,7 +375,6 @@ func testCreateDuplicateFeature(params *testParams) {
 func testGetExistingFeature(params *testParams) {
 	params.t.Helper()
 	params.t.Run("GetExistingFeatureAnnotation", func(t *testing.T) {
-		t.Parallel()
 		// First create a feature
 		createReq := &feature.NewFeatureAnnotation{
 			Id:        "DDB_G0285426",
@@ -415,7 +407,6 @@ func testGetExistingFeature(params *testParams) {
 func testGetNonExistentFeature(params *testParams) {
 	params.t.Helper()
 	params.t.Run("GetNonExistentFeatureAnnotation", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.FeatureAnnotationId{
 			Id: "DDB_G0000000",
 		}
@@ -430,7 +421,6 @@ func testGetNonExistentFeature(params *testParams) {
 func testGetFeatureWithInvalidID(params *testParams) {
 	params.t.Helper()
 	params.t.Run("GetFeatureAnnotationWithInvalidID", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.FeatureAnnotationId{
 			Id: "", // Empty ID
 		}
@@ -445,7 +435,6 @@ func testGetFeatureWithInvalidID(params *testParams) {
 func testUpdateExistingFeature(params *testParams) {
 	params.t.Helper()
 	params.t.Run("UpdateExistingFeatureAnnotation", func(t *testing.T) {
-		t.Parallel()
 		// First create a feature
 		createReq := &feature.NewFeatureAnnotation{
 			Id:        "DDB_G0285427",
@@ -490,7 +479,6 @@ func testUpdateExistingFeature(params *testParams) {
 func testUpdateNonExistentFeature(params *testParams) {
 	params.t.Helper()
 	params.t.Run("UpdateNonExistentFeatureAnnotation", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.FeatureAnnotationUpdate{
 			Id:        "DDB_G0000000",
 			UpdatedBy: "testuser@dictybase.org",
@@ -510,7 +498,6 @@ func testUpdateNonExistentFeature(params *testParams) {
 func testUpdateWithInvalidData(params *testParams) {
 	params.t.Helper()
 	params.t.Run("UpdateFeatureAnnotationWithInvalidData", func(t *testing.T) {
-		t.Parallel()
 		req := &feature.FeatureAnnotationUpdate{
 			Id: "", // Empty ID
 			Attributes: &feature.FeatureAnnotationAttributes{
@@ -611,6 +598,437 @@ func testGetFeatureWithEmptyName(params *testParams) {
 	_, err := params.client.GetFeatureAnnotationByName(params.ctx, req)
 
 	params.assert.Error(err, "should return an error for empty feature name")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.InvalidArgument,
+		expectedMsgSubstring: "validation",
+	})
+}
+
+// Helper functions for AddTags tests
+
+// createServiceTagPropertyCreate creates a TagPropertyCreate for service-level testing.
+func createServiceTagPropertyCreate(
+	tag, value, createdBy string,
+	timestamp *time.Time,
+) *feature.TagPropertyCreate {
+	tagCreate := &feature.TagPropertyCreate{
+		Tag:       tag,
+		Value:     value,
+		CreatedBy: createdBy,
+	}
+
+	if timestamp != nil {
+		tagCreate.CreatedAt = timestamppb.New(*timestamp)
+	}
+
+	return tagCreate
+}
+
+// createAddTagsServiceRequest creates an AddTagsRequest for service-level testing.
+func createAddTagsServiceRequest(
+	featureId string,
+	tags []*feature.TagPropertyCreate,
+) *feature.AddTagsRequest {
+	return &feature.AddTagsRequest{
+		Id:   featureId,
+		Tags: tags,
+	}
+}
+
+// verifyServiceTagsAdded verifies that tags were correctly added at the service level.
+func verifyServiceTagsAdded(
+	params *testParams,
+	result *feature.FeatureAnnotation,
+	expectedTags []*feature.TagPropertyCreate,
+	originalTagCount int,
+) {
+	params.t.Helper()
+
+	// Verify tag count increased
+	params.assert.Len(
+		result.Attributes.Properties,
+		originalTagCount+len(expectedTags),
+		"should have original tags plus new tags",
+	)
+
+	// Verify each expected tag is present
+	for _, expectedTag := range expectedTags {
+		found, otk := collection.Find(
+			result.Attributes.Properties,
+			func(p *feature.TagProperty) bool {
+				return p.Tag == expectedTag.Tag && p.Value == expectedTag.Value
+			},
+		)
+		params.assert.True(otk, "should find tag %s", expectedTag.Tag)
+		params.assert.Equal(
+			expectedTag.CreatedBy,
+			(*found).CreatedBy,
+			"should match created by for tag %s",
+			expectedTag.Tag,
+		)
+	}
+}
+
+func testAddTagsSuccess(params *testParams) {
+	params.t.Helper()
+	createReq := newTestFeature()
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+	originalTagCount := len(created.Attributes.Properties)
+
+	// Create tags to add
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"category",
+			"enzyme",
+			"tester@example.org",
+			nil,
+		),
+		createServiceTagPropertyCreate(
+			"priority",
+			"high",
+			"tester@example.org",
+			nil,
+		),
+	}
+
+	// Add tags
+	addReq := createAddTagsServiceRequest(created.Id, newTags)
+	result, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(err, "should successfully add tags")
+
+	// Verify tags were added
+	verifyServiceTagsAdded(params, result, newTags, originalTagCount)
+}
+
+func testAddTagsSingleTag(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285501" // Use unique ID
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+	originalTagCount := len(created.Attributes.Properties)
+
+	// Create single tag to add
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"single_tag",
+			"single_value",
+			"tester@example.org",
+			nil,
+		),
+	}
+
+	// Add tags
+	addReq := createAddTagsServiceRequest(created.Id, newTags)
+	result, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(err, "should successfully add single tag")
+
+	// Verify tag was added
+	verifyServiceTagsAdded(params, result, newTags, originalTagCount)
+}
+
+func testAddTagsMultipleTags(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285502" // Use unique ID
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+	originalTagCount := len(created.Attributes.Properties)
+
+	// Create multiple tags to add
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"category",
+			"enzyme",
+			"tester1@example.org",
+			nil,
+		),
+		createServiceTagPropertyCreate(
+			"organism",
+			"dictyostelium",
+			"tester2@example.org",
+			nil,
+		),
+		createServiceTagPropertyCreate(
+			"priority",
+			"high",
+			"tester1@example.org",
+			nil,
+		),
+	}
+
+	// Add tags
+	addReq := createAddTagsServiceRequest(created.Id, newTags)
+	result, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(err, "should successfully add multiple tags")
+
+	// Verify tags were added
+	verifyServiceTagsAdded(params, result, newTags, originalTagCount)
+}
+
+func testAddTagsAppendToExisting(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285503" // Use unique ID
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+	originalTags := created.Attributes.Properties
+	originalTagCount := len(originalTags)
+
+	// Create new tags with different names to ensure no conflicts
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"new_category",
+			"new_value",
+			"new_tester@example.org",
+			nil,
+		),
+		createServiceTagPropertyCreate(
+			"additional_info",
+			"extra_data",
+			"new_tester@example.org",
+			nil,
+		),
+	}
+
+	// Add tags
+	addReq := createAddTagsServiceRequest(created.Id, newTags)
+	result, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(
+		err,
+		"should successfully append tags to existing properties",
+	)
+
+	// Verify total count
+	params.assert.Len(
+		result.Attributes.Properties,
+		originalTagCount+len(newTags),
+		"should have original tags plus new tags",
+	)
+
+	// Verify original tags are preserved
+	for _, originalTag := range originalTags {
+		_, found := collection.Find(
+			result.Attributes.Properties,
+			func(p *feature.TagProperty) bool {
+				return p.Tag == originalTag.Tag &&
+					p.Value == originalTag.Value
+			},
+		)
+		params.assert.True(
+			found,
+			"original tag %s should be preserved",
+			originalTag.Tag,
+		)
+	}
+
+	// Verify new tags were added
+	verifyServiceTagsAdded(params, result, newTags, originalTagCount)
+}
+
+func testAddTagsEmptyRequest(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285504" // Use unique ID
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Add empty tags (should fail validation)
+	addReq := createAddTagsServiceRequest(
+		created.Id,
+		[]*feature.TagPropertyCreate{},
+	)
+	_, err = params.client.AddTags(params.ctx, addReq)
+
+	params.assert.Error(err, "should return error for empty tags request")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.InvalidArgument,
+		expectedMsgSubstring: "validation",
+	})
+}
+
+func testAddTagsDefaultTimestamps(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285505" // Use unique ID
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Create tags without timestamps
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"auto_timestamp1",
+			"value1",
+			"tester@example.org",
+			nil,
+		),
+		createServiceTagPropertyCreate(
+			"auto_timestamp2",
+			"value2",
+			"tester@example.org",
+			nil,
+		),
+	}
+
+	// Add tags
+	addReq := createAddTagsServiceRequest(created.Id, newTags)
+	result, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(
+		err,
+		"should successfully add tags with default timestamps",
+	)
+
+	// Verify timestamps are auto-generated and recent
+	for _, expectedTag := range newTags {
+		found, otk := collection.Find(
+			result.Attributes.Properties,
+			func(p *feature.TagProperty) bool {
+				return p.Tag == expectedTag.Tag
+			},
+		)
+		params.assert.True(otk, "should find tag %s", expectedTag.Tag)
+		params.assert.WithinDuration(
+			time.Now(),
+			(*found).CreatedAt.AsTime(),
+			5*time.Second,
+			"CreatedAt should be recent for tag %s",
+			expectedTag.Tag,
+		)
+	}
+}
+
+func testAddTagsProvidedTimestamps(params *testParams) {
+	params.t.Helper()
+	// Create a feature first
+	createReq := newTestFeature()
+	createReq.Id = "DDB_G0285506" // Use unique ID
+	created, err := params.client.CreateFeatureAnnotation(
+		params.ctx,
+		createReq,
+	)
+	params.assert.NoError(err, "should successfully create test feature")
+
+	// Create tags with specific timestamps
+	specTs1 := time.Now().
+		Add(-48 * time.Hour).
+		UTC().
+		Truncate(time.Microsecond)
+	specTs2 := time.Now().
+		Add(-24 * time.Hour).
+		UTC().
+		Truncate(time.Microsecond)
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"provided_timestamp1",
+			"value1",
+			"tester@example.org",
+			&specTs1,
+		),
+		createServiceTagPropertyCreate(
+			"provided_timestamp2",
+			"value2",
+			"tester@example.org",
+			&specTs2,
+		),
+	}
+
+	// Add tags
+	addReq := createAddTagsServiceRequest(created.Id, newTags)
+	result, err := params.client.AddTags(params.ctx, addReq)
+	params.assert.NoError(
+		err,
+		"should successfully add tags with provided timestamps",
+	)
+
+	// Verify provided timestamps are preserved
+	expectedTimestamps := []time.Time{specTs1, specTs2}
+	for idx, expectedTag := range newTags {
+		found, otk := collection.Find(
+			result.Attributes.Properties,
+			func(p *feature.TagProperty) bool {
+				return p.Tag == expectedTag.Tag
+			},
+		)
+		params.assert.True(otk, "should find tag %s", expectedTag.Tag)
+		params.assert.Equal(
+			expectedTimestamps[idx].Truncate(time.Second),
+			(*found).CreatedAt.AsTime().Truncate(time.Second),
+			"CreatedAt should match provided timestamp for tag %s",
+			expectedTag.Tag,
+		)
+	}
+}
+
+func testAddTagsNonExistentFeature(params *testParams) {
+	params.t.Helper()
+	// Create tags to add
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"test_tag",
+			"test_value",
+			"tester@example.org",
+			nil,
+		),
+	}
+
+	// Attempt to add tags to non-existent feature
+	addReq := createAddTagsServiceRequest("DDB_G0000000", newTags)
+	_, err := params.client.AddTags(params.ctx, addReq)
+
+	params.assert.Error(err, "should return error for non-existent feature")
+	assertGrpcError(assertGrpcErrorParams{
+		assert:               params.assert,
+		err:                  err,
+		expectedCode:         codes.NotFound,
+		expectedMsgSubstring: "not found",
+	})
+}
+
+func testAddTagsInvalidRequest(params *testParams) {
+	params.t.Helper()
+	// Create tags with invalid data
+	newTags := []*feature.TagPropertyCreate{
+		createServiceTagPropertyCreate(
+			"",
+			"test_value",
+			"tester@example.org",
+			nil,
+		), // Empty tag name
+	}
+
+	// Attempt to add invalid tags
+	addReq := createAddTagsServiceRequest("DDB_G0285425", newTags)
+	_, err := params.client.AddTags(params.ctx, addReq)
+
+	params.assert.Error(err, "should return error for invalid request")
 	assertGrpcError(assertGrpcErrorParams{
 		assert:               params.assert,
 		err:                  err,
