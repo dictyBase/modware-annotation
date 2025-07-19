@@ -228,11 +228,22 @@ func (srv *FeatureAnnotationService) SetTags(
 	if err := protovalidate.Validate(req); err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	//nolint:wrapcheck // gRPC status errors should not be wrapped
-	return nil, status.Error(
-		codes.Unimplemented,
-		"SetTags method is not yet implemented",
-	)
+	feat, err := srv.repo.SetTags(req)
+	if err != nil {
+		if repository.IsAnnotationNotFound(err) {
+			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
+	}
+	featProto := convertToProto(feat)
+	if err := srv.publisher.Publish(
+		srv.Topics["featureAnnotationUpdate"],
+		featProto,
+	); err != nil {
+		return nil, aphgrpc.HandleUpdateError(ctx, err)
+	}
+
+	return featProto, nil
 }
 
 func (srv *FeatureAnnotationService) RemoveTags(
