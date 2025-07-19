@@ -136,3 +136,23 @@ func TestSetTags(t *testing.T) {
 	testSetTagsNonExistentFeature(params)
 	testSetTagsInvalidRequest(params)
 }
+
+func TestRemoveTags(t *testing.T) {
+	t.Parallel()
+	client, assert := setup(t)
+	ctx := context.Background()
+	params := &testParams{
+		t:      t,
+		ctx:    ctx,
+		client: client,
+		assert: assert,
+	}
+	testRemoveTagsSuccess(params)
+	testRemoveTagsSingleTag(params)
+	testRemoveTagsMultipleTags(params)
+	testRemoveTagsPartialMatch(params)
+	testRemoveTagsNonExistentTag(params)
+	testRemoveTagsEmptyProperties(params)
+	testRemoveTagsNonExistentFeature(params)
+	testRemoveTagsInvalidRequest(params)
+}
