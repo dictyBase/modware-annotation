@@ -23,6 +23,26 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// tagPropertyCreateParams holds the parameters for the
+// createServiceTagPropertyCreate function.
+type tagPropertyCreateParams struct {
+	tag       string
+	value     string
+	createdBy string
+	timestamp *time.Time
+}
+
+// testListByPublicationHelperParams holds the parameters for the
+// testListByPublicationHelper function.
+type testListByPublicationHelperParams struct {
+	params            *testParams
+	publicationType   string // "doi" or "pubmed"
+	publicationID     string
+	featureID1        string
+	featureID2        string
+	featureNamePrefix string
+}
+
 // assertGrpcErrorParams holds the parameters for the assertGrpcError function.
 type assertGrpcErrorParams struct {
 	assert               *require.Assertions
@@ -171,29 +191,33 @@ func testCreateValidFeature(params *testParams) {
 		params.assert.Equal(req.Id, resp.Id)
 		params.assert.Equal(req.CreatedBy, resp.CreatedBy)
 		params.assert.Equal(req.Attributes.Name, resp.Attributes.Name)
-		params.assert.Equal(req.Attributes.Synonyms, resp.Attributes.Synonyms)
+		params.assert.Equal(
+			req.Attributes.Synonyms,
+			resp.Attributes.Synonyms,
+		)
 
 		// Validate properties
 		params.assert.Len(resp.Attributes.Properties, 2)
-		slices.SortFunc(req.Attributes.Properties, sortTagPropertiesByTag)
-		slices.SortFunc(resp.Attributes.Properties, sortTagPropertiesByTag)
+		slices.SortFunc(
+			req.Attributes.Properties,
+			sortTagPropertiesByTag,
+		)
+		slices.SortFunc(
+			resp.Attributes.Properties,
+			sortTagPropertiesByTag,
+		)
 		params.assert.ElementsMatch(
-			collection.Map(req.Attributes.Properties, extractTagAndValue),
-			collection.Map(resp.Attributes.Properties, extractTagAndValue),
+			collection.Map(
+				req.Attributes.Properties,
+				extractTagAndValue,
+			),
+			collection.Map(
+				resp.Attributes.Properties,
+				extractTagAndValue,
+			),
 			"should have matching properties",
 		)
 	})
-}
-
-// testListByPublicationHelperParams holds the parameters for the
-// testListByPublicationHelper function.
-type testListByPublicationHelperParams struct {
-	params            *testParams
-	publicationType   string // "doi" or "pubmed"
-	publicationID     string
-	featureID1        string
-	featureID2        string
-	featureNamePrefix string
 }
 
 // testListByPublicationHelper is a helper function to test listing features by publication ID (DOI or Pubmed).
@@ -363,23 +387,32 @@ func testCreateMissingFields(params *testParams) {
 
 func testCreateDuplicateFeature(params *testParams) {
 	params.t.Helper()
-	params.t.Run("CreateFailsDuplicateFeatureId", func(t *testing.T) {
-		req := &feature.NewFeatureAnnotation{
-			Id:        "DDB_G02854297",
-			CreatedBy: "testuser@dictybase.org",
-			CreatedAt: timestamppb.Now(),
-			Attributes: &feature.FeatureAnnotationAttributes{
-				Name: "Duplicate Feature",
-			},
-		}
-		_, firstErr := params.client.CreateFeatureAnnotation(params.ctx, req)
-		params.assert.NoError(firstErr)
-		_, dupErr := params.client.CreateFeatureAnnotation(params.ctx, req)
-		params.assert.Error(dupErr)
-		sts, ok := status.FromError(dupErr)
-		params.assert.True(ok)
-		params.assert.Equal(codes.AlreadyExists, sts.Code())
-	})
+	params.t.Run(
+		"CreateFailsDuplicateFeatureId",
+		func(t *testing.T) {
+			req := &feature.NewFeatureAnnotation{
+				Id:        "DDB_G02854297",
+				CreatedBy: "testuser@dictybase.org",
+				CreatedAt: timestamppb.Now(),
+				Attributes: &feature.FeatureAnnotationAttributes{
+					Name: "Duplicate Feature",
+				},
+			}
+			_, firstErr := params.client.CreateFeatureAnnotation(
+				params.ctx,
+				req,
+			)
+			params.assert.NoError(firstErr)
+			_, dupErr := params.client.CreateFeatureAnnotation(
+				params.ctx,
+				req,
+			)
+			params.assert.Error(dupErr)
+			sts, ok := status.FromError(dupErr)
+			params.assert.True(ok)
+			params.assert.Equal(codes.AlreadyExists, sts.Code())
+		},
+	)
 }
 
 func testGetExistingFeature(params *testParams) {
@@ -395,7 +428,10 @@ func testGetExistingFeature(params *testParams) {
 				Synonyms: []string{"test1", "test2"},
 			},
 		}
-		_, err := params.client.CreateFeatureAnnotation(params.ctx, createReq)
+		_, err := params.client.CreateFeatureAnnotation(
+			params.ctx,
+			createReq,
+		)
 		params.assert.NoError(err)
 
 		// Then retrieve it
@@ -406,7 +442,10 @@ func testGetExistingFeature(params *testParams) {
 		params.assert.NoError(err)
 		params.assert.Equal(createReq.Id, resp.Id)
 		params.assert.Equal(createReq.CreatedBy, resp.CreatedBy)
-		params.assert.Equal(createReq.Attributes.Name, resp.Attributes.Name)
+		params.assert.Equal(
+			createReq.Attributes.Name,
+			resp.Attributes.Name,
+		)
 		params.assert.Equal(
 			createReq.Attributes.Synonyms,
 			resp.Attributes.Synonyms,
@@ -455,7 +494,10 @@ func testUpdateExistingFeature(params *testParams) {
 				Synonyms: []string{"orig1", "orig2"},
 			},
 		}
-		_, err := params.client.CreateFeatureAnnotation(params.ctx, createReq)
+		_, err := params.client.CreateFeatureAnnotation(
+			params.ctx,
+			createReq,
+		)
 		params.assert.NoError(err)
 
 		// Then update it
@@ -474,7 +516,10 @@ func testUpdateExistingFeature(params *testParams) {
 		params.assert.NoError(err)
 		params.assert.Equal(updateReq.Id, resp.Id)
 		params.assert.Equal(updateReq.UpdatedBy, resp.UpdatedBy)
-		params.assert.Equal(updateReq.Attributes.Name, resp.Attributes.Name)
+		params.assert.Equal(
+			updateReq.Attributes.Name,
+			resp.Attributes.Name,
+		)
 		params.assert.ElementsMatch(
 			slices.Concat(
 				createReq.Attributes.Synonyms,
@@ -614,15 +659,6 @@ func testGetFeatureWithEmptyName(params *testParams) {
 		expectedCode:         codes.InvalidArgument,
 		expectedMsgSubstring: "validation",
 	})
-}
-
-// tagPropertyCreateParams holds the parameters for the
-// createServiceTagPropertyCreate function.
-type tagPropertyCreateParams struct {
-	tag       string
-	value     string
-	createdBy string
-	timestamp *time.Time
 }
 
 // Helper functions for AddTags tests
@@ -853,15 +889,16 @@ func testAddTagsAppendToExisting(params *testParams) {
 
 	// Verify original tags are preserved
 	for _, originalTag := range originalTags {
-		_, found := collection.Find(
+		pdx := slices.IndexFunc(
 			result.Attributes.Properties,
 			func(p *feature.TagProperty) bool {
 				return p.Tag == originalTag.Tag &&
 					p.Value == originalTag.Value
 			},
 		)
-		params.assert.True(
-			found,
+		params.assert.Greater(
+			pdx,
+			-1,
 			"original tag %s should be preserved",
 			originalTag.Tag,
 		)
@@ -909,7 +946,10 @@ func testAddTagsDefaultTimestamps(params *testParams) {
 		params,
 		"DDB_G0285505",
 		false,
-		func(featureID string, tags []*feature.TagPropertyCreate) (*feature.FeatureAnnotation, error) {
+		func(
+			featureID string,
+			tags []*feature.TagPropertyCreate,
+		) (*feature.FeatureAnnotation, error) {
 			addReq := createAddTagsServiceRequest(featureID, tags)
 			return params.client.AddTags(params.ctx, addReq)
 		},
@@ -1007,17 +1047,80 @@ func verifyServiceTagsSet(
 
 	// Verify each expected tag is present
 	for _, expectedTag := range expectedTags {
-		found, otk := collection.Find(
+		pdx := slices.IndexFunc(
 			result.Attributes.Properties,
 			func(p *feature.TagProperty) bool {
 				return p.Tag == expectedTag.Tag && p.Value == expectedTag.Value
 			},
 		)
-		params.assert.True(otk, "should find tag %s", expectedTag.Tag)
+		params.assert.Greater(pdx, -1, "should find tag %s", expectedTag.Tag)
 		params.assert.Equal(
 			expectedTag.CreatedBy,
-			(*found).CreatedBy,
+			result.Attributes.Properties[pdx].CreatedBy,
 			"should match created by for tag %s",
+			expectedTag.Tag,
+		)
+	}
+}
+
+// verifyAutoGeneratedTimestamps verifies that tag timestamps are auto-generated and recent.
+func verifyAutoGeneratedTimestamps(
+	params *testParams,
+	result *feature.FeatureAnnotation,
+	expectedTags []*feature.TagPropertyCreate,
+) {
+	params.t.Helper()
+	// Verify timestamps are auto-generated and recent
+	for _, expectedTag := range expectedTags {
+		pdx := slices.IndexFunc(
+			result.Attributes.Properties,
+			func(p *feature.TagProperty) bool {
+				return p.Tag == expectedTag.Tag
+			},
+		)
+		params.assert.Greater(
+			pdx,
+			-1,
+			"should find tag %s",
+			expectedTag.Tag,
+		)
+		params.assert.WithinDuration(
+			time.Now(),
+			result.Attributes.Properties[pdx].CreatedAt.AsTime(),
+			5*time.Second,
+			"CreatedAt should be recent for tag %s",
+			expectedTag.Tag,
+		)
+	}
+}
+
+// verifyProvidedTimestamps verifies that provided timestamps are preserved.
+func verifyProvidedTimestamps(
+	params *testParams,
+	result *feature.FeatureAnnotation,
+	expectedTags []*feature.TagPropertyCreate,
+	expectedTimestamps []time.Time,
+) {
+	params.t.Helper()
+	// Verify provided timestamps are preserved
+	for idx, expectedTag := range expectedTags {
+		pdx := slices.IndexFunc(
+			result.Attributes.Properties,
+			func(p *feature.TagProperty) bool {
+				return p.Tag == expectedTag.Tag
+			},
+		)
+		params.assert.Greater(
+			pdx,
+			-1,
+			"should find tag %s",
+			expectedTag.Tag,
+		)
+		params.assert.Equal(
+			expectedTimestamps[idx].Truncate(time.Second),
+			result.Attributes.Properties[pdx].CreatedAt.AsTime().
+				Truncate(time.Second),
+			"CreatedAt should match provided timestamp for tag %s",
 			expectedTag.Tag,
 		)
 	}
@@ -1032,47 +1135,10 @@ func verifyTagTimestamps(
 	autoGenerated bool,
 ) {
 	params.t.Helper()
-
 	if autoGenerated {
-		// Verify timestamps are auto-generated and recent
-		for _, expectedTag := range expectedTags {
-			pdx := slices.IndexFunc(
-				result.Attributes.Properties,
-				func(p *feature.TagProperty) bool {
-					return p.Tag == expectedTag.Tag
-				},
-			)
-			params.assert.Greater(
-				pdx,
-				-1,
-				"should find tag %s",
-				expectedTag.Tag,
-			)
-			params.assert.WithinDuration(
-				time.Now(),
-				result.Attributes.Properties[pdx].CreatedAt.AsTime(),
-				5*time.Second,
-				"CreatedAt should be recent for tag %s",
-				expectedTag.Tag,
-			)
-		}
+		verifyAutoGeneratedTimestamps(params, result, expectedTags)
 	} else {
-		// Verify provided timestamps are preserved
-		for idx, expectedTag := range expectedTags {
-			found, otk := collection.Find(
-				result.Attributes.Properties,
-				func(p *feature.TagProperty) bool {
-					return p.Tag == expectedTag.Tag
-				},
-			)
-			params.assert.True(otk, "should find tag %s", expectedTag.Tag)
-			params.assert.Equal(
-				expectedTimestamps[idx].Truncate(time.Second),
-				(*found).CreatedAt.AsTime().Truncate(time.Second),
-				"CreatedAt should match provided timestamp for tag %s",
-				expectedTag.Tag,
-			)
-		}
+		verifyProvidedTimestamps(params, result, expectedTags, expectedTimestamps)
 	}
 }
 
@@ -1305,15 +1371,16 @@ func testSetTagsReplaceExisting(params *testParams) {
 
 	// Verify original tags are no longer present
 	for _, originalTag := range originalTags {
-		_, found := collection.Find(
+		pdx := slices.IndexFunc(
 			result.Attributes.Properties,
 			func(p *feature.TagProperty) bool {
 				return p.Tag == originalTag.Tag &&
 					p.Value == originalTag.Value
 			},
 		)
-		params.assert.False(
-			found,
+		params.assert.Equal(
+			-1,
+			pdx,
 			"original tag %s should be removed",
 			originalTag.Tag,
 		)
@@ -1372,7 +1439,10 @@ func testSetTagsProvidedTimestamps(params *testParams) {
 		params,
 		"DDB_G0285607",
 		true,
-		func(featureID string, tags []*feature.TagPropertyCreate) (*feature.FeatureAnnotation, error) {
+		func(
+			featureID string,
+			tags []*feature.TagPropertyCreate,
+		) (*feature.FeatureAnnotation, error) {
 			setReq := createSetTagsServiceRequest(featureID, tags)
 			return params.client.SetTags(params.ctx, setReq)
 		},
