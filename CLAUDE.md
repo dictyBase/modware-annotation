@@ -1,3 +1,27 @@
+# Table of Contents
+
+- [Go Coding Conventions](#go-coding-conventions)
+  - [Build, Test, and Lint Commands](#build-test-and-lint-commands)
+  - [Code Style Guidelines](#code-style-guidelines)
+  - [Project Structure](#project-structure)
+  - [Variable Name Length](#variable-name-length)
+  - [Naming Style](#naming-style)
+  - [Clarity and Context](#clarity-and-context)
+  - [Avoidance](#avoidance)
+  - [Constants](#constants)
+  - [Error Handling](#error-handling)
+  - [Receivers](#receivers)
+- [Testing Best Practices](#testing-best-practices)
+  - [Test Organization and Structure](#test-organization-and-structure)
+  - [Parameter Structs for Test Functions](#parameter-structs-for-test-functions)
+  - [GRPC Service Testing with bufconn](#grpc-service-testing-with-bufconn)
+  - [Functional Programming in Tests](#functional-programming-in-tests)
+  - [Error Handling and Assertions](#error-handling-and-assertions)
+  - [Timestamp and Time Handling](#timestamp-and-time-handling)
+  - [Test Data Management](#test-data-management)
+  - [Comprehensive Test Coverage](#comprehensive-test-coverage)
+  - [Test Helper Organization](#test-helper-organization)
+
 # Go Coding Conventions
 
 -- **Build, Test, and Lint Commands**
@@ -558,4 +582,429 @@
 - **Receivers:**
     - Use short, one or two-letter receiver names that reflect the type (e.g.,
     `r` for `io.Reader`, `f` for `*File`).
+
+# Testing Best Practices
+
+- **Test Organization and Structure**
+    - Use descriptive test function names that clearly indicate what is being tested
+    - Organize tests into separate files by functionality: `*_test.go` for main tests, `*_test_helpers.go` for reusable helpers
+    - Group related test helper functions by domain (CRUD operations, tag management, list operations)
+    - Use parallel execution with `t.Parallel()` for independent tests to improve performance
+      ```go
+      func TestCreateFeatureAnnotation(t *testing.T) {
+          t.Parallel()
+          client, assert := setup(t)
+          ctx := context.Background()
+          params := &testParams{
+              t:      t,
+              ctx:    ctx,
+              client: client,
+              assert: assert,
+          }
+          testCreateValidFeature(params)
+          testCreateMissingFields(params)
+          testCreateDuplicateFeature(params)
+      }
+      ```
+
+- **Parameter Structs for Test Functions**
+    - Use structs to pass multiple parameters to test helper functions for better maintainability
+    - Define parameter structs with clear, descriptive names
+      ```go
+      // tagPropertyCreateParams holds the parameters for the
+      // createServiceTagPropertyCreate function.
+      type tagPropertyCreateParams struct {
+          tag       string
+          value     string
+          createdBy string
+          timestamp *time.Time
+      }
+      
+      // assertGrpcErrorParams holds the parameters for the assertGrpcError function.
+      type assertGrpcErrorParams struct {
+          assert               *require.Assertions
+          err                  error
+          expectedCode         codes.Code
+          expectedMsgSubstring string
+      }
+      
+      // Usage example
+      func createServiceTagPropertyCreate(
+          params *tagPropertyCreateParams,
+      ) *feature.TagPropertyCreate {
+          tagCreate := &feature.TagPropertyCreate{
+              Tag:       params.tag,
+              Value:     params.value,
+              CreatedBy: params.createdBy,
+          }
+          
+          if params.timestamp != nil {
+              tagCreate.CreatedAt = timestamppb.New(*params.timestamp)
+          }
+          
+          return tagCreate
+      }
+      ```
+
+- **GRPC Service Testing with bufconn**
+    - Use in-memory GRPC testing with `bufconn.Listen()` for fast, isolated tests
+    - Create mock implementations for external dependencies
+    - Ensure proper cleanup with `t.Cleanup()` to prevent resource leaks
+      ```go
+      func setup(
+          t *testing.T,
+      ) (feature.FeatureAnnotationServiceClient, *require.Assertions) {
+          t.Helper()
+          assert := require.New(t)
+          tra, err := testarango.NewTestArangoFromEnv(true)
+          assert.NoError(err, "expect no error from creating an arangodb instance")
+          
+          // Create repository with isolated test collections
+          repo, err := arangodb.NewFeatureAnnoRepo(
+              arangodb.GetConnectParamsFromDB(tra),
+              &arangodb.FeatureCollectionParams{
+                  Feature: "feature_test",
+                  Pub:     "pub_test",
+                  Edge:    "feature_pub_test",
+                  Graph:   "feature_pub_graph_test",
+              },
+          )
+          assert.NoError(err)
+          
+          // Create service with mock dependencies
+          svc, err := NewFeatureAnnotationService(&FeatureParams{
+              Repository: repo,
+              Publisher:  &MockMessage{}, // Mock message publisher
+          })
+          assert.NoError(err)
+          
+          // GRPC server setup with bufconn
+          server := grpc.NewServer()
+          feature.RegisterFeatureAnnotationServiceServer(server, svc)
+          lis := bufconn.Listen(1024 * 1024)
+          go func() {
+              if err = server.Serve(lis); err != nil {
+                  t.Logf("Server exited with error: %v", err)
+                  os.Exit(1)
+              }
+          }()
+          
+          // GRPC client setup
+          dialer := func(context.Context, string) (net.Conn, error) {
+              conn, errd := lis.Dial()
+              assert.NoError(errd, "expect no error from creating listener")
+              return conn, nil
+          }
+          
+          conn, err := grpc.NewClient(
+              "bufnet",
+              grpc.WithTransportCredentials(insecure.NewCredentials()),
+              grpc.WithContextDialer(dialer),
+          )
+          assert.NoError(err)
+          
+          // Cleanup resources
+          t.Cleanup(func() {
+              _ = repo.Dbh().Drop()
+              conn.Close()
+              lis.Close()
+              server.Stop()
+          })
+          
+          return feature.NewFeatureAnnotationServiceClient(conn), assert
+      }
+      
+      // Mock implementation for message publisher
+      type MockMessage struct{}
+      
+      func (msn *MockMessage) Publish(
+          subject string,
+          feat *feature.FeatureAnnotation,
+      ) error {
+          return nil
+      }
+      
+      func (msn *MockMessage) Close() error {
+          return nil
+      }
+      ```
+
+- **Functional Programming in Tests**
+    - Use collection utilities for data transformations and filtering in tests
+    - Leverage `slices` package functions for sorting and searching
+    - Prefer functional approaches for cleaner, more readable test code
+      ```go
+      // Use collection.Map for data transformations
+      params.assert.ElementsMatch(
+          collection.Map(
+              req.Attributes.Properties,
+              extractTagAndValue,
+          ),
+          collection.Map(
+              resp.Attributes.Properties,
+              extractTagAndValue,
+          ),
+          "should have matching properties",
+      )
+      
+      // Use slices.SortFunc for consistent ordering
+      slices.SortFunc(
+          req.Attributes.Properties,
+          sortTagPropertiesByTag,
+      )
+      slices.SortFunc(
+          resp.Attributes.Properties,
+          sortTagPropertiesByTag,
+      )
+      
+      // Use slices.ContainsFunc for complex element search
+      found := slices.ContainsFunc(result.Attributes.Properties,
+          func(prop *feature.TagProperty) bool {
+              return prop.Tag == expectedTag.Tag &&
+                  prop.Value == expectedTag.Value &&
+                  prop.CreatedBy == expectedTag.CreatedBy
+          })
+      
+      // Helper functions for data extraction
+      func sortTagPropertiesByTag(a, b *feature.TagProperty) int {
+          return strings.Compare(
+              strings.ToLower(a.Tag),
+              strings.ToLower(b.Tag),
+          )
+      }
+      
+      func extractTagAndValue(prop *feature.TagProperty) *feature.TagProperty {
+          return &feature.TagProperty{
+              Tag:   prop.Tag,
+              Value: prop.Value,
+          }
+      }
+      ```
+
+- **Error Handling and Assertions**
+    - Create dedicated functions for GRPC error assertion to ensure consistency
+    - Test all relevant error codes and messages
+    - Use type assertions to verify specific error types
+      ```go
+      // Dedicated GRPC error assertion function
+      func assertGrpcError(params assertGrpcErrorParams) {
+          params.assert.Error(params.err, "expected a gRPC error")
+          sts, ok := status.FromError(params.err)
+          params.assert.True(ok, "error should be a gRPC status error")
+          params.assert.Equal(
+              params.expectedCode,
+              sts.Code(),
+              "expected gRPC code %s, but got %s",
+              params.expectedCode,
+              sts.Code(),
+          )
+          if params.expectedMsgSubstring != "" {
+              params.assert.Contains(
+                  strings.ToLower(sts.Message()), // Case-insensitive check
+                  strings.ToLower(params.expectedMsgSubstring),
+                  "expected gRPC error message to contain '%s', but got '%s'",
+                  params.expectedMsgSubstring,
+                  sts.Message(),
+              )
+          }
+      }
+      
+      // Usage in tests
+      func testAddTagsNonExistentFeature(params *testParams) {
+          params.t.Helper()
+          // ... test setup ...
+          _, err := params.client.AddTags(params.ctx, addReq)
+          
+          params.assert.Error(err, "should return error for non-existent feature")
+          assertGrpcError(assertGrpcErrorParams{
+              assert:               params.assert,
+              err:                  err,
+              expectedCode:         codes.NotFound,
+              expectedMsgSubstring: "not found",
+          })
+      }
+      ```
+
+- **Timestamp and Time Handling**
+    - Use `assert.WithinDuration()` for timestamp tolerance testing
+    - Truncate timestamps when comparing for consistent precision
+    - Test both auto-generated and user-provided timestamps
+      ```go
+      // Verify auto-generated timestamps are recent
+      params.assert.WithinDuration(
+          time.Now(),
+          result.Attributes.Properties[idx].CreatedAt.AsTime(),
+          5*time.Second,
+          "CreatedAt should be recent for tag %s",
+          expectedTag.Tag,
+      )
+      
+      // Verify provided timestamps are preserved with truncation
+      params.assert.Equal(
+          expectedTimestamps[idx].Truncate(time.Second),
+          result.Attributes.Properties[idx].CreatedAt.AsTime().
+              Truncate(time.Second),
+          "CreatedAt should match provided timestamp for tag %s",
+          expectedTag.Tag,
+      )
+      
+      // Helper function for timestamp behavior testing
+      func testTimestampBehavior(
+          params *testParams,
+          featureID string,
+          withProvidedTimestamps bool,
+          operation func(string, []*feature.TagPropertyCreate) (*feature.FeatureAnnotation, error),
+      ) {
+          params.t.Helper()
+          
+          var newTags []*feature.TagPropertyCreate
+          var expectedTimestamps []time.Time
+          
+          if withProvidedTimestamps {
+              newTags, expectedTimestamps = createTestTagsWithTimestamps()
+          } else {
+              newTags = createTestTagsWithoutTimestamps()
+          }
+          
+          result, err := operation(created.Id, newTags)
+          params.assert.NoError(err, "should successfully perform tag operation")
+          
+          // Verify timestamps
+          verifyTagTimestamps(
+              params,
+              result,
+              newTags,
+              expectedTimestamps,
+              !withProvidedTimestamps,
+          )
+      }
+      ```
+
+- **Test Data Management**
+    - Create factory functions for consistent test data generation
+    - Use unique IDs for test isolation and prevent conflicts
+    - Organize test data creation in reusable helper functions
+      ```go
+      // Factory function for test data
+      func newTestFeature() *feature.NewFeatureAnnotation {
+          return &feature.NewFeatureAnnotation{
+              Id:        "DDB_G0285425",
+              CreatedBy: "testuser@dictybase.org",
+              CreatedAt: timestamppb.Now(),
+              Attributes: &feature.FeatureAnnotationAttributes{
+                  Name:     "Test Feature",
+                  Synonyms: []string{"test1", "test2"},
+                  Properties: []*feature.TagProperty{
+                      {
+                          Tag:       "description",
+                          Value:     "Test description",
+                          CreatedBy: "testuser@dictybase.org",
+                      },
+                      {
+                          Tag:       "note",
+                          Value:     "Test note",
+                          CreatedBy: "testuser@dictybase.org",
+                      },
+                  },
+              },
+          }
+      }
+      
+      // Test data creation with parameter structs
+      func createTestTagsWithTimestamps() ([]*feature.TagPropertyCreate, []time.Time) {
+          specTs1 := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Microsecond)
+          specTs2 := time.Now().Add(-24 * time.Hour).UTC().Truncate(time.Microsecond)
+          expectedTimestamps := []time.Time{specTs1, specTs2}
+          newTags := []*feature.TagPropertyCreate{
+              createServiceTagPropertyCreate(&tagPropertyCreateParams{
+                  tag:       "provided_timestamp1",
+                  value:     "value1",
+                  createdBy: "tester@example.org",
+                  timestamp: &specTs1,
+              }),
+              createServiceTagPropertyCreate(&tagPropertyCreateParams{
+                  tag:       "provided_timestamp2",
+                  value:     "value2",
+                  createdBy: "tester@example.org",
+                  timestamp: &specTs2,
+              }),
+          }
+          return newTags, expectedTimestamps
+      }
+      ```
+
+- **Comprehensive Test Coverage**
+    - Test success paths with multiple scenarios (single item, multiple items, edge cases)
+    - Test validation errors for invalid input data
+    - Test business logic errors for non-existent resources
+    - Test edge cases like empty requests and boundary conditions
+      ```go
+      func TestSetTags(t *testing.T) {
+          t.Parallel()
+          client, assert := setup(t)
+          ctx := context.Background()
+          params := &testParams{
+              t:      t,
+              ctx:    ctx,
+              client: client,
+              assert: assert,
+          }
+          // Success scenarios
+          testSetTagsSuccess(params)
+          testSetTagsSingleTag(params)
+          testSetTagsMultipleTags(params)
+          testSetTagsReplaceExisting(params)
+          
+          // Edge cases
+          testSetTagsEmptyRequest(params)
+          
+          // Timestamp handling
+          testSetTagsDefaultTimestamps(params)
+          testSetTagsProvidedTimestamps(params)
+          
+          // Error conditions
+          testSetTagsNonExistentFeature(params)
+          testSetTagsInvalidRequest(params)
+      }
+      ```
+
+- **Test Helper Organization**
+    - Mark helper functions with `t.Helper()` for better error reporting
+    - Group helpers by functionality in separate files
+    - Use descriptive names that clearly indicate the helper's purpose
+    - Create verification functions that encapsulate complex assertion logic
+      ```go
+      // Verification helper with struct parameters
+      func verifyServiceTagsSet(
+          params *testParams,
+          result *feature.FeatureAnnotation,
+          expectedTags []*feature.TagPropertyCreate,
+      ) {
+          params.t.Helper()
+          
+          // Verify tag count matches exactly (should replace, not append)
+          params.assert.Len(
+              result.Attributes.Properties,
+              len(expectedTags),
+              "should have exactly the number of new tags",
+          )
+          
+          // Verify each expected tag is present
+          for _, expectedTag := range expectedTags {
+              idx := slices.IndexFunc(
+                  result.Attributes.Properties,
+                  func(p *feature.TagProperty) bool {
+                      return p.Tag == expectedTag.Tag && p.Value == expectedTag.Value
+                  },
+              )
+              params.assert.Greater(idx, -1, "should find tag %s", expectedTag.Tag)
+              params.assert.Equal(
+                  expectedTag.CreatedBy,
+                  result.Attributes.Properties[idx].CreatedBy,
+                  "should match created by for tag %s",
+                  expectedTag.Tag,
+              )
+          }
+      }
+      ```
 
