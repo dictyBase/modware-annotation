@@ -677,18 +677,15 @@ func verifyServiceTagsAdded(args *verifyServiceTagsAddedParams) {
 
 	// Verify each expected tag is present
 	for _, expectedTag := range args.expectedTags {
-		found, otk := collection.Find(
-			args.result.Attributes.Properties,
+		otk := slices.ContainsFunc(args.result.Attributes.Properties,
 			func(prop *feature.TagProperty) bool {
 				return prop.Tag == expectedTag.Tag &&
-					prop.Value == expectedTag.Value
-			},
-		)
-		args.params.assert.True(otk, "should find tag %s", expectedTag.Tag)
-		args.params.assert.Equal(
-			expectedTag.CreatedBy,
-			(*found).CreatedBy,
-			"should match created by for tag %s",
+					prop.Value == expectedTag.Value &&
+					prop.CreatedBy == expectedTag.CreatedBy
+			})
+		args.params.assert.True(
+			otk,
+			"should find tag %s",
 			expectedTag.Tag,
 		)
 	}
