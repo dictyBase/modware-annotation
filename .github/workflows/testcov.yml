@@ -19,15 +19,13 @@ jobs:
       - name: check out code
         uses: actions/checkout@v4
       - name: unit test
-        run: go test -shuffle on -covermode=atomic -coverprofile=profile.cov -v ./...
+        run: go test -race -covermode=atomic -coverprofile=coverage.txt ./...
         env:
           ARANGO_USER: root
           ARANGO_PASS: rootpass
           ARANGO_HOST: localhost
           ARANGO_PORT: ${{ job.services.arangodb.ports[8529] }}
-          GOPROXY: https://proxy.golang.org
       - name: upload coverage to codecov
         uses: codecov/codecov-action@v5
         with:
-          file: ./profile.cov
           token: ${{ secrets.CODECOV }}
