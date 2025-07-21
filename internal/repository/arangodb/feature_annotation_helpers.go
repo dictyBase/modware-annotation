@@ -236,9 +236,7 @@ func updateAttributes(
 	mdoc.DbLinks = append(
 		mdoc.DbLinks,
 		collection.Map(attrs.Dblinks, convertDbLink)...)
-	mdoc.Properties = append(
-		mdoc.Properties,
-		collection.Map(attrs.Properties, convertProperty)...)
+	mdoc.Properties = collection.Map(attrs.Properties, convertProperty)
 }
 
 func convertDbLink(link *feature.DbLink) model.DbLinkDoc {
