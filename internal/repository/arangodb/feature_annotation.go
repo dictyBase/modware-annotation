@@ -295,6 +295,11 @@ func (fann *featureAnnoRepo) processPublicationType(
 //   - The updated FeatureAnnotationDoc with all changes applied
 //   - An error if the operation fails at any stage
 //
+// Note: When properties are provided in the update, they completely replace
+// all existing properties rather than being appended. This provides consistent
+// behavior with SetTags. To add properties while preserving existing ones,
+// use AddTags instead.
+//
 // The update process occurs within a transaction to maintain data consistency.
 // If publications are updated, the method ensures proper handling of both DOI
 // and Pubmed IDs, including the creation of appropriate graph edges.
