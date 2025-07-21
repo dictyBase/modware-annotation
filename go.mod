@@ -3,6 +3,7 @@ module github.com/dictyBase/modware-annotation
 require (
 	github.com/arangodb/go-driver v1.6.6
 	github.com/bufbuild/protovalidate-go v0.10.0
+	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.8.0
 	github.com/dictyBase/go-genproto v0.0.0-20250714184734-732389f8acb6
@@ -25,7 +26,6 @@ require (
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
