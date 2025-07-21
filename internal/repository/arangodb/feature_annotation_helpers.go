@@ -51,7 +51,7 @@ func createFeatureCollection(
 		Message: "Feature annotation validation failed",
 		Type:    "json",
 	}
-	if err := schemaOpt.LoadRule(schema); err != nil {
+	if err = schemaOpt.LoadRule(schema); err != nil {
 		return nil, fmt.Errorf("error in loading schema %s", err)
 	}
 	coll, err := dbh.FindOrCreateCollection(
@@ -150,7 +150,7 @@ func createPubCollection(
 		Message: "Pub validation failed",
 		Type:    "json",
 	}
-	if err := schemaOpt.LoadRule(schema); err != nil {
+	if err = schemaOpt.LoadRule(schema); err != nil {
 		return nil, fmt.Errorf("error in loading pub schema %s", err)
 	}
 	coll, err := dbh.FindOrCreateCollection(
