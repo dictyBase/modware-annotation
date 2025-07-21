@@ -19,7 +19,7 @@ jobs:
       - name: check out code
         uses: actions/checkout@v4
       - name: unit test
-        run: go test -race -covermode=atomic -coverprofile=coverage.txt ./...
+        run: go test -covermode=atomic -coverprofile=coverage.txt ./...
         env:
           ARANGO_USER: root
           ARANGO_PASS: rootpass

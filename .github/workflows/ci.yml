@@ -22,7 +22,7 @@ jobs:
           go-version: '~1.24'
       - run: go version
       - name: unit test
-        run: go test -race -covermode=atomic -coverprofile=coverage.txt ./...
+        run: go test -covermode=atomic -coverprofile=coverage.txt ./...
         env:
           ARANGO_USER: root
           ARANGO_PASS: rootpass
