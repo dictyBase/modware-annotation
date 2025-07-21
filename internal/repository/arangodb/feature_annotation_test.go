@@ -290,7 +290,7 @@ func TestUpdateNonExistentFeatureAnnotation(t *testing.T) {
 	asrt.True(repository.IsAnnotationNotFound(err))
 }
 
-func TestAddPropertiesToExistingFeature(t *testing.T) {
+func TestReplacePropertiesInExistingFeature(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
 	t.Cleanup(cleanupDB(repo))
@@ -316,19 +316,16 @@ func TestAddPropertiesToExistingFeature(t *testing.T) {
 
 	doc, err := repo.EditFeatureAnnotation(update)
 	asrt.NoError(err)
-	asrt.Len(doc.Properties, 2)
+	asrt.Len(doc.Properties, 1)
 
-	// Create expected properties by combining original + new
-	expectedProperties := slices.Concat(
-		added.Properties,
-		collection.Map(update.Attributes.Properties, convertProperty),
-	)
+	// Properties should be replaced, not appended
+	expectedProperties := collection.Map(update.Attributes.Properties, convertProperty)
 	slices.SortFunc(expectedProperties, sortTagProperties)
 	slices.SortFunc(doc.Properties, sortTagProperties)
 	asrt.ElementsMatch(
 		expectedProperties,
 		doc.Properties,
-		"should have combined properties",
+		"should have replaced properties",
 	)
 }
 
