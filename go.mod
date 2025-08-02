@@ -8,7 +8,7 @@ require (
 	github.com/dictyBase/arangomanager v0.8.0
 	github.com/dictyBase/go-genproto v0.0.0-20250714184734-732389f8acb6
 	github.com/dictyBase/go-obograph v1.6.0
-	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/nats-io/nats.go v1.44.0
 	github.com/sirupsen/logrus v1.9.3
