@@ -143,20 +143,41 @@ message FeatureAnnotationAttributes {
   repeated TagProperty properties = 7;
 }
 
+// FeatureAnnotationUpdateAttributes defines the core properties and metadata of
+// a feature annotation for update operations, where all fields are optional.
+message FeatureAnnotationUpdateAttributes {
+  // Short human readable textual name
+  string name = 1;
+  // Alternate list of names
+  repeated string synonyms = 2;
+  // List of publications(doi identifiers)
+  repeated string publications = 3;
+  // List of pubmed id
+  repeated string pubmed = 4;
+  // Cross references to other databases
+  repeated DbLink dblinks = 6;
+  // Bucket of key value pair data
+  repeated TagProperty properties = 7;
+}
+
 // FeatureAnnotationUpdate contains the fields needed to update an existing
 // feature annotation.
+// Migration Note: The 'attributes' field is deprecated. Use 'update_attributes' instead
+// which allows all fields to be optional for partial updates.
 message FeatureAnnotationUpdate {
   string type = 1;
   string id = 2 [(buf.validate.field).required = true];
-  FeatureAnnotationAttributes attributes = 3;
+  // DEPRECATED: Use update_attributes field instead. This field is maintained
+  // for backward compatibility and will be removed in a future version.
+  FeatureAnnotationAttributes attributes = 3 [deprecated = true];
   // email id of the user who updated the content
-  string updated_by = 4 [(buf.validate.field).cel = {
-    id: "valid_email"
-    message: "email must be a valid email"
-    expression: "this.isEmail()"
-  }];
+  string updated_by = 4 [(buf.validate.field).string.email = true];
   // Toggle the obsolete status
   bool is_obsolete = 5;
+  // New field for partial updates with all optional fields. When both
+  // attributes and update_attributes are provided, update_attributes takes
+  // precedence.
+  FeatureAnnotationUpdateAttributes update_attributes = 6;
 }
 
 // NewFeatureAnnotation contains all the information needed to create a new
