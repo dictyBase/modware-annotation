@@ -217,26 +217,127 @@ func createFeaturePubGraph(
 	return grph, nil
 }
 
+// copyFeatureAnnotationDoc creates a deep copy of a FeatureAnnotationDoc.
+func copyFeatureAnnotationDoc(
+	doc *model.FeatureAnnotationDoc,
+) *model.FeatureAnnotationDoc {
+	if doc == nil {
+		return nil
+	}
+
+	// Create a new instance with all fields copied
+	newDoc := &model.FeatureAnnotationDoc{
+		DocumentMeta: doc.DocumentMeta,
+		Type:         doc.Type,
+		AnnoId:       doc.AnnoId,
+		CreatedAt:    doc.CreatedAt,
+		UpdatedAt:    doc.UpdatedAt,
+		CreatedBy:    doc.CreatedBy,
+		UpdatedBy:    doc.UpdatedBy,
+		Name:         doc.Name,
+		IsObsolete:   doc.IsObsolete,
+		NotFound:     doc.NotFound,
+	}
+
+	// Deep copy slices - only if they have content
+	if len(doc.Synonyms) > 0 {
+		newDoc.Synonyms = make([]string, len(doc.Synonyms))
+		copy(newDoc.Synonyms, doc.Synonyms)
+	}
+
+	if len(doc.Publications) > 0 {
+		newDoc.Publications = make([]string, len(doc.Publications))
+		copy(newDoc.Publications, doc.Publications)
+	}
+
+	if len(doc.Pubmed) > 0 {
+		newDoc.Pubmed = make([]string, len(doc.Pubmed))
+		copy(newDoc.Pubmed, doc.Pubmed)
+	}
+
+	// Deep copy DbLinks
+	if len(doc.DbLinks) > 0 {
+		newDoc.DbLinks = make([]model.DbLinkDoc, len(doc.DbLinks))
+		copy(newDoc.DbLinks, doc.DbLinks)
+	}
+
+	// Deep copy Properties
+	if len(doc.Properties) > 0 {
+		newDoc.Properties = make([]model.TagPropertyDoc, len(doc.Properties))
+		copy(newDoc.Properties, doc.Properties)
+	}
+
+	return newDoc
+}
+
 func updateBasicFields(
 	faDoc *model.FeatureAnnotationDoc,
 	doc *feature.FeatureAnnotationUpdate,
-) {
-	faDoc.UpdatedBy = doc.UpdatedBy
-	if faDoc.IsObsolete != doc.IsObsolete {
-		faDoc.IsObsolete = doc.IsObsolete
+) *model.FeatureAnnotationDoc {
+	// Create a copy of the document
+	newDoc := copyFeatureAnnotationDoc(faDoc)
+
+	// Update fields on the copy
+	newDoc.UpdatedBy = doc.UpdatedBy
+	if newDoc.IsObsolete != doc.IsObsolete {
+		newDoc.IsObsolete = doc.IsObsolete
 	}
+
+	return newDoc
 }
 
 func updateAttributes(
 	mdoc *model.FeatureAnnotationDoc,
 	attrs *feature.FeatureAnnotationAttributes,
-) {
-	mdoc.Name = attrs.Name
-	mdoc.Synonyms = append(mdoc.Synonyms, attrs.Synonyms...)
-	mdoc.DbLinks = append(
-		mdoc.DbLinks,
+) *model.FeatureAnnotationDoc {
+	// Create a copy of the document
+	newDoc := copyFeatureAnnotationDoc(mdoc)
+
+	// Update fields on the copy
+	newDoc.Name = attrs.Name
+	// Append synonyms to existing ones (original behavior)
+	newDoc.Synonyms = append(newDoc.Synonyms, attrs.Synonyms...)
+	// Append dblinks to existing ones (original behavior)
+	newDoc.DbLinks = append(
+		newDoc.DbLinks,
 		collection.Map(attrs.Dblinks, convertDbLink)...)
-	mdoc.Properties = collection.Map(attrs.Properties, convertProperty)
+	// Replace properties (original behavior)
+	newDoc.Properties = collection.Map(attrs.Properties, convertProperty)
+
+	return newDoc
+}
+
+// updateAttributesPartial handles partial updates from
+// FeatureAnnotationUpdateAttributes. Only non-empty/non-nil fields are updated,
+// preserving existing values otherwise.
+func updateAttributesPartial(
+	mdoc *model.FeatureAnnotationDoc,
+	attrs *feature.FeatureAnnotationUpdateAttributes,
+) *model.FeatureAnnotationDoc {
+	// Create a copy of the document
+	newDoc := copyFeatureAnnotationDoc(mdoc)
+
+	// Update name only if provided
+	if len(attrs.Name) > 0 {
+		newDoc.Name = attrs.Name
+	}
+
+	// Update synonyms only if provided (replaces existing)
+	if len(attrs.Synonyms) > 0 {
+		newDoc.Synonyms = append([]string(nil), attrs.Synonyms...)
+	}
+
+	// Update dblinks only if provided (replaces existing)
+	if len(attrs.Dblinks) > 0 {
+		newDoc.DbLinks = collection.Map(attrs.Dblinks, convertDbLink)
+	}
+
+	// Update properties only if provided (replaces existing, consistent with SetTags)
+	if len(attrs.Properties) > 0 {
+		newDoc.Properties = collection.Map(attrs.Properties, convertProperty)
+	}
+
+	return newDoc
 }
 
 func convertDbLink(link *feature.DbLink) model.DbLinkDoc {
