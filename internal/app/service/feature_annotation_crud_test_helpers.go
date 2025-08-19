@@ -186,13 +186,13 @@ func testUpdateExistingFeature(params *testParams) {
 	params.assert.Equal(updateReq.Id, resp.Id)
 	params.assert.Equal(updateReq.UpdatedBy, resp.UpdatedBy)
 	params.assert.Equal(
-		updateReq.Attributes.Name,
+		updateReq.Attributes.Name, //nolint:staticcheck // Test uses deprecated field for backward compatibility
 		resp.Attributes.Name,
 	)
 	params.assert.ElementsMatch(
 		slices.Concat(
 			createReq.Attributes.Synonyms,
-			updateReq.Attributes.Synonyms,
+			updateReq.Attributes.Synonyms, //nolint:staticcheck // Test uses deprecated field for backward compatibility
 		),
 		resp.Attributes.Synonyms,
 	)
