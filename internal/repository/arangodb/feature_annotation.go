@@ -466,8 +466,10 @@ func (fann *featureAnnoRepo) AddTag(
 }
 
 // AddTags adds multiple tags to an existing feature annotation.
+// Intentional duplication with SetTags - both follow same
+// transaction pattern but use different AQL queries
 //
-//nolint:dupl // Intentional duplication with SetTags - both follow same transaction pattern but use different AQL queries
+//nolint:dupl
 func (fann *featureAnnoRepo) AddTags(
 	req *feature.AddTagsRequest,
 ) (*model.FeatureAnnotationDoc, error) {
