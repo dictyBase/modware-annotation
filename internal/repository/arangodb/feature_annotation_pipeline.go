@@ -166,11 +166,27 @@ func stepUpdateDocFields(state *editState) *editState {
 		return state
 	}
 
-	// Update fields
-	updateBasicFields(state.origDoc, state.doc)
-	if state.doc.Attributes != nil {
-		updateAttributes(state.origDoc, state.doc.Attributes)
+	// Start with a copy of the original document
+	updatedDoc := copyFeatureAnnotationDoc(state.origDoc)
+
+	// Update basic fields (returns new copy)
+	updatedDoc = updateBasicFields(updatedDoc, state.doc)
+
+	// Handle attributes update - prefer UpdateAttributes over deprecated Attributes
+	if state.doc.UpdateAttributes != nil {
+		// Use the new partial update logic
+		updatedDoc = updateAttributesPartial(
+			updatedDoc,
+			state.doc.UpdateAttributes,
+		)
+	} else if state.doc.Attributes != nil { //nolint:staticcheck // Backward compatibility with deprecated field
+		// Fall back to deprecated full update for backward compatibility
+		//nolint:staticcheck // Backward compatibility with deprecated field
+		updatedDoc = updateAttributes(updatedDoc, state.doc.Attributes)
 	}
+
+	// Store the updated document in state
+	state.updatedDoc = updatedDoc
 
 	// Prepare the update query
 	state.updateQuery = fmt.Sprintf(
@@ -190,8 +206,8 @@ func stepExecuteUpdate(state *editState) *editState {
 	result, err := state.txr.DoRun(
 		state.updateQuery,
 		map[string]interface{}{
-			"doc":  state.origDoc.Key,
-			"data": state.origDoc,
+			"doc":  state.updatedDoc.Key, // Use updatedDoc instead of origDoc
+			"data": state.updatedDoc,     // Use updatedDoc instead of origDoc
 		},
 	)
 	if err != nil {
@@ -200,10 +216,12 @@ func stepExecuteUpdate(state *editState) *editState {
 		return state
 	}
 
-	// Read the updated result
-	state.updatedDoc = &model.FeatureAnnotationDoc{}
-	if err := result.Read(state.updatedDoc); err != nil {
+	// Read the result from the database
+	dbDoc := &model.FeatureAnnotationDoc{}
+	if err := result.Read(dbDoc); err != nil {
 		state.Err = fmt.Errorf("error reading updated document: %w", err)
+	} else {
+		state.updatedDoc = dbDoc
 	}
 
 	return state
@@ -215,17 +233,30 @@ func stepHandlePublications(state *editState) *editState {
 		return state
 	}
 
-	// Skip if no attributes
-	if state.doc.Attributes == nil {
+	// Determine which attributes to use - prefer UpdateAttributes over deprecated Attributes
+	var pubmedIDs []string
+	var doiPublications []string
+
+	switch {
+	case state.doc.UpdateAttributes != nil:
+		// Use publications from the new UpdateAttributes field
+		pubmedIDs = state.doc.UpdateAttributes.Pubmed
+		doiPublications = state.doc.UpdateAttributes.Publications
+	case state.doc.Attributes != nil: //nolint:staticcheck // Backward compatibility with deprecated field
+		// Fall back to deprecated Attributes field for backward compatibility
+		pubmedIDs = state.doc.Attributes.Pubmed             //nolint:staticcheck // Backward compatibility with deprecated field
+		doiPublications = state.doc.Attributes.Publications //nolint:staticcheck // Backward compatibility with deprecated field
+	default:
+		// No attributes to process
 		return state
 	}
 
 	// Process Pubmed IDs
-	if !collection.IsEmpty(state.doc.Attributes.Pubmed) {
+	if !collection.IsEmpty(pubmedIDs) {
 		if err := state.fann.processPublicationType(
 			state.txr,
 			state.updatedDoc,
-			state.doc.Attributes.Pubmed,
+			pubmedIDs,
 			"pubmed",
 		); err != nil {
 			state.Err = fmt.Errorf(
@@ -238,11 +269,11 @@ func stepHandlePublications(state *editState) *editState {
 	}
 
 	// Process DOI publications
-	if !collection.IsEmpty(state.doc.Attributes.Publications) {
+	if !collection.IsEmpty(doiPublications) {
 		if err := state.fann.processPublicationType(
 			state.txr,
 			state.updatedDoc,
-			state.doc.Attributes.Publications,
+			doiPublications,
 			"doi",
 		); err != nil {
 			state.Err = fmt.Errorf("error processing DOI publications: %w", err)
