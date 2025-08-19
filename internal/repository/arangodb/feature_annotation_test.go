@@ -261,7 +261,7 @@ func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	// Combined synonyms check
 	expectedSynonyms := slices.Concat(
 		added.Synonyms,
-		update.Attributes.Synonyms,
+		update.Attributes.Synonyms, //nolint:staticcheck // Test uses deprecated field for backward compatibility
 	)
 	slices.Sort(expectedSynonyms)
 	slices.Sort(doc.Synonyms)
@@ -319,6 +319,7 @@ func TestReplacePropertiesInExistingFeature(t *testing.T) {
 	asrt.Len(doc.Properties, 1)
 
 	// Properties should be replaced, not appended
+	//nolint:staticcheck // Test uses deprecated field for backward compatibility
 	expectedProperties := collection.Map(update.Attributes.Properties, convertProperty)
 	slices.SortFunc(expectedProperties, sortTagProperties)
 	slices.SortFunc(doc.Properties, sortTagProperties)
