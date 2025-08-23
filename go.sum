@@ -30,8 +30,6 @@ github.com/dictyBase/aphgrpc v1.4.2 h1:jkNyIpUBATNVNTM99TfAHln8UEpzyvNNNuM2+UY6t
 github.com/dictyBase/aphgrpc v1.4.2/go.mod h1:rzi2U95QntAuS6XpqespgZmQ8Ujo2Sq2R5FyhW5adA8=
 github.com/dictyBase/arangomanager v0.8.0 h1:wXWmq7QYBn37eGs0nELPxqccMbTvx9G99k/crHwfDAw=
 github.com/dictyBase/arangomanager v0.8.0/go.mod h1:Fm3AuYBeMccsYcu8M6iq2a96XlPIe4Y55x95TAWmGs4=
-github.com/dictyBase/go-genproto v0.0.0-20250714184734-732389f8acb6 h1:w4uL7TGaFkx+auQAOVB//u6fNZ/I50mZE+28VcbR9KI=
-github.com/dictyBase/go-genproto v0.0.0-20250714184734-732389f8acb6/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-genproto v0.0.0-20250812211349-c01bdbe25058 h1:+tJZbSiQi6XfhbRSHDFT9uue0x37SW4hOh7ypD0OQaM=
 github.com/dictyBase/go-genproto v0.0.0-20250812211349-c01bdbe25058/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-obograph v1.6.0 h1:otuiEadRCJ25o6X/5tWhDjiiAbK0R8LBLQpBxVREotc=
@@ -267,8 +265,8 @@ google.golang.org/protobuf v1.23.1-0.20200526195155-81db48ad09cc/go.mod h1:EGpAD
 google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlbajtzgsN7c=
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.36.7 h1:IgrO7UwFQGJdRNXH/sQux4R1Dj1WAKcLElzeeRaXV2A=
-google.golang.org/protobuf v1.36.7/go.mod h1:jduwjTPXsFjZGTmRluh+L6NjiWu7pchiJ2/5YcXBHnY=
+google.golang.org/protobuf v1.36.8 h1:xHScyCOEuuwZEc6UtSOvPbAT4zRh0xcNRYekJwfqyMc=
+google.golang.org/protobuf v1.36.8/go.mod h1:fuxRtAxBytpl4zzqUh6/eyUujkJdNiuEkXntxiD/uRU=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
