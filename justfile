@@ -31,17 +31,17 @@ test:
     gotestsum --format-hide-empty-pkg --format testdox --format-icons hivis
 
 # Build multi-architecture images for all platforms
-build-multiarch:
-    docker buildx build --platform {{platforms}} -t {{image}} -f {{dockerfile}} .
+build-multiarch image_tag=tag:
+    docker buildx build --platform {{platforms}} -t {{namespace}}/{{name}}:{{image_tag}} -f {{dockerfile}} .
 
 # Build amd64 image only for quick local testing
-build-amd64:
-    docker buildx build --platform linux/amd64 -t {{image}} -f {{dockerfile}} --load .
+build-amd64 image_tag=tag:
+    docker buildx build --platform linux/amd64 -t {{namespace}}/{{name}}:{{image_tag}} -f {{dockerfile}} --load .
 
 # Build arm64 image only for quick local testing
-build-arm64:
-    docker buildx build --platform linux/arm64 -t {{image}} -f {{dockerfile}} --load .
+build-arm64 image_tag=tag:
+    docker buildx build --platform linux/arm64 -t {{namespace}}/{{name}}:{{image_tag}} -f {{dockerfile}} --load .
 
 # Tag and push multi-architecture images to GitHub Container Registry
-push-ghcr:
-    docker buildx build --platform {{platforms}} -t {{image}} -f {{dockerfile}} --push .
+push-ghcr image_tag=tag:
+    docker buildx build --platform {{platforms}} -t {{namespace}}/{{name}}:{{image_tag}} -f {{dockerfile}} --push .
