@@ -182,6 +182,79 @@ The project adheres to the following conventions:
 
 For more details on coding standards, refer to [go_conventions.md](go_conventions.md).
 
+## Docker Build
+
+Multi-architecture images are built using `docker buildx` for `linux/amd64`
+and `linux/arm64` targets. The `justfile` contains recipes for building and
+pushing images.
+
+### One-Time Developer Setup
+
+Before using the build recipes, create the named buildx builder on your
+machine. This step is required once per developer machine:
+
+```bash
+docker buildx create --name multiarch --use
+docker buildx inspect --bootstrap
+```
+
+The `--use` flag makes `multiarch` the active builder for subsequent `docker
+buildx` commands. The `--bootstrap` flag starts the builder daemon and
+confirms it is healthy.
+
+Alternatively, use the justfile recipe:
+
+```bash
+just setup-buildx
+```
+
+### Verify Setup
+
+Confirm both target platforms are available:
+
+```bash
+docker buildx inspect | grep Platforms
+# Expected output includes: linux/arm64, linux/amd64
+```
+
+Confirm the `multiarch` builder is active (marked with `*`):
+
+```bash
+docker buildx ls
+# NAME/NODE   DRIVER/ENDPOINT  STATUS
+# multiarch*  docker-container running ...
+```
+
+### Build Recipes
+
+```bash
+# Build for both platforms (no local load — intended for push)
+just build-multiarch
+
+# Build amd64 image and load into local Docker daemon
+just build-amd64
+
+# Build arm64 image and load into local Docker daemon
+just build-arm64
+
+# Build and push multi-arch manifest to GHCR
+just push-ghcr
+```
+
+### Switching Builders
+
+To switch the active builder back to Docker's default:
+
+```bash
+docker buildx use default
+```
+
+To switch back to the multiarch builder:
+
+```bash
+docker buildx use multiarch
+```
+
 ## Deployment
 
 The service is designed to be deployed as a Docker container in a Kubernetes

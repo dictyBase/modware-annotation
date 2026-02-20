@@ -14,6 +14,11 @@ image := namespace + "/" + name + ":" + tag
 default:
     @just --list
 
+# Create and activate the multiarch buildx builder (one-time developer setup)
+setup-buildx:
+    docker buildx create --name multiarch --use
+    docker buildx inspect --bootstrap
+
 # Run Go tests before building
 test:
     gotestsum --format-hide-empty-pkg --format testdox --format-icons hivis
