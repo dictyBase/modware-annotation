@@ -14,9 +14,16 @@ image := namespace + "/" + name + ":" + tag
 default:
     @just --list
 
-# Create and activate the multiarch buildx builder (one-time developer setup)
+# Create and activate the multiarch buildx builder (safe to run multiple times)
 setup-buildx:
-    docker buildx create --name multiarch --use
+    #!/usr/bin/env sh
+    if docker buildx inspect multiarch >/dev/null 2>&1; then \
+        echo "Builder 'multiarch' already exists, setting as active..."; \
+        docker buildx use multiarch; \
+    else \
+        echo "Creating builder 'multiarch'..."; \
+        docker buildx create --name multiarch --use; \
+    fi
     docker buildx inspect --bootstrap
 
 # Run Go tests before building
