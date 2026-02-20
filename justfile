@@ -4,7 +4,7 @@
 name := "modware-annotation"
 namespace := "ghcr.io/dictybase"
 tag := "latest"
-dockerfile := "build/package/Dockerfile"
+dockerfile := "build/package/Dockerfile.multiarch"
 platforms := "linux/amd64,linux/arm64"
 
 # Full image reference

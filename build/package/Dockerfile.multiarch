@@ -1,0 +1,54 @@
+# Multi-architecture Dockerfile for modware-annotation
+# Supports: linux/amd64, linux/arm64
+
+# BUILDPLATFORM is the platform where the build is running (native)
+ARG BUILDPLATFORM
+
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
+
+# TARGETOS and TARGETARCH are the OS and architecture we're building for
+ARG TARGETOS
+ARG TARGETARCH
+
+LABEL maintainer="Siddhartha Basu <siddhartha-basu@northwestern.edu>"
+
+# Install build dependencies (upx only, conditional usage later)
+RUN apk add --no-cache upx
+
+# Go build configuration
+ENV GOPROXY=https://proxy.golang.org \
+    GO111MODULE=on \
+    CGO_ENABLED=0 \
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH
+
+# Setup workspace
+RUN mkdir -p /modware-annotation
+WORKDIR /modware-annotation
+
+# Download dependencies first (layer caching)
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+# Copy source code
+ADD cmd cmd
+ADD internal internal
+
+# Build static binary
+RUN go build \
+    -a \
+    -ldflags "-s -w -extldflags '-static'" \
+    -installsuffix cgo \
+    -tags netgo \
+    -o /bin/app \
+    cmd/modware-annotation/main.go
+
+# Conditionally compress binary (amd64 only)
+# UPX may have issues with arm64 binaries
+RUN if [ "$TARGETARCH" = "amd64" ]; then upx -q -9 /bin/app; fi
+
+# Runtime stage - minimal distroless image
+FROM gcr.io/distroless/static
+COPY --from=builder /bin/app /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/app"]
