@@ -24,5 +24,5 @@ RUN go build \
 RUN upx -q -9 /bin/app
 
 FROM gcr.io/distroless/static:nonroot
-COPY --from=builder /bin/app /usr/local/bin/
+COPY --from=builder --chmod=755 /bin/app /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/app"]

@@ -50,5 +50,5 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then upx -q -9 /bin/app; fi
 
 # Runtime stage - minimal distroless image
 FROM gcr.io/distroless/static:nonroot
-COPY --from=builder /bin/app /usr/local/bin/
+COPY --from=builder --chmod=755 /bin/app /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/app"]
