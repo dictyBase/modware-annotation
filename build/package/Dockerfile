@@ -12,8 +12,8 @@ WORKDIR /modware-annotation
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
-ADD cmd cmd
-ADD internal internal
+COPY cmd cmd
+COPY internal internal
 RUN go build \
     -a \
     -ldflags "-s -w -extldflags '-static'" \
@@ -23,6 +23,6 @@ RUN go build \
     cmd/modware-annotation/main.go
 RUN upx -q -9 /bin/app
 
-FROM gcr.io/distroless/static
+FROM gcr.io/distroless/static:nonroot
 COPY --from=builder /bin/app /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/app"]
