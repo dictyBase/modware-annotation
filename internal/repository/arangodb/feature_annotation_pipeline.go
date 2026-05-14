@@ -205,7 +205,7 @@ func stepExecuteUpdate(state *editState) *editState {
 
 	result, err := state.txr.DoRun(
 		state.updateQuery,
-		map[string]interface{}{
+		map[string]any{
 			"doc":  state.updatedDoc.Key, // Use updatedDoc instead of origDoc
 			"data": state.updatedDoc,     // Use updatedDoc instead of origDoc
 		},

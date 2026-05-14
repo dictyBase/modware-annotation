@@ -41,7 +41,7 @@ func (ar *arangorepository) RemoveAnnotation(id string, purge bool) error {
 	_, err = ar.anno.annot.UpdateDocument(
 		context.Background(),
 		manno.Key,
-		map[string]interface{}{"is_obsolete": true},
+		map[string]any{"is_obsolete": true},
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -95,7 +95,7 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(
 	// update the new group
 	res, err := ar.database.DoRun(
 		annGroupUpd,
-		map[string]interface{}{
+		map[string]any{
 			"@anno_group_collection": ar.anno.annog.Name(),
 			"key":                    groupID,
 			"group":                  nids,

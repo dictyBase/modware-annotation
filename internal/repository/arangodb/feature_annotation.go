@@ -79,7 +79,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 ) (*model.FeatureAnnotationDoc, error) {
 	res, err := fann.database.GetRow(
 		featureGetByIDQ,
-		map[string]interface{}{
+		map[string]any{
 			"@collection": fann.feature.Name(),
 			"graph":       fann.featPub.Name(),
 			"id":          fid,
@@ -105,7 +105,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotationByName(
 ) (*model.FeatureAnnotationDoc, error) {
 	res, err := fann.database.GetRow(
 		featAnnoGetByNameQ,
-		map[string]interface{}{
+		map[string]any{
 			"@collection": fann.feature.Name(),
 			"graph":       fann.featPub.Name(), // Add graph name
 			"name":        name,
@@ -201,7 +201,7 @@ func (fann *featureAnnoRepo) storeFeatureAnnotation(
 ) (*model.FeatureAnnotationDoc, error) {
 	result, err := txr.DoRun(
 		fmt.Sprintf("INSERT @doc INTO %s RETURN NEW", fann.feature.Name()),
-		map[string]interface{}{
+		map[string]any{
 			"doc": faDoc,
 		},
 	)
@@ -341,7 +341,7 @@ func (fann *featureAnnoRepo) ListByPublicationID(
 	publicationID string,
 	source string,
 ) ([]*model.FeatureAnnotationDoc, error) {
-	binds := map[string]interface{}{
+	binds := map[string]any{
 		"@collection": fann.pub.Name(),
 		"graph":       fann.featPub.Name(),
 		"id":          publicationID,
@@ -383,7 +383,7 @@ func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
 	fid string,
 	purge bool,
 ) error {
-	bindVars := map[string]interface{}{
+	bindVars := map[string]any{
 		"@collection": fann.feature.Name(),
 		"id":          fid,
 	}
@@ -455,7 +455,7 @@ func (fann *featureAnnoRepo) AddTag(
 	meta, err := fann.feature.UpdateDocument(
 		ctx,
 		doc.Key,
-		map[string]interface{}{"properties": newTags},
+		map[string]any{"properties": newTags},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error adding tag: %w", err)
@@ -486,7 +486,7 @@ func (fann *featureAnnoRepo) AddTags(
 	if err != nil {
 		return nil, fmt.Errorf("error beginning transaction: %w", err)
 	}
-	result, err := txr.DoRun(featurePropsAppendQ, map[string]interface{}{
+	result, err := txr.DoRun(featurePropsAppendQ, map[string]any{
 		"@collection": fann.feature.Name(),
 		"key":         doc.Key,
 		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
@@ -540,7 +540,7 @@ func (fann *featureAnnoRepo) SetTags(
 		return nil, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	result, err := txr.DoRun(featurePropsSetQ, map[string]interface{}{
+	result, err := txr.DoRun(featurePropsSetQ, map[string]any{
 		"@collection": fann.feature.Name(),
 		"key":         doc.Key,
 		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
@@ -591,7 +591,7 @@ func (fann *featureAnnoRepo) RemoveTags(
 	meta, err := fann.feature.UpdateDocument(
 		ctx,
 		doc.Key,
-		map[string]interface{}{"properties": updProps},
+		map[string]any{"properties": updProps},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error adding tag: %w", err)
@@ -614,7 +614,7 @@ func (fann *featureAnnoRepo) upsertPublicationsTx(
 ) ([]string, error) {
 	result, err := txr.DoRun(
 		pubUpsertQ,
-		map[string]interface{}{
+		map[string]any{
 			"ids":         ids,
 			"@collection": fann.pub.Name(),
 		},
@@ -646,7 +646,7 @@ func (fann *featureAnnoRepo) createPublicationEdgesTx(
 ) error {
 	err := txr.Do(
 		featurePubEdgeQ,
-		map[string]interface{}{
+		map[string]any{
 			"feature_key":      featureKey,
 			"pub_keys":         pubKeys,
 			"source":           source,

@@ -91,7 +91,7 @@ func (org *organismRepo) GetOrganismByName(
 	genus, species string,
 ) (*model.OrganismDoc, error) {
 	res, err := org.database.GetRow(orgGetByNameQ,
-		map[string]interface{}{
+		map[string]any{
 			"@collection": org.organism.Name(),
 			"genus":       genus,
 			"species":     species,
@@ -173,7 +173,7 @@ func (org *organismRepo) EditOrganism(
 		return nil, fmt.Errorf("error reading organism document: %w", err)
 	}
 
-	update := map[string]interface{}{
+	update := map[string]any{
 		"updated_at": time.Now(),
 		"updated_by": doc.UpdatedBy,
 	}
@@ -240,7 +240,7 @@ func (org *organismRepo) RemoveOrganism(oid string) error {
 func (org *organismRepo) ListOrganisms() ([]*model.OrganismDoc, error) {
 	cursor, err := org.database.SearchRows(
 		orgListQ,
-		map[string]interface{}{
+		map[string]any{
 			"@collection": org.organism.Name(),
 		},
 	)

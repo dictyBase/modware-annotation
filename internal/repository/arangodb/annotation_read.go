@@ -81,7 +81,7 @@ func (ar *arangorepository) ListAnnotations(
 		return nil, fmt.Errorf("error in valdating parameters %w", err)
 	}
 	annoModel := make([]*model.AnnoDoc, 0)
-	bindVars := map[string]interface{}{
+	bindVars := map[string]any{
 		"@anno_collection":  ar.anno.annot.Name(),
 		"@cv_collection":    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
@@ -213,7 +213,7 @@ func (ar *arangorepository) GetAnnotationTag(
 	annoModel := new(model.AnnoTag)
 	res, err := ar.database.GetRow(
 		tagGetQ,
-		map[string]interface{}{
+		map[string]any{
 			"@cvterm_collection": ar.onto.Term.Name(),
 			"@cv_collection":     ar.onto.Cv.Name(),
 			"ontology":           ontology,
@@ -240,7 +240,7 @@ func (ar *arangorepository) existAnno(
 	attr *annotation.NewTaggedAnnotationAttributes,
 	tag string,
 ) error {
-	count, err := ar.database.CountWithParams(annExistQ, map[string]interface{}{
+	count, err := ar.database.CountWithParams(annExistQ, map[string]any{
 		"@anno_collection":  ar.anno.annot.Name(),
 		"@cv_collection":    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),

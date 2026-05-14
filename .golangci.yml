@@ -45,6 +45,7 @@ linters:
     - unparam
     - unused
     - whitespace
+    - modernize
 
 issues:
   exclude-rules:
