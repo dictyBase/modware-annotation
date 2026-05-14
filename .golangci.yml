@@ -5,8 +5,6 @@ run:
   go: "1.25"
 linters:
   settings:
-    goconst:
-      ignore-tests: true
     lll:
       line-length: 130
     gosec:
@@ -32,7 +30,6 @@ linters:
     - decorder
     - dogsled
     - errcheck
-    - goconst
     - gocritic
     - gocyclo
     - gosec
@@ -59,6 +56,7 @@ issues:
         - funlen
 
   # don't enable:
+  # - goconst: too noisy for ArangoDB bind parameter maps (short keys repeat across unrelated queries)
   # - godox
   # - maligned,prealloc
   # - gochecknoglobals
