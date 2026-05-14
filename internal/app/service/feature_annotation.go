@@ -280,8 +280,9 @@ func (srv *FeatureAnnotationService) RemoveTags(
 	return featProto, nil
 }
 
-// ListFeatureAnnotationsByPubmedID lists all feature annotations associated with a PubMed ID.
-func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedID(
+// ListFeatureAnnotationsByPubmedId lists all feature annotations associated with a PubMed ID.
+//nolint:staticcheck // must match gRPC-generated interface name
+func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
 	ctx context.Context,
 	req *feature.PubmedId,
 ) (*feature.FeatureAnnotationCollection, error) {
