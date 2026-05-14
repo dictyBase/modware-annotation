@@ -4,7 +4,7 @@
 # BUILDPLATFORM is the platform where the build is running (native)
 ARG BUILDPLATFORM
 
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 
 # TARGETOS and TARGETARCH are the OS and architecture we're building for
 ARG TARGETOS
