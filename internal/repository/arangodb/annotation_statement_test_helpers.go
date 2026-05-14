@@ -762,14 +762,46 @@ func testGetListAnnoStatementValidFilters(t *testing.T) {
 		)
 	})
 
-	t.Run("another valid filter without cursor", func(t *testing.T) {
+	t.Run("second filter without cursor", func(t *testing.T) {
 		assert := require.New(t)
 		result := getListAnnoStatement(
 			`tag==private note;ontology==dicty_annotation`,
 			0,
 		)
-		assert.NoError(result.Err, "should not return error for valid filter")
+		assert.NoError(result.Err, "should not return error for second filter")
+		assert.Equal(SecondFilter, result.Type, "should detect SecondFilter type")
 		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			"@@cvterm_collection",
+			"SecondFilter statement must reference @@cvterm_collection",
+		)
+		assert.NotContains(
+			result.Statement,
+			"DATE_ISO8601",
+			"should not contain cursor logic without cursor",
+		)
+	})
+
+	t.Run("second filter with cursor", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement(
+			`tag==private note;ontology==dicty_annotation`,
+			12345,
+		)
+		assert.NoError(result.Err, "should not return error for second filter with cursor")
+		assert.Equal(SecondFilter, result.Type, "should detect SecondFilter type")
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			"@@cvterm_collection",
+			"SecondFilter statement with cursor must reference @@cvterm_collection",
+		)
+		assert.Contains(
+			result.Statement,
+			"DATE_ISO8601(@cursor)",
+			"should contain cursor logic",
+		)
 	})
 
 	t.Run("valid filter with cursor", func(t *testing.T) {
@@ -801,6 +833,18 @@ func testGetListAnnoStatementTagFilters(t *testing.T) {
 
 	// Reuse the common filtering logic through testFilterStatement
 	testFilterStatement(t, "tag==gene", "FILTER cvt.label", "cvterm filter")
+
+	t.Run("tag-only filter references cvterm_collection", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("tag==gene", 0)
+		assert.NoError(result.Err, "should not return error")
+		assert.Equal(SecondFilter, result.Type, "should detect SecondFilter type for cvterm-only filter")
+		assert.Contains(
+			result.Statement,
+			"@@cvterm_collection",
+			"single cvterm filter must reference @@cvterm_collection",
+		)
+	})
 
 	t.Run("multiple filters", func(t *testing.T) {
 		assert := require.New(t)
