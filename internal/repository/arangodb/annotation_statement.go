@@ -26,6 +26,7 @@ type StatementType string
 // function.
 type PickStatementResult struct {
 	Statement string
+	Type      StatementType
 	Err       error
 }
 
@@ -105,6 +106,7 @@ func buildAQLStatement(ctx FilterContext) PickStatementResult {
 	default:
 		result.Err = errors.New("unsupported statement type")
 	}
+	result.Type = ctx.Type
 
 	return result
 }

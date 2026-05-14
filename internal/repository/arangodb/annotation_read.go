@@ -91,6 +91,9 @@ func (ar *arangorepository) ListAnnotations(
 		bindVars["cursor"] = params.Cursor
 	}
 	result := getListAnnoStatement(params.Filter, params.Cursor)
+	if result.Type == SecondFilter {
+		bindVars["@cvterm_collection"] = ar.onto.Term.Name()
+	}
 	if result.Err != nil {
 		return nil, result.Err
 	}
