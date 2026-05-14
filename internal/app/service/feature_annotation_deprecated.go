@@ -8,8 +8,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
 // UpdateTag is deprecated and always returns Unimplemented.
+//
+//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
 func (srv *FeatureAnnotationService) UpdateTag(
 	_ context.Context,
 	_ *feature.UpdateTagRequest,
@@ -22,8 +23,9 @@ func (srv *FeatureAnnotationService) UpdateTag(
 	)
 }
 
-//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
 // RemoveTag is deprecated and always returns Unimplemented.
+//
+//nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
 func (srv *FeatureAnnotationService) RemoveTag(
 	_ context.Context,
 	_ *feature.RemoveTagRequest,
