@@ -1,3 +1,4 @@
+// Package validate provides argument validation helpers for CLI commands.
 package validate
 
 import (
@@ -8,6 +9,7 @@ import (
 
 const errNo = 2
 
+// ServerArgs validates that all required server CLI arguments are present.
 func ServerArgs(clt *cli.Context) error {
 	for _, param := range []string{
 		"arangodb-pass",

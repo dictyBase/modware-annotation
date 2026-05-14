@@ -65,7 +65,7 @@ func TestAppendToAnntationGroup(t *testing.T) {
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	nids := testModelMaptoID(mla[4:], model2IdCallback)
-	eg, err := anrepo.AppendToAnnotationGroup(g.GroupId, nids...)
+	eg, err := anrepo.AppendToAnnotationGroup(g.GroupID, nids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.ElementsMatch(
 		testModelMaptoID(eg.AnnoDocs, model2IdCallback),

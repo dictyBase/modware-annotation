@@ -1,86 +1,63 @@
+version: 2
 run:
   timeout: 5m
   allow-parallel-runners: true
-linters-settings:
-   testifylint:
-    enable-all: true
-   paralleltest:
-    ignore-missing-subtests: true
-   lll:
+  go: "1.24"
+linters:
+  settings:
+    lll:
       line-length: 130
-   revive:
+    gosec:
+      excludes:
+        - G402
+        - G404
+    staticcheck:
+      checks: ["all", "-SA5001"]
+    funlen:
+      lines: 80
+      statements: 70
+    revive:
       rules:
         - name: var-naming
           arguments: [["ID"]]
-   gosec:
-      excludes:
-        - G404
-   wrapcheck:
-      ignorePackageGlobs:
-        - github.com/dictyBase/aphgrpc
-        - github.com/dictyBase/arangomanager
-        - github.com/arangodb/go-driver
-linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
     - asciicheck
     - bodyclose
     - bidichk
-    - cyclop 
+    - cyclop
     - decorder
     - dogsled
-    - dupl
     - errcheck
-    - errname
-    - funlen
-    - gci
-    - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
-    - godot
-    - gofmt
-    - goimports
     - gosec
-    - gosimple
     - govet
-    - gocognit
-    - gomoddirectives
-    - gomodguard
-    - grouper
     - ineffassign
-    - importas
     - lll
-    - maintidx
     - misspell
     - nakedret
-    - nestif
-    - nilerr
-    - nolintlint
-    - prealloc
-    - paralleltest
-    - predeclared
     - revive
-    - rowserrcheck
     - staticcheck
-    - typecheck
     - unconvert
-    - thelper
-    - tparallel
-    - testifylint
     - unparam
     - unused
-    - unconvert
-    - unparam
-    - varnamelen
-    - wastedassign
     - whitespace
-    - wrapcheck
+
+issues:
+  exclude-rules:
+    - linters:
+        - typecheck
+      text: "file requires newer Go version"
+    - path: "_test\\.go"
+      linters:
+        - funlen
 
   # don't enable:
   # - godox
   # - maligned,prealloc
   # - gochecknoglobals
   # - golint
-  #  - forcetypeassert
+  # - gochecknoinits

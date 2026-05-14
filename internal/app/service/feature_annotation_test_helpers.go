@@ -56,15 +56,18 @@ type testParams struct {
 	assert *require.Assertions
 }
 
+// MockMessage is a no-op message publisher used in tests.
 type MockMessage struct{}
 
+// Publish implements the Publisher interface as a no-op.
 func (msn *MockMessage) Publish(
-	subject string,
-	feat *feature.FeatureAnnotation,
+	_ string,
+	_ *feature.FeatureAnnotation,
 ) error {
 	return nil
 }
 
+// Close implements the Publisher interface as a no-op.
 func (msn *MockMessage) Close() error {
 	return nil
 }
@@ -140,8 +143,8 @@ func setup(
 	assert.NoError(err)
 	t.Cleanup(func() {
 		_ = repo.Dbh().Drop()
-		conn.Close()
-		lis.Close()
+		_ = conn.Close()
+		_ = lis.Close()
 		server.Stop()
 	})
 

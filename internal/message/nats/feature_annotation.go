@@ -14,6 +14,7 @@ type featureAnnotationPublisher struct {
 	conn *gnats.Conn
 }
 
+// NewFeatureAnnotationPublisher creates a new NATS-backed feature annotation message publisher.
 func NewFeatureAnnotationPublisher(
 	host, port string,
 	options ...gnats.Option,

@@ -762,6 +762,33 @@ func testGetListAnnoStatementValidFilters(t *testing.T) {
 		)
 	})
 
+	t.Run("valid filter with cursor", func(t *testing.T) {
+		assert := require.New(t)
+		result := getListAnnoStatement("value==test", 12345)
+		assert.NoError(
+			result.Err,
+			"should not return error for valid filter with cursor",
+		)
+		assert.NotEmpty(result.Statement, "statement should not be empty")
+		assert.Contains(
+			result.Statement,
+			"FILTER ann.value",
+			"should contain annotation filter",
+		)
+		assert.Contains(
+			result.Statement,
+			"DATE_ISO8601(@cursor)",
+			"should contain cursor logic",
+		)
+	})
+}
+
+func testGetListAnnoStatementSecondFilters(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	t.Run("second filter without cursor", func(t *testing.T) {
 		assert := require.New(t)
 		result := getListAnnoStatement(
@@ -796,26 +823,6 @@ func testGetListAnnoStatementValidFilters(t *testing.T) {
 			result.Statement,
 			"@@cvterm_collection",
 			"SecondFilter statement with cursor must reference @@cvterm_collection",
-		)
-		assert.Contains(
-			result.Statement,
-			"DATE_ISO8601(@cursor)",
-			"should contain cursor logic",
-		)
-	})
-
-	t.Run("valid filter with cursor", func(t *testing.T) {
-		assert := require.New(t)
-		result := getListAnnoStatement("value==test", 12345)
-		assert.NoError(
-			result.Err,
-			"should not return error for valid filter with cursor",
-		)
-		assert.NotEmpty(result.Statement, "statement should not be empty")
-		assert.Contains(
-			result.Statement,
-			"FILTER ann.value",
-			"should contain annotation filter",
 		)
 		assert.Contains(
 			result.Statement,

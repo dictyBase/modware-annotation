@@ -58,7 +58,7 @@ func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdat
 	if rgt.IsEmpty() {
 		mann.NotFound = true
 
-		return mann, &repository.AnnoNotFoundError{Id: uat.Data.Id}
+		return mann, &repository.AnnoNotFoundError{ID: uat.Data.Id}
 	}
 	if err := rgt.Read(mann); err != nil {
 		return mann, fmt.Errorf("error in reading to struct %s", err)
@@ -71,10 +71,10 @@ func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdat
 		attr.Value,
 		attr.EditableValue,
 		attr.CreatedBy,
-		mann.EnrtyId,
+		mann.EnrtyID,
 		mann.Rank,
 		mann.Version + 1,
-		mann.CvtId,
+		mann.CvtID,
 		mann.ID.String(),
 	}
 	dbh := ar.database.Handler()
@@ -118,7 +118,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 	if err != nil {
 		return grp, err
 	}
-	dbg := &model.DbGroup{}
+	dbg := &model.DBGroup{}
 	rdn, err := ar.database.DoRun(
 		annGroupInst,
 		map[string]interface{}{
@@ -134,7 +134,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 	}
 	grp.CreatedAt = dbg.CreatedAt
 	grp.UpdatedAt = dbg.UpdatedAt
-	grp.GroupId = dbg.GroupId
+	grp.GroupID = dbg.GroupID
 	grp.AnnoDocs = mla
 
 	return grp, nil
@@ -183,13 +183,13 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupID string, idslice ...s
 	if err != nil {
 		return grp, fmt.Errorf("error in updating group with id %s %s", groupID, err)
 	}
-	dbg := &model.DbGroup{}
+	dbg := &model.DBGroup{}
 	if err := rdn.Read(dbg); err != nil {
 		return grp, fmt.Errorf("error in reading to struct %s", err)
 	}
 	grp.CreatedAt = dbg.CreatedAt
 	grp.UpdatedAt = dbg.UpdatedAt
-	grp.GroupId = dbg.GroupId
+	grp.GroupID = dbg.GroupID
 	grp.AnnoDocs = aml
 
 	return grp, nil

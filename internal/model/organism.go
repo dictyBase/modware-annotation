@@ -6,6 +6,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+// OrganismDoc represents an organism document stored in ArangoDB.
 type OrganismDoc struct {
 	driver.DocumentMeta
 	CreatedAt    time.Time `json:"created_at"`
@@ -19,7 +20,7 @@ type OrganismDoc struct {
 	NotFound     bool
 }
 
-// GetOrganismSchema returns a JSON schema definition for OrganismDoc as []byte.
+// Schema returns a JSON schema definition for OrganismDoc as []byte.
 func Schema() []byte {
 	return []byte(`{
         "type": "object",

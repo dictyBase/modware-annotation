@@ -75,9 +75,9 @@ func TestListFeatureAnnotationsByPubmedId(t *testing.T) {
 		client: client,
 		assert: assert,
 	}
-	testListByPubmedIdValid(params)
-	testListByPubmedIdNotFound(params)
-	testListByPubmedIdInvalid(params)
+	testListByPubmedIDValid(params)
+	testListByPubmedIDNotFound(params)
+	testListByPubmedIDInvalid(params)
 }
 
 func TestListFeatureAnnotationsByDOI(t *testing.T) {

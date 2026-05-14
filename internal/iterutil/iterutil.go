@@ -1,3 +1,4 @@
+// Package iterutil provides generic iterator utility functions for Go's iter.Seq type.
 package iterutil
 
 import "iter"

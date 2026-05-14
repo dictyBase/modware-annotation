@@ -1,3 +1,4 @@
+// Package server provides gRPC server startup functions for the annotation service.
 package server
 
 import (
@@ -36,6 +37,7 @@ type serverParams struct {
 	msg  message.Publisher
 }
 
+// RunServer starts the gRPC annotation server using the provided CLI context.
 func RunServer(clt *cli.Context) error {
 	spn, err := repoAndNatsConn(clt)
 	if err != nil {

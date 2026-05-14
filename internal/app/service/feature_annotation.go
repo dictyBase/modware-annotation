@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// FeatureAnnotationService implements the gRPC FeatureAnnotationService server.
 type FeatureAnnotationService struct {
 	*aphgrpc.Service
 	repo      repository.FeatureAnnotationRepository
@@ -24,6 +25,7 @@ type FeatureAnnotationService struct {
 	feature.UnimplementedFeatureAnnotationServiceServer
 }
 
+// FeatureParams holds the required parameters for creating a FeatureAnnotationService.
 type FeatureParams struct {
 	Repository repository.FeatureAnnotationRepository `validate:"required"`
 	Publisher  message.FeatureAnnotationPublisher     `validate:"required"`
@@ -40,6 +42,7 @@ func featureAnnoDefaultOptions() *aphgrpc.ServiceOptions {
 	}
 }
 
+// NewFeatureAnnotationService creates a new FeatureAnnotationService from the given parameters.
 func NewFeatureAnnotationService(
 	params *FeatureParams,
 ) (*FeatureAnnotationService, error) {
@@ -63,6 +66,7 @@ func NewFeatureAnnotationService(
 	}, nil
 }
 
+// GetFeatureAnnotation retrieves a feature annotation by its ID.
 func (srv *FeatureAnnotationService) GetFeatureAnnotation(
 	ctx context.Context,
 	req *feature.FeatureAnnotationId,
@@ -106,6 +110,7 @@ func (srv *FeatureAnnotationService) GetFeatureAnnotationByName(
 	return convertToProto(feat), nil
 }
 
+// CreateFeatureAnnotation creates a new feature annotation from the provided request.
 func (srv *FeatureAnnotationService) CreateFeatureAnnotation(
 	ctx context.Context,
 	req *feature.NewFeatureAnnotation,
@@ -129,6 +134,7 @@ func (srv *FeatureAnnotationService) CreateFeatureAnnotation(
 	return featProto, nil
 }
 
+// UpdateFeatureAnnotation updates an existing feature annotation.
 func (srv *FeatureAnnotationService) UpdateFeatureAnnotation(
 	ctx context.Context,
 	req *feature.FeatureAnnotationUpdate,
@@ -150,6 +156,7 @@ func (srv *FeatureAnnotationService) UpdateFeatureAnnotation(
 	return featProto, nil
 }
 
+// DeleteFeatureAnnotation removes a feature annotation by its ID.
 func (srv *FeatureAnnotationService) DeleteFeatureAnnotation(
 	ctx context.Context,
 	req *feature.DeleteFeatureAnnotationRequest,
@@ -169,6 +176,7 @@ func (srv *FeatureAnnotationService) DeleteFeatureAnnotation(
 	return &emptypb.Empty{}, nil
 }
 
+// AddTag adds a single tag to the specified feature annotation.
 func (srv *FeatureAnnotationService) AddTag(
 	ctx context.Context,
 	req *feature.AddTagRequest,
@@ -194,6 +202,7 @@ func (srv *FeatureAnnotationService) AddTag(
 	return featProto, nil
 }
 
+// AddTags adds multiple tags to the specified feature annotation.
 func (srv *FeatureAnnotationService) AddTags(
 	ctx context.Context,
 	req *feature.AddTagsRequest,
@@ -219,6 +228,7 @@ func (srv *FeatureAnnotationService) AddTags(
 	return featProto, nil
 }
 
+// SetTags replaces all tags on the specified feature annotation.
 func (srv *FeatureAnnotationService) SetTags(
 	ctx context.Context,
 	req *feature.SetTagsRequest,
@@ -244,6 +254,7 @@ func (srv *FeatureAnnotationService) SetTags(
 	return featProto, nil
 }
 
+// RemoveTags removes specified tags from a feature annotation.
 func (srv *FeatureAnnotationService) RemoveTags(
 	ctx context.Context,
 	req *feature.RemoveTagsRequest,
@@ -269,7 +280,8 @@ func (srv *FeatureAnnotationService) RemoveTags(
 	return featProto, nil
 }
 
-func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
+// ListFeatureAnnotationsByPubmedID lists all feature annotations associated with a PubMed ID.
+func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedID(
 	ctx context.Context,
 	req *feature.PubmedId,
 ) (*feature.FeatureAnnotationCollection, error) {
@@ -277,7 +289,7 @@ func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	// Assuming "pubmed" is the correct source identifier for PubMed IDs in the repository
-	feats, err := srv.repo.ListByPublicationId(req.Id, "pubmed")
+	feats, err := srv.repo.ListByPublicationID(req.Id, "pubmed")
 	if err != nil {
 		if repository.IsPublicationAnnotationNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -290,6 +302,7 @@ func (srv *FeatureAnnotationService) ListFeatureAnnotationsByPubmedId(
 	}, nil
 }
 
+// ListFeatureAnnotationsByDOI lists all feature annotations associated with a DOI.
 func (srv *FeatureAnnotationService) ListFeatureAnnotationsByDOI(
 	ctx context.Context,
 	req *feature.DOI,
@@ -297,7 +310,7 @@ func (srv *FeatureAnnotationService) ListFeatureAnnotationsByDOI(
 	if err := protovalidate.Validate(req); err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	feats, err := srv.repo.ListByPublicationId(req.Id, "doi")
+	feats, err := srv.repo.ListByPublicationID(req.Id, "doi")
 	if err != nil {
 		if repository.IsPublicationAnnotationNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -319,12 +332,12 @@ func convertToProto(
 	attrs.Synonyms = feat.Synonyms
 	attrs.Publications = feat.Publications
 	attrs.Pubmed = feat.Pubmed
-	attrs.Dblinks = collection.Map(feat.DbLinks, convertDbLink)
+	attrs.Dblinks = collection.Map(feat.DBLinks, convertDBLink)
 	attrs.Properties = collection.Map(feat.Properties, convertProperty)
 
 	return &feature.FeatureAnnotation{
 		Type:       "feature_annotations",
-		Id:         feat.AnnoId,
+		Id:         feat.AnnoID,
 		CreatedBy:  feat.CreatedBy,
 		UpdatedBy:  feat.UpdatedBy,
 		CreatedAt:  timestamppb.New(feat.CreatedAt),
@@ -334,10 +347,10 @@ func convertToProto(
 	}
 }
 
-func convertDbLink(link model.DbLinkDoc) *feature.DbLink {
+func convertDBLink(link model.DBLinkDoc) *feature.DbLink {
 	return &feature.DbLink{
 		Database:  link.Database,
-		PrimaryId: link.PrimaryId,
+		PrimaryId: link.PrimaryID,
 		Version:   link.Version,
 		Linktype:  link.LinkType,
 		Url:       link.URL,

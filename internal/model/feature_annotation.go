@@ -1,3 +1,4 @@
+// Package model defines data structures for annotations.
 package model
 
 import (
@@ -8,9 +9,9 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-// DbLinkDoc represents a link to an external database identifier.
-type DbLinkDoc struct {
-	PrimaryId string `json:"primary_id"`
+// DBLinkDoc represents a link to an external database identifier.
+type DBLinkDoc struct {
+	PrimaryID string `json:"primary_id"`
 	Database  string `json:"database"`
 	Version   int64  `json:"version"`
 	LinkType  string `json:"linktype,omitempty"`
@@ -33,7 +34,7 @@ type TagPropertyDoc struct {
 type FeatureAnnotationDoc struct {
 	driver.DocumentMeta
 	Type         string           `json:"feature_type,omitempty"`
-	AnnoId       string           `json:"feature_id"`
+	AnnoID       string           `json:"feature_id"`
 	CreatedAt    time.Time        `json:"created_at"`
 	UpdatedAt    time.Time        `json:"updated_at"`
 	CreatedBy    string           `json:"created_by"`
@@ -42,7 +43,7 @@ type FeatureAnnotationDoc struct {
 	Synonyms     []string         `json:"synonyms,omitempty"`
 	Publications []string         `json:"publications,omitempty"`
 	Pubmed       []string         `json:"pubmed,omitempty"`
-	DbLinks      []DbLinkDoc      `json:"dblinks,omitempty"`
+	DBLinks      []DBLinkDoc      `json:"dblinks,omitempty"`
 	Properties   []TagPropertyDoc `json:"properties,omitempty"`
 	IsObsolete   bool             `json:"is_obsolete"`
 	NotFound     bool             `json:"-"`
@@ -92,7 +93,7 @@ func FeatureAnnotationSchema() ([]byte, error) {
 			"type":  "array",
 			"items": map[string]string{"type": "string"},
 		},
-		"dblinks":     getDbLinksSchema(),
+		"dblinks":     getDBLinksSchema(),
 		"properties":  getPropertiesSchema(),
 		"is_obsolete": map[string]string{"type": "boolean"},
 	}
@@ -110,7 +111,7 @@ func FeatureAnnotationSchema() ([]byte, error) {
 	return []byte(fmt.Sprintf(baseSchema, string(propsJSON))), nil
 }
 
-func getDbLinksSchema() map[string]interface{} {
+func getDBLinksSchema() map[string]interface{} {
 	return map[string]interface{}{
 		"type": "array",
 		"items": map[string]interface{}{

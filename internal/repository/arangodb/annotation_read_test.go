@@ -71,7 +71,7 @@ func TestGetAnnotationByID(t *testing.T) {
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	eim, err := anrepo.GetAnnotationByID(mann.Key)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(mann.EnrtyId, eim.EnrtyId, "should match entry identifier")
+	assert.Equal(mann.EnrtyID, eim.EnrtyID, "should match entry identifier")
 	assert.Equal(mann.Ontology, eim.Ontology, "should match ontology")
 	assert.Equal(mann.Tag, eim.Tag, "should match tag")
 	assert.Equal(mann.Key, eim.Key, "should match the identifier")
@@ -84,7 +84,7 @@ func TestGetAnnotationByID(t *testing.T) {
 
 	em2, err := anrepo.GetAnnotationByID(ml2.Key)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	assert.Equal(ml2.EnrtyId, em2.EnrtyId, "should match entry identifier")
+	assert.Equal(ml2.EnrtyID, em2.EnrtyID, "should match entry identifier")
 
 	nie, err := anrepo.GetAnnotationByID("9999999")
 	assert.Errorf(err, "expected %s error, received nothing", err)
@@ -113,7 +113,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Equal(int64(0), mae.Rank, "should match rank 0")
 	assert.Equal(
-		mae.EnrtyId,
+		mae.EnrtyID,
 		nta.Data.Attributes.EntryId,
 		"should match the entry id",
 	)
@@ -125,7 +125,7 @@ func TestGetAnnotationByEntry(t *testing.T) {
 	})
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Equal(
-		ml2.EnrtyId,
+		ml2.EnrtyID,
 		nta2.Data.Attributes.EntryId,
 		"should match the entry id",
 	)
@@ -186,7 +186,7 @@ func TestGetAnnotationGroup(t *testing.T) {
 	ids := testModelMaptoID(mla, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	eg, err := anrepo.GetAnnotationGroup(g.GroupId)
+	eg, err := anrepo.GetAnnotationGroup(g.GroupID)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.ElementsMatch(
 		testModelMaptoID(g.AnnoDocs, model2IdCallback),
@@ -341,7 +341,7 @@ func testListAnnoFilterOneFirstPage(
 	for _, m := range mla {
 		assert.Equal("sidd@gmail.com", m.CreatedBy, "should match created by")
 		assert.Equal(m.Tag, tags[0], "should match the tag")
-		assert.Equal(m.EnrtyId, ddbg[0], "should match the entry id")
+		assert.Equal(m.EnrtyID, ddbg[0], "should match the entry id")
 	}
 	testModelListSort(t, mla)
 
@@ -408,7 +408,7 @@ func testListAnnoFilterTwoFirstPage(
 	for _, m := range ml4 {
 		assert.Equal("basu@gmail.com", m.CreatedBy, "should match created by")
 		assert.Equal(m.Tag, tags[1], "should match the tag")
-		assert.Equal(m.EnrtyId, ddbg[1], "should match the entry id")
+		assert.Equal(m.EnrtyID, ddbg[1], "should match the entry id")
 	}
 	testModelListSort(t, ml4)
 
@@ -479,7 +479,7 @@ func testAddAnnotationSuccess(
 	)
 	assert.Equal(
 		nta.Data.Attributes.EntryId,
-		mann.EnrtyId,
+		mann.EnrtyID,
 		"should match entry identifier",
 	)
 	assert.Equal(nta.Data.Attributes.Rank, mann.Rank, "should match the rank")
@@ -578,7 +578,7 @@ func testAddAnnotationSuccessSecond(
 	)
 	assert.Equal(
 		nta.Data.Attributes.EntryId,
-		mann2.EnrtyId,
+		mann2.EnrtyID,
 		"should match entry identifier",
 	)
 	assert.Equal(nta.Data.Attributes.Rank, mann2.Rank, "should match the rank")

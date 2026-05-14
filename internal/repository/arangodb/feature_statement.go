@@ -53,7 +53,7 @@ const (
             FILTER f.feature_id == @id
 	    UPDATE f WITH { is_obsolete: true } IN @@collection
     `
-	featureGetByIdQ = `
+	featureGetByIDQ = `
 	FOR f IN @@collection 
 	    FILTER f.feature_id == @id 
 	    FILTER f.is_obsolete == false 
@@ -89,7 +89,7 @@ const (
 	    RETURN MERGE(f, {pubmed: pubmed, publications: doi})
 	`
 
-	featureByPublicationIdQ = `
+	featureByPublicationIDQ = `
 	FOR pub IN @@collection
     		FOR v,e IN 1..1 INBOUND pub GRAPH @graph
         	FILTER pub.id == @id

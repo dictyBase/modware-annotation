@@ -78,7 +78,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 	fid string,
 ) (*model.FeatureAnnotationDoc, error) {
 	res, err := fann.database.GetRow(
-		featureGetByIdQ,
+		featureGetByIDQ,
 		map[string]interface{}{
 			"@collection": fann.feature.Name(),
 			"graph":       fann.featPub.Name(),
@@ -89,7 +89,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 		return nil, fmt.Errorf("error executing query: %w", err)
 	}
 	if res.IsEmpty() {
-		return nil, &repository.AnnoNotFoundError{Id: fid}
+		return nil, &repository.AnnoNotFoundError{ID: fid}
 	}
 	doc := &model.FeatureAnnotationDoc{}
 	if err := res.Read(doc); err != nil {
@@ -335,24 +335,24 @@ func (fann *featureAnnoRepo) ListFeatureAnnotations() ([]*model.FeatureAnnotatio
 	return nil, fmt.Errorf("not implemented")
 }
 
-// ListByPublicationId retrieves feature annotations associated with a given
+// ListByPublicationID retrieves feature annotations associated with a given
 // publication ID and source.
-func (fann *featureAnnoRepo) ListByPublicationId(
-	publicationId string,
+func (fann *featureAnnoRepo) ListByPublicationID(
+	publicationID string,
 	source string,
 ) ([]*model.FeatureAnnotationDoc, error) {
 	binds := map[string]interface{}{
 		"@collection": fann.pub.Name(),
 		"graph":       fann.featPub.Name(),
-		"id":          publicationId,
+		"id":          publicationID,
 		"source":      source,
 	}
 
-	resultSet, err := fann.database.SearchRows(featureByPublicationIdQ, binds)
+	resultSet, err := fann.database.SearchRows(featureByPublicationIDQ, binds)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"error querying for feature annotations by publication ID %s and source %s: %w",
-			publicationId,
+			publicationID,
 			source,
 			err,
 		)
@@ -360,7 +360,7 @@ func (fann *featureAnnoRepo) ListByPublicationId(
 
 	if resultSet.IsEmpty() {
 		return nil, &repository.PublicationAnnotationNotFoundError{
-			ID: publicationId, Source: source,
+			ID: publicationID, Source: source,
 		}
 	}
 
@@ -394,7 +394,7 @@ func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
 		return fmt.Errorf("error checking document existence: %w", err)
 	}
 	if existRes.IsEmpty() {
-		return &repository.AnnoNotFoundError{Id: fid}
+		return &repository.AnnoNotFoundError{ID: fid}
 	}
 
 	if purge {
@@ -667,7 +667,7 @@ func createFeatureAnnotationDoc(
 	doc *feature.NewFeatureAnnotation,
 ) *model.FeatureAnnotationDoc {
 	faDoc := &model.FeatureAnnotationDoc{
-		AnnoId:     doc.Id,
+		AnnoID:     doc.Id,
 		Name:       doc.Attributes.Name,
 		CreatedAt:  doc.CreatedAt.AsTime(),
 		UpdatedAt:  doc.CreatedAt.AsTime(), // Initially same as created_at

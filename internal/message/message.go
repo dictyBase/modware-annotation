@@ -1,3 +1,4 @@
+// Package message defines publisher interfaces for annotation messaging.
 package message
 
 import (

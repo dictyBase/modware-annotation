@@ -229,7 +229,7 @@ func copyFeatureAnnotationDoc(
 	newDoc := &model.FeatureAnnotationDoc{
 		DocumentMeta: doc.DocumentMeta,
 		Type:         doc.Type,
-		AnnoId:       doc.AnnoId,
+		AnnoID:       doc.AnnoID,
 		CreatedAt:    doc.CreatedAt,
 		UpdatedAt:    doc.UpdatedAt,
 		CreatedBy:    doc.CreatedBy,
@@ -256,9 +256,9 @@ func copyFeatureAnnotationDoc(
 	}
 
 	// Deep copy DbLinks
-	if len(doc.DbLinks) > 0 {
-		newDoc.DbLinks = make([]model.DbLinkDoc, len(doc.DbLinks))
-		copy(newDoc.DbLinks, doc.DbLinks)
+	if len(doc.DBLinks) > 0 {
+		newDoc.DBLinks = make([]model.DBLinkDoc, len(doc.DBLinks))
+		copy(newDoc.DBLinks, doc.DBLinks)
 	}
 
 	// Deep copy Properties
@@ -298,9 +298,9 @@ func updateAttributes(
 	// Append synonyms to existing ones (original behavior)
 	newDoc.Synonyms = append(newDoc.Synonyms, attrs.Synonyms...)
 	// Append dblinks to existing ones (original behavior)
-	newDoc.DbLinks = append(
-		newDoc.DbLinks,
-		collection.Map(attrs.Dblinks, convertDbLink)...)
+	newDoc.DBLinks = append(
+		newDoc.DBLinks,
+		collection.Map(attrs.Dblinks, convertDBLink)...)
 	// Replace properties (original behavior)
 	newDoc.Properties = collection.Map(attrs.Properties, convertProperty)
 
@@ -329,7 +329,7 @@ func updateAttributesPartial(
 
 	// Update dblinks only if provided (replaces existing)
 	if len(attrs.Dblinks) > 0 {
-		newDoc.DbLinks = collection.Map(attrs.Dblinks, convertDbLink)
+		newDoc.DBLinks = collection.Map(attrs.Dblinks, convertDBLink)
 	}
 
 	// Update properties only if provided (replaces existing, consistent with SetTags)
@@ -340,9 +340,9 @@ func updateAttributesPartial(
 	return newDoc
 }
 
-func convertDbLink(link *feature.DbLink) model.DbLinkDoc {
-	return model.DbLinkDoc{
-		PrimaryId: link.PrimaryId,
+func convertDBLink(link *feature.DbLink) model.DBLinkDoc {
+	return model.DBLinkDoc{
+		PrimaryID: link.PrimaryId,
 		Database:  link.Database,
 		Version:   link.Version,
 		LinkType:  link.Linktype,
@@ -390,7 +390,7 @@ func setOptionalFields(
 	faDoc *model.FeatureAnnotationDoc,
 ) *model.FeatureAnnotationDoc {
 	faDoc.Synonyms = doc.Attributes.Synonyms
-	faDoc.DbLinks = collection.Map(doc.Attributes.Dblinks, convertDbLink)
+	faDoc.DBLinks = collection.Map(doc.Attributes.Dblinks, convertDBLink)
 	faDoc.Properties = collection.Map(
 		doc.Attributes.Properties,
 		convertProperty,
