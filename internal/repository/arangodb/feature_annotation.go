@@ -81,8 +81,8 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 		featureGetByIDQ,
 		map[string]any{
 			collectionBind: fann.feature.Name(),
-			"graph":       fann.featPub.Name(),
-			"id":          fid,
+			"graph":        fann.featPub.Name(),
+			"id":           fid,
 		},
 	)
 	if err != nil {
@@ -107,8 +107,8 @@ func (fann *featureAnnoRepo) GetFeatureAnnotationByName(
 		featAnnoGetByNameQ,
 		map[string]any{
 			collectionBind: fann.feature.Name(),
-			"graph":       fann.featPub.Name(), // Add graph name
-			"name":        name,
+			"graph":        fann.featPub.Name(), // Add graph name
+			"name":         name,
 		},
 	)
 	if err != nil {
@@ -343,9 +343,9 @@ func (fann *featureAnnoRepo) ListByPublicationID(
 ) ([]*model.FeatureAnnotationDoc, error) {
 	binds := map[string]any{
 		collectionBind: fann.pub.Name(),
-		"graph":       fann.featPub.Name(),
-		"id":          publicationID,
-		"source":      source,
+		"graph":        fann.featPub.Name(),
+		"id":           publicationID,
+		"source":       source,
 	}
 
 	resultSet, err := fann.database.SearchRows(featureByPublicationIDQ, binds)
@@ -385,7 +385,7 @@ func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
 ) error {
 	bindVars := map[string]any{
 		collectionBind: fann.feature.Name(),
-		"id":          fid,
+		"id":           fid,
 	}
 
 	// Check if document exists
@@ -488,8 +488,8 @@ func (fann *featureAnnoRepo) AddTags(
 	}
 	result, err := txr.DoRun(featurePropsAppendQ, map[string]any{
 		collectionBind: fann.feature.Name(),
-		"key":         doc.Key,
-		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
+		"key":          doc.Key,
+		"newprops":     collection.Map(req.Tags, convertNewTagToModel),
 	})
 	if err != nil {
 		if abortErr := txr.Abort(); abortErr != nil {
@@ -542,8 +542,8 @@ func (fann *featureAnnoRepo) SetTags(
 
 	result, err := txr.DoRun(featurePropsSetQ, map[string]any{
 		collectionBind: fann.feature.Name(),
-		"key":         doc.Key,
-		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
+		"key":          doc.Key,
+		"newprops":     collection.Map(req.Tags, convertNewTagToModel),
 	})
 	if err != nil {
 		if abortErr := txr.Abort(); abortErr != nil {
@@ -615,7 +615,7 @@ func (fann *featureAnnoRepo) upsertPublicationsTx(
 	result, err := txr.DoRun(
 		pubUpsertQ,
 		map[string]any{
-			"ids":         ids,
+			"ids":          ids,
 			collectionBind: fann.pub.Name(),
 		},
 	)
