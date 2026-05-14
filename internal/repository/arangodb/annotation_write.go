@@ -64,7 +64,7 @@ func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdat
 		return mann, fmt.Errorf("error in reading to struct %s", err)
 	}
 	// create annotation document
-	bindParams := []interface{}{
+	bindParams := []any{
 		ar.anno.annot.Name(),
 		ar.anno.term.Name(),
 		ar.anno.ver.Name(),
@@ -121,7 +121,7 @@ func (ar *arangorepository) AddAnnotationGroup(idslice ...string) (*model.AnnoGr
 	dbg := &model.DBGroup{}
 	rdn, err := ar.database.DoRun(
 		annGroupInst,
-		map[string]interface{}{
+		map[string]any{
 			"@anno_group_collection": ar.anno.annog.Name(),
 			"group":                  idslice,
 		},
@@ -174,7 +174,7 @@ func (ar *arangorepository) AppendToAnnotationGroup(groupID string, idslice ...s
 	// update the new group
 	rdn, err := ar.database.DoRun(
 		annGroupUpd,
-		map[string]interface{}{
+		map[string]any{
 			"@anno_group_collection": ar.anno.annog.Name(),
 			"key":                    groupID,
 			"group":                  model.DocToIDs(aml),
@@ -199,7 +199,7 @@ func (ar *arangorepository) createAnno(params *createParams) (*model.AnnoDoc, er
 	mann := &model.AnnoDoc{}
 	attr := params.attr
 	rins, err := ar.database.DoRun(
-		annInst, map[string]interface{}{
+		annInst, map[string]any{
 			"@anno_collection":    ar.anno.annot.Name(),
 			"@anno_cv_collection": ar.anno.term.Name(),
 			"editable_value":      attr.EditableValue,

@@ -84,8 +84,8 @@ func DocToIDs(ml []*AnnoDoc) []string {
 }
 
 // ConvToModel converts a generic interface value to an AnnoDoc model.
-func ConvToModel(i interface{}) (*AnnoDoc, error) {
-	cmap, isok := i.(map[string]interface{})
+func ConvToModel(i any) (*AnnoDoc, error) {
+	cmap, isok := i.(map[string]any)
 	if !isok {
 		return &AnnoDoc{}, errors.New("error in typecasting")
 	}

@@ -124,19 +124,19 @@ func TestPipeWithDifferentTypes(t *testing.T) {
 
 // Benchmark tests.
 func BenchmarkPipe2(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		Pipe2(i, add1, toString)
 	}
 }
 
 func BenchmarkPipe4(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		Pipe4(i, add1, multiply2, toString, addPrefix)
 	}
 }
 
 func BenchmarkPipe8(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		Pipe8(i, add1, multiply2, toString, addPrefix, addSuffix, toUpper, getLength, isEven)
 	}
 }

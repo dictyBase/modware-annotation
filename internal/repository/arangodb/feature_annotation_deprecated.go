@@ -56,7 +56,7 @@ func (fann *featureAnnoRepo) UpdateTag(
 	meta, err := fann.feature.UpdateDocument(
 		ctx,
 		doc.Key,
-		map[string]interface{}{"properties": newProps},
+		map[string]any{"properties": newProps},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error updating tag: %w", err)
@@ -89,7 +89,7 @@ func (fann *featureAnnoRepo) RemoveTag(
 	_, err = fann.feature.UpdateDocument(
 		context.Background(),
 		doc.Key,
-		map[string]interface{}{"properties": newProps},
+		map[string]any{"properties": newProps},
 	)
 	if err != nil {
 		return fmt.Errorf("error removing tag: %w", err)

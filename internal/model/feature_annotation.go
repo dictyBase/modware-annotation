@@ -75,7 +75,7 @@ func FeatureAnnotationSchema() ([]byte, error) {
         "additionalProperties": true
     }`
 
-	properties := map[string]interface{}{
+	properties := map[string]any{
 		"feature_type": map[string]string{"type": "string"},
 		"feature_id":   map[string]string{"type": "string"},
 		"created_at": map[string]string{
@@ -89,7 +89,7 @@ func FeatureAnnotationSchema() ([]byte, error) {
 		"created_by": map[string]string{"type": "string", "format": "email"},
 		"updated_by": map[string]string{"type": "string", "format": "email"},
 		"name":       map[string]string{"type": "string"},
-		"synonyms": map[string]interface{}{
+		"synonyms": map[string]any{
 			"type":  "array",
 			"items": map[string]string{"type": "string"},
 		},
@@ -108,15 +108,15 @@ func FeatureAnnotationSchema() ([]byte, error) {
 			)
 	}
 
-	return []byte(fmt.Sprintf(baseSchema, string(propsJSON))), nil
+	return fmt.Appendf(nil, baseSchema, string(propsJSON)), nil
 }
 
-func getDBLinksSchema() map[string]interface{} {
-	return map[string]interface{}{
+func getDBLinksSchema() map[string]any {
+	return map[string]any{
 		"type": "array",
-		"items": map[string]interface{}{
+		"items": map[string]any{
 			"type": "object",
-			"properties": map[string]interface{}{
+			"properties": map[string]any{
 				"primary_id": map[string]string{"type": "string"},
 				"version":    map[string]string{"type": "integer"},
 				"database":   map[string]string{"type": "string"},
@@ -129,12 +129,12 @@ func getDBLinksSchema() map[string]interface{} {
 	}
 }
 
-func getPropertiesSchema() map[string]interface{} {
-	return map[string]interface{}{
+func getPropertiesSchema() map[string]any {
+	return map[string]any{
 		"type": "array",
-		"items": map[string]interface{}{
+		"items": map[string]any{
 			"type": "object",
-			"properties": map[string]interface{}{
+			"properties": map[string]any{
 				"tag":   map[string]string{"type": "string"},
 				"value": map[string]string{"type": "string"},
 				"created_by": map[string]string{

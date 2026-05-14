@@ -221,7 +221,7 @@ func newTestTaggedAnnotationsList(num int) []*annotation.NewTaggedAnnotation {
 	rsrc := rand.New(rand.NewSource(time.Now().UnixNano()))
 	geneIDMax := 800000
 	geneIDMin := 300000
-	for i := 0; i < num; i++ {
+	for range num {
 		value := fmt.Sprintf("cool gene %s", tags[rsrc.Intn(len(tags)-1)])
 		nal = append(nal, &annotation.NewTaggedAnnotation{
 			Data: &annotation.NewTaggedAnnotation_Data{
