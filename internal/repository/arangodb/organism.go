@@ -93,8 +93,8 @@ func (org *organismRepo) GetOrganismByName(
 	res, err := org.database.GetRow(orgGetByNameQ,
 		map[string]any{
 			collectionBind: org.organism.Name(),
-			"genus":       genus,
-			"species":     species,
+			"genus":        genus,
+			"species":      species,
 		})
 	if err != nil {
 		return nil, fmt.Errorf("error executing query: %w", err)
