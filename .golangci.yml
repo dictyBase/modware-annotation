@@ -5,6 +5,8 @@ run:
   go: "1.25"
 linters:
   settings:
+    goconst:
+      ignore-tests: true
     lll:
       line-length: 130
     gosec:

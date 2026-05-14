@@ -83,7 +83,7 @@ func (ar *arangorepository) ListAnnotations(
 	annoModel := make([]*model.AnnoDoc, 0)
 	bindVars := map[string]any{
 		"@anno_collection":  ar.anno.annot.Name(),
-		"@cv_collection":    ar.onto.Cv.Name(),
+		cvCollectionBind:    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"limit":             params.Limit + 1,
 	}
@@ -92,7 +92,7 @@ func (ar *arangorepository) ListAnnotations(
 	}
 	result := getListAnnoStatement(params.Filter, params.Cursor)
 	if result.Type == SecondFilter {
-		bindVars["@cvterm_collection"] = ar.onto.Term.Name()
+		bindVars[cvtermCollectionBind] = ar.onto.Term.Name()
 	}
 	if result.Err != nil {
 		return nil, result.Err
@@ -214,8 +214,8 @@ func (ar *arangorepository) GetAnnotationTag(
 	res, err := ar.database.GetRow(
 		tagGetQ,
 		map[string]any{
-			"@cvterm_collection": ar.onto.Term.Name(),
-			"@cv_collection":     ar.onto.Cv.Name(),
+			cvtermCollectionBind: ar.onto.Term.Name(),
+			cvCollectionBind:     ar.onto.Cv.Name(),
 			"ontology":           ontology,
 			"tag":                tag,
 		})
@@ -242,7 +242,7 @@ func (ar *arangorepository) existAnno(
 ) error {
 	count, err := ar.database.CountWithParams(annExistQ, map[string]any{
 		"@anno_collection":  ar.anno.annot.Name(),
-		"@cv_collection":    ar.onto.Cv.Name(),
+		cvCollectionBind:    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"entry_id":          attr.EntryId,
 		"rank":              attr.Rank,

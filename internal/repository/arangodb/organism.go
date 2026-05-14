@@ -92,7 +92,7 @@ func (org *organismRepo) GetOrganismByName(
 ) (*model.OrganismDoc, error) {
 	res, err := org.database.GetRow(orgGetByNameQ,
 		map[string]any{
-			"@collection": org.organism.Name(),
+			collectionBind: org.organism.Name(),
 			"genus":       genus,
 			"species":     species,
 		})
@@ -241,7 +241,7 @@ func (org *organismRepo) ListOrganisms() ([]*model.OrganismDoc, error) {
 	cursor, err := org.database.SearchRows(
 		orgListQ,
 		map[string]any{
-			"@collection": org.organism.Name(),
+			collectionBind: org.organism.Name(),
 		},
 	)
 	if err != nil {
