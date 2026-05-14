@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	filterOne   = `entry_id==DDB_G0286429;tag==private note;ontology==dicty_annotation`
-	filterTwo   = `entry_id==DDB_G0294491;tag==name description;ontology==dicty_annotation`
-	filterThree = `entry_id==jumbo`
+	filterOne     = `entry_id==DDB_G0286429;tag==private note;ontology==dicty_annotation`
+	filterTwo     = `entry_id==DDB_G0294491;tag==name description;ontology==dicty_annotation`
+	filterThree   = `entry_id==jumbo`
+	filterTagOnly = `tag==private note;ontology==dicty_annotation`
 )
 
 //nolint:tparallel
@@ -609,4 +610,96 @@ func testAddAnnotationSuccessThird(
 		"should match ontology name",
 	)
 	assert.Equal(nta.Data.Attributes.Tag, annm.Tag, "should match the tag")
+}
+
+// TestListAnnoTagOnlyFilter exercises the SecondFilter (tag+ontology only, no
+// entry_id) code path in ListAnnotations — the path that previously failed
+// with AQL bind parameter errors.
+//
+//nolint:tparallel
+func TestListAnnoTagOnlyFilter(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
+
+	tal := newTestTaggedAnnotationsListForFiltering(10)
+	for _, anno := range tal {
+		_, err := anrepo.AddAnnotation(anno)
+		assert.NoErrorf(err, "setup: expect no error adding annotation, received %s", err)
+	}
+
+	var firstPage []*model.AnnoDoc
+
+	t.Run("FirstPage", func(t *testing.T) {
+		firstPage = testListAnnoTagOnlyFirstPage(t, assert, anrepo)
+	})
+
+	t.Run("SecondPage", func(t *testing.T) {
+		testListAnnoTagOnlySecondPage(t, assert, anrepo, firstPage)
+	})
+
+	t.Run("NoResults", func(t *testing.T) {
+		testListAnnoTagOnlyNotFound(t, assert, anrepo)
+	})
+}
+
+func testListAnnoTagOnlyFirstPage(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) []*model.AnnoDoc {
+	t.Helper()
+	mla, err := anrepo.ListAnnotations(
+		&repository.ListAnnotationsParams{Limit: 3, Filter: filterTagOnly},
+	)
+	assert.NoErrorf(err, "SecondFilter query must not return AQL bind error, got %s", err)
+	assert.NotEmpty(mla, "should return at least one annotation")
+	for _, m := range mla {
+		assert.Equal(tags[0], m.Tag, "tag should match filter")
+		assert.Equal("dicty_annotation", m.Ontology, "ontology should match filter")
+	}
+	testModelListSort(t, mla)
+
+	return mla
+}
+
+func testListAnnoTagOnlySecondPage(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+	prevResult []*model.AnnoDoc,
+) {
+	t.Helper()
+	assert.NotEmpty(prevResult, "previous result should not be empty")
+	ml2, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
+		Limit:  3,
+		Filter: filterTagOnly,
+	})
+	assert.NoErrorf(
+		err,
+		"SecondFilter+cursor query must not return AQL bind error, got %s",
+		err,
+	)
+	assert.Exactly(prevResult[len(prevResult)-1], ml2[0], "pages should overlap by one")
+	testModelListSort(t, ml2)
+}
+
+func testListAnnoTagOnlyNotFound(
+	t *testing.T,
+	assert *require.Assertions,
+	anrepo repository.TaggedAnnotationRepository,
+) {
+	t.Helper()
+	_, err := anrepo.ListAnnotations(
+		&repository.ListAnnotationsParams{
+			Limit:  4,
+			Filter: `tag==nonexistent tag;ontology==dicty_annotation`,
+		},
+	)
+	assert.Error(err, "expect not-found error")
+	assert.True(
+		repository.IsAnnotationListNotFound(err),
+		"error should be annotationListNotFound",
+	)
 }
