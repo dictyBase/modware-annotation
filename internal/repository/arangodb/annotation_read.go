@@ -74,6 +74,34 @@ func (ar *arangorepository) GetAnnotationByEntry(
 	return mann, nil
 }
 
+// buildListAnnoBindVars constructs the AQL bind variable map for
+// ListAnnotations. The set of collection bind parameters depends on the
+// statement type: SecondFilter queries traverse cvterm first (no
+// @@anno_collection), while all other types traverse annotations first (no
+// @@cvterm_collection). Providing an unreferenced key causes ArangoDB to
+// reject the query, so the two collection parameters are mutually exclusive.
+func buildListAnnoBindVars(
+	stmtType StatementType,
+	annoCollection, cvCollection, cvtermCollection, graphName string,
+	limit, cursor int64,
+) map[string]any {
+	bindVars := map[string]any{
+		cvCollectionBind:    cvCollection,
+		"anno_cvterm_graph": graphName,
+		"limit":             limit + 1,
+	}
+	if cursor != 0 {
+		bindVars["cursor"] = cursor
+	}
+	if stmtType == SecondFilter {
+		bindVars[cvtermCollectionBind] = cvtermCollection
+	} else {
+		bindVars["@anno_collection"] = annoCollection
+	}
+
+	return bindVars
+}
+
 func (ar *arangorepository) ListAnnotations(
 	params *repository.ListAnnotationsParams,
 ) ([]*model.AnnoDoc, error) {
@@ -81,22 +109,19 @@ func (ar *arangorepository) ListAnnotations(
 		return nil, fmt.Errorf("error in valdating parameters %w", err)
 	}
 	annoModel := make([]*model.AnnoDoc, 0)
-	bindVars := map[string]any{
-		"@anno_collection":  ar.anno.annot.Name(),
-		cvCollectionBind:    ar.onto.Cv.Name(),
-		"anno_cvterm_graph": ar.anno.annotg.Name(),
-		"limit":             params.Limit + 1,
-	}
-	if params.Cursor != 0 {
-		bindVars["cursor"] = params.Cursor
-	}
 	result := getListAnnoStatement(params.Filter, params.Cursor)
-	if result.Type == SecondFilter {
-		bindVars[cvtermCollectionBind] = ar.onto.Term.Name()
-	}
 	if result.Err != nil {
 		return nil, result.Err
 	}
+	bindVars := buildListAnnoBindVars(
+		result.Type,
+		ar.anno.annot.Name(),
+		ar.onto.Cv.Name(),
+		ar.onto.Term.Name(),
+		ar.anno.annotg.Name(),
+		params.Limit,
+		params.Cursor,
+	)
 	res, err := ar.database.SearchRows(result.Statement, bindVars)
 	if err != nil {
 		return annoModel, fmt.Errorf("error in searching rows %s", err)
