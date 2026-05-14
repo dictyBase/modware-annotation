@@ -30,8 +30,8 @@ func (ar *arangorepository) LoadOboJSON(rde io.Reader) (*storage.UploadInformati
 func (ar *arangorepository) termID(onto, term string) (string, error) {
 	var tid string
 	row, err := ar.database.GetRow(annExistTagQ, map[string]any{
-		"@cv_collection":     ar.onto.Cv.Name(),
-		"@cvterm_collection": ar.onto.Term.Name(),
+		cvCollectionBind:     ar.onto.Cv.Name(),
+		cvtermCollectionBind: ar.onto.Term.Name(),
 		"ontology":           onto,
 		"tag":                term,
 	})
@@ -51,7 +51,7 @@ func (ar *arangorepository) termID(onto, term string) (string, error) {
 func (ar *arangorepository) termName(tid string) (string, error) {
 	var name string
 	cvtr, err := ar.database.GetRow(cvtID2LblQ, map[string]any{
-		"@cvterm_collection": ar.onto.Term.Name(),
+		cvtermCollectionBind: ar.onto.Term.Name(),
 		"id":                 tid,
 	})
 	if err != nil {

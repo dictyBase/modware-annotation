@@ -80,7 +80,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotation(
 	res, err := fann.database.GetRow(
 		featureGetByIDQ,
 		map[string]any{
-			"@collection": fann.feature.Name(),
+			collectionBind: fann.feature.Name(),
 			"graph":       fann.featPub.Name(),
 			"id":          fid,
 		},
@@ -106,7 +106,7 @@ func (fann *featureAnnoRepo) GetFeatureAnnotationByName(
 	res, err := fann.database.GetRow(
 		featAnnoGetByNameQ,
 		map[string]any{
-			"@collection": fann.feature.Name(),
+			collectionBind: fann.feature.Name(),
 			"graph":       fann.featPub.Name(), // Add graph name
 			"name":        name,
 		},
@@ -342,7 +342,7 @@ func (fann *featureAnnoRepo) ListByPublicationID(
 	source string,
 ) ([]*model.FeatureAnnotationDoc, error) {
 	binds := map[string]any{
-		"@collection": fann.pub.Name(),
+		collectionBind: fann.pub.Name(),
 		"graph":       fann.featPub.Name(),
 		"id":          publicationID,
 		"source":      source,
@@ -384,7 +384,7 @@ func (fann *featureAnnoRepo) RemoveFeatureAnnotation(
 	purge bool,
 ) error {
 	bindVars := map[string]any{
-		"@collection": fann.feature.Name(),
+		collectionBind: fann.feature.Name(),
 		"id":          fid,
 	}
 
@@ -487,7 +487,7 @@ func (fann *featureAnnoRepo) AddTags(
 		return nil, fmt.Errorf("error beginning transaction: %w", err)
 	}
 	result, err := txr.DoRun(featurePropsAppendQ, map[string]any{
-		"@collection": fann.feature.Name(),
+		collectionBind: fann.feature.Name(),
 		"key":         doc.Key,
 		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
 	})
@@ -541,7 +541,7 @@ func (fann *featureAnnoRepo) SetTags(
 	}
 
 	result, err := txr.DoRun(featurePropsSetQ, map[string]any{
-		"@collection": fann.feature.Name(),
+		collectionBind: fann.feature.Name(),
 		"key":         doc.Key,
 		"newprops":    collection.Map(req.Tags, convertNewTagToModel),
 	})
@@ -616,7 +616,7 @@ func (fann *featureAnnoRepo) upsertPublicationsTx(
 		pubUpsertQ,
 		map[string]any{
 			"ids":         ids,
-			"@collection": fann.pub.Name(),
+			collectionBind: fann.pub.Name(),
 		},
 	)
 	if err != nil {
