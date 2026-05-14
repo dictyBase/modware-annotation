@@ -9,4 +9,4 @@ jobs:
     with:
       repository: ${{ github.repository }}
       ref: ${{ github.event.pull_request.head.sha }}
-      version: v2.12.2-alpine
+      version: v2.8.0-alpine
