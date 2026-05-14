@@ -1,3 +1,4 @@
+// Package arangodb implements the annotation repository using ArangoDB.
 package arangodb
 
 import (
@@ -167,8 +168,8 @@ func (ar *arangorepository) ClearAnnotations() error {
 		ar.anno.verg,
 		ar.anno.annotg,
 	} {
-		arangoDb := ar.database.Handler()
-		isok, err := arangoDb.GraphExists(context.Background(), grph.Name())
+		arangoDB := ar.database.Handler()
+		isok, err := arangoDB.GraphExists(context.Background(), grph.Name())
 		if err != nil {
 			return fmt.Errorf("error in checking existence of graph %s", err)
 		}
@@ -190,7 +191,7 @@ func DocumentsExists(c driver.Collection, ids ...string) error {
 			return fmt.Errorf("error in checking for existence of identifier %s %s", kdi, err)
 		}
 		if !ok {
-			return &repo.AnnoNotFoundError{Id: kdi}
+			return &repo.AnnoNotFoundError{ID: kdi}
 		}
 	}
 

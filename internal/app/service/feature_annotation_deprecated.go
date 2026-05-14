@@ -9,9 +9,10 @@ import (
 )
 
 //nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
+// UpdateTag is deprecated and always returns Unimplemented.
 func (srv *FeatureAnnotationService) UpdateTag(
-	ctx context.Context,
-	req *feature.UpdateTagRequest,
+	_ context.Context,
+	_ *feature.UpdateTagRequest,
 ) (*feature.FeatureAnnotation, error) {
 	//nolint:wrapcheck // gRPC status errors should not be wrapped
 	return nil, status.Error(
@@ -22,9 +23,10 @@ func (srv *FeatureAnnotationService) UpdateTag(
 }
 
 //nolint:staticcheck // SA1019: Using deprecated types in deprecated method implementation
+// RemoveTag is deprecated and always returns Unimplemented.
 func (srv *FeatureAnnotationService) RemoveTag(
-	ctx context.Context,
-	req *feature.RemoveTagRequest,
+	_ context.Context,
+	_ *feature.RemoveTagRequest,
 ) (*feature.FeatureAnnotation, error) {
 	//nolint:wrapcheck // gRPC status errors should not be wrapped
 	return nil, status.Error(

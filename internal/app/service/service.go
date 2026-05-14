@@ -28,7 +28,7 @@ type oboStreamHandler struct {
 
 // Write write the content of the stream to a writer.
 func (oh *oboStreamHandler) Write() error {
-	defer oh.writer.Close()
+	defer func() { _ = oh.writer.Close() }()
 	for {
 		req, err := oh.stream.Recv()
 		if err != nil {
@@ -59,7 +59,7 @@ type AnnotationService struct {
 	annotation.UnimplementedTaggedAnnotationServiceServer
 }
 
-// ServiceParams are the attributes that are required for creating new AnnotationService.
+// Params are the attributes that are required for creating a new AnnotationService.
 type Params struct {
 	Repository repository.TaggedAnnotationRepository `validate:"required"`
 	Publisher  message.Publisher                     `validate:"required"`
@@ -94,20 +94,21 @@ func NewAnnotationService(srvP *Params) (*AnnotationService, error) {
 	}, nil
 }
 
-func (s *AnnotationService) GetGroupResourceName() string {
-	return s.group
+// GetGroupResourceName returns the resource name used for annotation groups.
+func (srv *AnnotationService) GetGroupResourceName() string {
+	return srv.group
 }
 
 // OboJSONFileUpload uploads a obojson formatted file to the server.
-func (s *AnnotationService) OboJSONFileUpload(
+func (srv *AnnotationService) OboJSONFileUpload(
 	stream annotation.TaggedAnnotationService_OboJSONFileUploadServer,
 ) error {
 	in, out := io.Pipe()
 	grp := new(errgroup.Group)
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 	oh := &oboStreamHandler{writer: out, stream: stream}
 	grp.Go(oh.Write)
-	info, err := s.repo.LoadOboJSON(in)
+	info, err := srv.repo.LoadOboJSON(in)
 	if err != nil {
 		return aphgrpc.HandleGenericError(
 			context.Background(),
@@ -157,7 +158,7 @@ func getAnnoAttributes(
 		CreatedBy:     annom.CreatedBy,
 		CreatedAt:     aphgrpc.TimestampProto(annom.CreatedAt),
 		Version:       annom.Version,
-		EntryId:       annom.EnrtyId,
+		EntryId:       annom.EnrtyID,
 		Rank:          annom.Rank,
 		IsObsolete:    annom.IsObsolete,
 		Tag:           annom.Tag,

@@ -247,7 +247,7 @@ func (org *organismRepo) ListOrganisms() ([]*model.OrganismDoc, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error executing organism list query: %w", err)
 	}
-	defer cursor.Close()
+	defer func() { _ = cursor.Close() }()
 	if cursor.IsEmpty() {
 		return nil, &repository.ListNotFoundError{}
 	}

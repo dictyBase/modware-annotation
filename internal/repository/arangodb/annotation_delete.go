@@ -16,7 +16,7 @@ func (ar *arangorepository) RemoveAnnotation(id string, purge bool) error {
 	_, err := ar.anno.annot.ReadDocument(context.Background(), id, manno)
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			return &repository.AnnoNotFoundError{Id: id}
+			return &repository.AnnoNotFoundError{ID: id}
 		}
 
 		return fmt.Errorf("error in reading document %s", err)
@@ -76,10 +76,10 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(
 		)
 	}
 	if !isok {
-		return manno, &repository.GroupNotFoundError{Id: groupID}
+		return manno, &repository.GroupNotFoundError{ID: groupID}
 	}
 	// retrieve all annotations ids for the group
-	dbg := &model.DbGroup{}
+	dbg := &model.DBGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
 		groupID, dbg,
@@ -106,13 +106,13 @@ func (ar *arangorepository) RemoveFromAnnotationGroup(
 			groupID, err,
 		)
 	}
-	ndbg := &model.DbGroup{}
+	ndbg := &model.DBGroup{}
 	if err := res.Read(ndbg); err != nil {
 		return manno, fmt.Errorf("error in reading data into struct %s", err)
 	}
 	manno.CreatedAt = ndbg.CreatedAt
 	manno.UpdatedAt = ndbg.UpdatedAt
-	manno.GroupId = ndbg.GroupId
+	manno.GroupID = ndbg.GroupID
 	manno.AnnoDocs = mla
 
 	return manno, nil

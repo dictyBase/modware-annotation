@@ -28,6 +28,7 @@ type featureServerParams struct {
 	msg  message.FeatureAnnotationPublisher
 }
 
+// RunFeatureServer starts the gRPC feature annotation server using the provided CLI context.
 func RunFeatureServer(clt *cli.Context) error {
 	spn, err := featureRepoAndNatsConn(clt)
 	if err != nil {

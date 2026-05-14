@@ -17,10 +17,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type validateDbLinksParams struct {
+type validateDBLinksParams struct {
 	t          *testing.T
 	assertions *require.Assertions
-	got        []model.DbLinkDoc
+	got        []model.DBLinkDoc
 	expected   []*feature.DbLink
 }
 
@@ -51,9 +51,9 @@ type validateCompleteFeatureParams struct {
 	expected   *feature.NewFeatureAnnotation // Contains base info + attributes
 }
 
-// testListByPublicationIdSuccessParams defines the parameters for the
-// testListByPublicationIdSuccess helper function.
-type testListByPublicationIdSuccessParams struct {
+// testListByPublicationIDSuccessParams defines the parameters for the
+// testListByPublicationIDSuccess helper function.
+type testListByPublicationIDSuccessParams struct {
 	t                    *testing.T
 	pubID                string
 	source               string
@@ -316,7 +316,7 @@ func validateProperties(params validatePropertiesParams) {
 // compareTagProperties implements sorting for TagPropertyDoc slices by tag and
 // value using case-insensitive comparison.
 
-func validateDbLinks(params validateDbLinksParams) {
+func validateDBLinks(params validateDBLinksParams) {
 	params.t.Helper()
 	params.assertions.Equal(
 		len(params.expected),
@@ -326,7 +326,7 @@ func validateDbLinks(params validateDbLinksParams) {
 	for idx, link := range params.expected {
 		params.assertions.Equal(
 			link.PrimaryId,
-			params.got[idx].PrimaryId,
+			params.got[idx].PrimaryID,
 			"should have matching primary ID",
 		)
 		params.assertions.Equal(
@@ -361,7 +361,7 @@ func validateBasicFields(params validateFeatureAnnotationParams) {
 	params.t.Helper()
 	params.assertions.Regexp(
 		`^DDB_G\d+`,
-		params.got.AnnoId,
+		params.got.AnnoID,
 		"should have matching IDs",
 	)
 	params.assertions.Equal(
@@ -400,10 +400,10 @@ func validateCompleteFeatureAnnotation(params validateCompleteFeatureParams) {
 	})
 
 	// Validate associated database links
-	validateDbLinks(validateDbLinksParams{
+	validateDBLinks(validateDBLinksParams{
 		t:          params.t,
 		assertions: params.assertions,
-		got:        params.got.DbLinks,
+		got:        params.got.DBLinks,
 		expected:   params.expected.Attributes.Dblinks,
 	})
 
@@ -469,10 +469,10 @@ func assertListByPublicationResults(
 	retrievedIDs := collection.Map(
 		params.results,
 		func(doc *model.FeatureAnnotationDoc) string {
-			return doc.AnnoId
+			return doc.AnnoID
 		},
 	)
-	expectedIDs := []string{params.added1.AnnoId, params.added2.AnnoId}
+	expectedIDs := []string{params.added1.AnnoID, params.added2.AnnoID}
 	slices.Sort(retrievedIDs)
 	slices.Sort(expectedIDs)
 	params.asrt.Equal(
@@ -482,8 +482,8 @@ func assertListByPublicationResults(
 	)
 }
 
-func testListByPublicationIdSuccess(
-	params *testListByPublicationIdSuccessParams,
+func testListByPublicationIDSuccess(
+	params *testListByPublicationIDSuccessParams,
 ) {
 	params.t.Helper() // Mark as helper
 	asrt, repo := setUpFeatureTest(params.t)
@@ -513,7 +513,7 @@ func testListByPublicationIdSuccess(
 	asrt.NoError(err, "Failed to add unrelated feature 3")
 
 	// Action: Call ListByPublicationId
-	results, err := repo.ListByPublicationId(params.pubID, params.source)
+	results, err := repo.ListByPublicationID(params.pubID, params.source)
 	asrt.NoError(err, "Expected no error retrieving by "+params.errorMsgSuffix)
 
 	// Assertions (common logic extracted)
@@ -558,7 +558,7 @@ func seedAnnotationWithTags(
 		},
 	})
 	assert.NoError(err)
-	model, err := repo.GetFeatureAnnotation(newFeat.AnnoId)
+	model, err := repo.GetFeatureAnnotation(newFeat.AnnoID)
 	assert.NoError(err)
 	return model
 }
@@ -651,22 +651,22 @@ func verifyNewTagsAdded(params verifyNewTagsAddedParams) {
 
 // createAddTagsRequest creates an AddTagsRequest with the provided tags for testing purposes.
 func createAddTagsRequest(
-	featureId string,
+	featureID string,
 	tags []*feature.TagPropertyCreate,
 ) *feature.AddTagsRequest {
 	return &feature.AddTagsRequest{
-		Id:   featureId,
+		Id:   featureID,
 		Tags: tags,
 	}
 }
 
 // createSetTagsRequest creates a SetTagsRequest with the provided tags for testing purposes.
 func createSetTagsRequest(
-	featureId string,
+	featureID string,
 	tags []*feature.TagPropertyCreate,
 ) *feature.SetTagsRequest {
 	return &feature.SetTagsRequest{
-		Id:   featureId,
+		Id:   featureID,
 		Tags: tags,
 	}
 }

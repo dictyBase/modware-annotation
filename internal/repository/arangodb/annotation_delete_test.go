@@ -20,7 +20,7 @@ func TestRemoveFromAnnotationGroup(t *testing.T) {
 	ids := testModelMaptoID(mla, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	ega, err := anrepo.RemoveFromAnnotationGroup(g.GroupId, ids[:5]...)
+	ega, err := anrepo.RemoveFromAnnotationGroup(g.GroupID, ids[:5]...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.ElementsMatch(
 		testModelMaptoID(g.AnnoDocs, model2IdCallback),
@@ -48,9 +48,9 @@ func TestRemoveAnnotationGroup(t *testing.T) {
 	ids := testModelMaptoID(mla, model2IdCallback)
 	g, err := anrepo.AddAnnotationGroup(ids...)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	err = anrepo.RemoveAnnotationGroup(g.GroupId)
+	err = anrepo.RemoveAnnotationGroup(g.GroupID)
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	err = anrepo.RemoveAnnotationGroup(g.GroupId)
+	err = anrepo.RemoveAnnotationGroup(g.GroupID)
 	assert.Errorf(err, "should return error")
 	assert.Contains(
 		err.Error(),

@@ -38,8 +38,8 @@ type FeatureAnnotationRepository interface {
 	RemoveTags(req *feature.RemoveTagsRequest) (*model.FeatureAnnotationDoc, error)
 
 	// Publication-based queries
-	// ListByPublicationId retrieves all feature annotations associated with the given publication ID and source
-	ListByPublicationId(id string, source string) ([]*model.FeatureAnnotationDoc, error)
+	// ListByPublicationID retrieves all feature annotations associated with the given publication ID and source
+	ListByPublicationID(id string, source string) ([]*model.FeatureAnnotationDoc, error)
 
 	// Embed deprecated interface for backward compatibility during transition period
 	DeprecatedFeatureAnnotationRepository

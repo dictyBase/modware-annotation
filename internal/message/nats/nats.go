@@ -1,3 +1,5 @@
+// Package nats provides NATS messaging publisher implementations.
+//
 //nolint:dupl
 package nats
 
@@ -14,6 +16,7 @@ type natsPublisher struct {
 	conn *gnats.Conn
 }
 
+// NewPublisher creates a new NATS-backed annotation message publisher.
 func NewPublisher(
 	host, port string,
 	options ...gnats.Option,

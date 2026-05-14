@@ -9,7 +9,8 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
-func (s *AnnotationService) UpdateAnnotation(
+// UpdateAnnotation updates an existing tagged annotation.
+func (srv *AnnotationService) UpdateAnnotation(
 	ctx context.Context,
 	rta *annotation.TaggedAnnotationUpdate,
 ) (*annotation.TaggedAnnotation, error) {
@@ -17,15 +18,15 @@ func (s *AnnotationService) UpdateAnnotation(
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	tga := &annotation.TaggedAnnotation{}
-	mde, err := s.repo.EditAnnotation(rta)
+	mde, err := srv.repo.EditAnnotation(rta)
 	if err != nil {
 		return nil, aphgrpc.HandleUpdateError(ctx, err)
 	}
 	if mde.NotFound {
 		return nil, aphgrpc.HandleNotFoundError(ctx, err)
 	}
-	tga.Data = s.getAnnoData(mde)
-	err = s.publisher.Publish(s.Topics["annotationUpdate"], tga)
+	tga.Data = srv.getAnnoData(mde)
+	err = srv.publisher.Publish(srv.Topics["annotationUpdate"], tga)
 	if err != nil {
 		return nil, aphgrpc.HandleUpdateError(ctx, err)
 	}
@@ -33,7 +34,8 @@ func (s *AnnotationService) UpdateAnnotation(
 	return tga, nil
 }
 
-func (s *AnnotationService) CreateAnnotation(
+// CreateAnnotation creates a new tagged annotation.
+func (srv *AnnotationService) CreateAnnotation(
 	ctx context.Context,
 	rta *annotation.NewTaggedAnnotation,
 ) (*annotation.TaggedAnnotation, error) {
@@ -41,12 +43,12 @@ func (s *AnnotationService) CreateAnnotation(
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
 	tga := &annotation.TaggedAnnotation{}
-	m, err := s.repo.AddAnnotation(rta)
+	m, err := srv.repo.AddAnnotation(rta)
 	if err != nil {
 		return nil, aphgrpc.HandleInsertError(ctx, err)
 	}
-	tga.Data = s.getAnnoData(m)
-	err = s.publisher.Publish(s.Topics["annotationCreate"], tga)
+	tga.Data = srv.getAnnoData(m)
+	err = srv.publisher.Publish(srv.Topics["annotationCreate"], tga)
 	if err != nil {
 		return nil, aphgrpc.HandleInsertError(ctx, err)
 	}
@@ -54,13 +56,14 @@ func (s *AnnotationService) CreateAnnotation(
 	return tga, nil
 }
 
-func (s *AnnotationService) AddToAnnotationGroup(
+// AddToAnnotationGroup appends an annotation to an existing annotation group.
+func (srv *AnnotationService) AddToAnnotationGroup(
 	ctx context.Context, rta *annotation.AnnotationGroupId,
 ) (*annotation.TaggedAnnotationGroup, error) {
 	if err := protovalidate.Validate(rta); err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mga, err := s.repo.AppendToAnnotationGroup(rta.GroupId, rta.Id)
+	mga, err := srv.repo.AppendToAnnotationGroup(rta.GroupId, rta.Id)
 	if err != nil {
 		if repository.IsGroupNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -69,16 +72,17 @@ func (s *AnnotationService) AddToAnnotationGroup(
 		return nil, aphgrpc.HandleUpdateError(ctx, err)
 	}
 
-	return s.getGroup(mga), nil
+	return srv.getGroup(mga), nil
 }
 
-func (s *AnnotationService) CreateAnnotationGroup(
+// CreateAnnotationGroup creates a new annotation group from a list of annotation IDs.
+func (srv *AnnotationService) CreateAnnotationGroup(
 	ctx context.Context, rta *annotation.AnnotationIdList,
 ) (*annotation.TaggedAnnotationGroup, error) {
 	if err := protovalidate.Validate(rta); err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mga, err := s.repo.AddAnnotationGroup(rta.Ids...)
+	mga, err := srv.repo.AddAnnotationGroup(rta.Ids...)
 	if err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -87,5 +91,5 @@ func (s *AnnotationService) CreateAnnotationGroup(
 		return nil, aphgrpc.HandleInsertError(ctx, err)
 	}
 
-	return s.getGroup(mga), nil
+	return srv.getGroup(mga), nil
 }

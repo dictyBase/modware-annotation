@@ -294,7 +294,7 @@ func unsetLogicIfSingleFilter(filters []*query.Filter) []*query.Filter {
 	}
 	// Create a new slice of size 1
 	newFilters := make([]*query.Filter, 1)
-	newFilters[0] = &query.Filter{
+	newFilters[0] = &query.Filter{ //nolint:gosec // G602: slice created with make(size=1), index 0 is always valid
 		Field:    filters[0].Field,
 		Value:    filters[0].Value,
 		Operator: filters[0].Operator,

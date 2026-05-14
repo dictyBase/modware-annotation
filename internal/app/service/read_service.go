@@ -11,8 +11,10 @@ import (
 	"github.com/dictyBase/modware-annotation/internal/repository"
 )
 
+// LIMIT is the default number of results returned by list operations.
 var LIMIT int64 = 10
 
+// GetAnnotation retrieves a tagged annotation by its ID.
 func (srv *AnnotationService) GetAnnotation(
 	ctx context.Context,
 	req *annotation.AnnotationId,
@@ -37,6 +39,7 @@ func (srv *AnnotationService) GetAnnotation(
 	return tna, nil
 }
 
+// GetEntryAnnotation retrieves a tagged annotation by entry annotation request parameters.
 func (srv *AnnotationService) GetEntryAnnotation(
 	ctx context.Context, rea *annotation.EntryAnnotationRequest,
 ) (*annotation.TaggedAnnotation, error) {
@@ -57,6 +60,7 @@ func (srv *AnnotationService) GetEntryAnnotation(
 	return tna, nil
 }
 
+// GetAnnotationGroup retrieves a tagged annotation group by its group ID.
 func (srv *AnnotationService) GetAnnotationGroup(
 	ctx context.Context, rid *annotation.GroupEntryId,
 ) (*annotation.TaggedAnnotationGroup, error) {
@@ -75,6 +79,7 @@ func (srv *AnnotationService) GetAnnotationGroup(
 	return srv.getGroup(mga), nil
 }
 
+// ListAnnotationGroups returns a paginated collection of tagged annotation groups.
 func (srv *AnnotationService) ListAnnotationGroups(
 	ctx context.Context, rgp *annotation.ListGroupParameters,
 ) (*annotation.TaggedAnnotationGroupCollection, error) {
@@ -110,7 +115,7 @@ func (srv *AnnotationService) ListAnnotationGroups(
 				Type: srv.GetGroupResourceName(),
 				Group: &annotation.TaggedAnnotationGroup{
 					Data:      gdata,
-					GroupId:   mgs.GroupId,
+					GroupId:   mgs.GroupID,
 					CreatedAt: aphgrpc.TimestampProto(mgs.CreatedAt),
 					UpdatedAt: aphgrpc.TimestampProto(mgs.UpdatedAt),
 				},
@@ -133,6 +138,7 @@ func (srv *AnnotationService) ListAnnotationGroups(
 	}, nil
 }
 
+// ListAnnotations returns a paginated collection of tagged annotations.
 func (srv *AnnotationService) ListAnnotations(
 	ctx context.Context, ral *annotation.ListParameters,
 ) (*annotation.TaggedAnnotationCollection, error) {
@@ -174,6 +180,7 @@ func (srv *AnnotationService) ListAnnotations(
 	return tac, nil
 }
 
+// GetAnnotationTag retrieves an annotation tag by name and ontology.
 func (srv *AnnotationService) GetAnnotationTag(
 	ctx context.Context, rta *annotation.TagRequest,
 ) (*annotation.AnnotationTag, error) {
@@ -213,7 +220,7 @@ func (srv *AnnotationService) getGroup(
 ) *annotation.TaggedAnnotationGroup {
 	gta := &annotation.TaggedAnnotationGroup{}
 	gta.Data = srv.getGroupData(mga)
-	gta.GroupId = mga.GroupId
+	gta.GroupId = mga.GroupID
 	gta.CreatedAt = aphgrpc.TimestampProto(mga.CreatedAt)
 	gta.UpdatedAt = aphgrpc.TimestampProto(mga.UpdatedAt)
 

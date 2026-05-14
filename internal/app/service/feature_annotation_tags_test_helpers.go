@@ -80,11 +80,11 @@ func createServiceTagPropertyCreate(
 
 // createAddTagsServiceRequest creates an AddTagsRequest for service-level testing.
 func createAddTagsServiceRequest(
-	featureId string,
+	featureID string,
 	tags []*feature.TagPropertyCreate,
 ) *feature.AddTagsRequest {
 	return &feature.AddTagsRequest{
-		Id:   featureId,
+		Id:   featureID,
 		Tags: tags,
 	}
 }
@@ -410,11 +410,11 @@ func testAddTagsInvalidRequest(params *testParams) {
 
 // createSetTagsServiceRequest creates a SetTagsRequest for service-level testing.
 func createSetTagsServiceRequest(
-	featureId string,
+	featureID string,
 	tags []*feature.TagPropertyCreate,
 ) *feature.SetTagsRequest {
 	return &feature.SetTagsRequest{
-		Id:   featureId,
+		Id:   featureID,
 		Tags: tags,
 	}
 }
@@ -531,21 +531,21 @@ func verifyTagTimestamps(args *verifyTagTimestampsParams) {
 
 // createTestTagsWithTimestamps creates test tags with specific timestamps.
 func createTestTagsWithTimestamps() ([]*feature.TagPropertyCreate, []time.Time) {
-	specTs1 := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Microsecond)
-	specTs2 := time.Now().Add(-24 * time.Hour).UTC().Truncate(time.Microsecond)
-	expectedTimestamps := []time.Time{specTs1, specTs2}
+	specTS1 := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Microsecond)
+	specTS2 := time.Now().Add(-24 * time.Hour).UTC().Truncate(time.Microsecond)
+	expectedTimestamps := []time.Time{specTS1, specTS2}
 	newTags := []*feature.TagPropertyCreate{
 		createServiceTagPropertyCreate(&tagPropertyCreateParams{
 			tag:       "provided_timestamp1",
 			value:     "value1",
 			createdBy: "tester@example.org",
-			timestamp: &specTs1,
+			timestamp: &specTS1,
 		}),
 		createServiceTagPropertyCreate(&tagPropertyCreateParams{
 			tag:       "provided_timestamp2",
 			value:     "value2",
 			createdBy: "tester@example.org",
-			timestamp: &specTs2,
+			timestamp: &specTS2,
 		}),
 	}
 	return newTags, expectedTimestamps

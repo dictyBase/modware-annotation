@@ -1,3 +1,4 @@
+// Package service implements the gRPC service handlers for the annotation service.
 package service
 
 import (
@@ -10,22 +11,24 @@ import (
 	empty "google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (s *AnnotationService) DeleteAnnotationGroup(ctx context.Context, r *annotation.GroupEntryId) (*empty.Empty, error) {
+// DeleteAnnotationGroup removes an annotation group identified by its group ID.
+func (srv *AnnotationService) DeleteAnnotationGroup(ctx context.Context, r *annotation.GroupEntryId) (*empty.Empty, error) {
 	if err := protovalidate.Validate(r); err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	if err := s.repo.RemoveAnnotationGroup(r.GroupId); err != nil {
+	if err := srv.repo.RemoveAnnotationGroup(r.GroupId); err != nil {
 		return nil, aphgrpc.HandleDeleteError(ctx, err)
 	}
 
 	return &empty.Empty{}, nil
 }
 
-func (s *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.DeleteAnnotationRequest) (*empty.Empty, error) {
+// DeleteAnnotation removes a tagged annotation by its ID.
+func (srv *AnnotationService) DeleteAnnotation(ctx context.Context, r *annotation.DeleteAnnotationRequest) (*empty.Empty, error) {
 	if err := protovalidate.Validate(r); err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	if err := s.repo.RemoveAnnotation(r.Id, r.Purge); err != nil {
+	if err := srv.repo.RemoveAnnotation(r.Id, r.Purge); err != nil {
 		if repository.IsAnnotationNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
 		}

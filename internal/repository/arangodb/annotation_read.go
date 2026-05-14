@@ -33,7 +33,7 @@ func (ar *arangorepository) GetAnnotationByID(
 	if res.IsEmpty() {
 		model.NotFound = true
 
-		return model, &repository.AnnoNotFoundError{Id: annoid}
+		return model, &repository.AnnoNotFoundError{ID: annoid}
 	}
 	if err := res.Read(model); err != nil {
 		return model, fmt.Errorf("error in reading data to structure %s", err)
@@ -65,7 +65,7 @@ func (ar *arangorepository) GetAnnotationByEntry(
 	if res.IsEmpty() {
 		mann.NotFound = true
 
-		return mann, &repository.AnnoNotFoundError{Id: req.EntryId}
+		return mann, &repository.AnnoNotFoundError{ID: req.EntryId}
 	}
 	if err := res.Read(mann); err != nil {
 		return mann, fmt.Errorf("error in reading data to structure %s", err)
@@ -128,7 +128,7 @@ func (ar *arangorepository) GetAnnotationGroup(
 		return grp, err
 	}
 	// retrieve group information
-	dbg := &model.DbGroup{}
+	dbg := &model.DBGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
 		groupID,
@@ -139,7 +139,7 @@ func (ar *arangorepository) GetAnnotationGroup(
 	}
 	grp.CreatedAt = dbg.CreatedAt
 	grp.UpdatedAt = dbg.UpdatedAt
-	grp.GroupId = dbg.GroupId
+	grp.GroupID = dbg.GroupID
 	grp.AnnoDocs = ann
 
 	return grp, nil
@@ -274,10 +274,10 @@ func (ar *arangorepository) groupID2Annotations(
 			)
 	}
 	if !isOk {
-		return annoModel, &repository.GroupNotFoundError{Id: groupID}
+		return annoModel, &repository.GroupNotFoundError{ID: groupID}
 	}
 	// retrieve group object
-	dbg := &model.DbGroup{}
+	dbg := &model.DBGroup{}
 	_, err = ar.anno.annog.ReadDocument(
 		context.Background(),
 		groupID, dbg,

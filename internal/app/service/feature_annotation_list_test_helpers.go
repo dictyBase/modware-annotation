@@ -106,7 +106,7 @@ func testListByDOIInvalid(params *testParams) {
 	params.assert.Equal(codes.InvalidArgument, sts.Code())
 }
 
-func testListByPubmedIdValid(params *testParams) {
+func testListByPubmedIDValid(params *testParams) {
 	params.t.Helper()
 	testListByPublicationHelper(&testListByPublicationHelperParams{
 		params:            params,
@@ -118,7 +118,7 @@ func testListByPubmedIdValid(params *testParams) {
 	})
 }
 
-func testListByPubmedIdNotFound(params *testParams) {
+func testListByPubmedIDNotFound(params *testParams) {
 	params.t.Helper()
 	req := &feature.PubmedId{Id: "99999999"} // Non-existent pubmed ID
 	_, err := params.client.ListFeatureAnnotationsByPubmedId(
@@ -131,7 +131,7 @@ func testListByPubmedIdNotFound(params *testParams) {
 	params.assert.Equal(codes.NotFound, sts.Code())
 }
 
-func testListByPubmedIdInvalid(params *testParams) {
+func testListByPubmedIDInvalid(params *testParams) {
 	params.t.Helper()
 	req := &feature.PubmedId{Id: ""} // Invalid (empty) pubmed ID
 	_, err := params.client.ListFeatureAnnotationsByPubmedId(

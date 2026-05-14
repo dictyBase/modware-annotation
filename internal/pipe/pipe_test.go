@@ -150,6 +150,6 @@ func TestPipeEdgeCases(t *testing.T) {
 	require.Equal(t, 42, result)
 
 	// Test with nil-like zero values
-	result2 := Pipe2(0, func(x int) string { return "" }, func(s string) int { return len(s) })
+	result2 := Pipe2(0, func(_ int) string { return "" }, func(s string) int { return len(s) })
 	require.Equal(t, 0, result2)
 }

@@ -1,3 +1,4 @@
+// Package collection provides generic collection utility functions.
 package collection
 
 import (
@@ -199,7 +200,7 @@ func SliceToTuple2[T1, T2 any](slice []any) Tuple2[T1, T2] {
 	return NewTuple2(first, second)
 }
 
-// Fold applies a folding function to each element of a slice along with an accumulator value,
+// TFold applies a folding function to each element of a slice along with an accumulator value,
 // returning a result of type R as determined by the folder function.
 // The accumulator is passed as part of a Tuple2 structure.
 func TFold[A, B, R any](
@@ -209,8 +210,8 @@ func TFold[A, B, R any](
 	return folder(tup)
 }
 
-// CurriedFold returns a function that applies the folder function to a Tuple2,
-// returning a result of type R. This is a curried version of Fold.
+// CurriedTFold returns a function that applies the folder function to a Tuple2,
+// returning a result of type R. This is a curried version of TFold.
 func CurriedTFold[A, B, R any](
 	folder func(Tuple2[A, B]) R,
 ) func(Tuple2[A, B]) R {

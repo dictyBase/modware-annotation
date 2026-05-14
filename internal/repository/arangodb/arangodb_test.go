@@ -77,7 +77,7 @@ func loadData(tra *testarango.TestArango) error {
 	if err != nil {
 		return fmt.Errorf("error in open file %s", err)
 	}
-	defer res.Close()
+	defer func() { _ = res.Close() }()
 	gra, err := graph.BuildGraph(res)
 	if err != nil {
 		return fmt.Errorf("error in building graph %s", err)
@@ -280,7 +280,7 @@ func TestLoadOboJSON(t *testing.T) {
 	defer tearDown(anrepo)
 	fh, err := oboReader()
 	assert.NoErrorf(err, "expect no error, received %s", err)
-	defer fh.Close()
+	defer func() { _ = fh.Close() }()
 	info, err := anrepo.LoadOboJSON(bufio.NewReader(fh))
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.True(info.IsCreated, "should match created status")
@@ -345,7 +345,7 @@ func testGroupMember(
 				"should have dicty_annotation ontology",
 			)
 			assert.Equalf(
-				gdoc.EnrtyId,
+				gdoc.EnrtyID,
 				ddbg[idx],
 				"should have %d as entry id",
 				idx,
