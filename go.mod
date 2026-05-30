@@ -8,7 +8,7 @@ require (
 	github.com/dictyBase/arangomanager v0.8.0
 	github.com/dictyBase/go-genproto v0.0.0-20250812211349-c01bdbe25058
 	github.com/dictyBase/go-obograph v1.6.0
-	github.com/go-playground/validator/v10 v10.30.2
+	github.com/go-playground/validator/v10 v10.30.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/nats-io/nats.go v1.52.0
 	github.com/sirupsen/logrus v1.9.4
@@ -45,11 +45,11 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.mongodb.org/mongo-driver v1.17.4 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
-	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
