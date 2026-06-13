@@ -7,7 +7,7 @@ require (
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.8.0
 	github.com/dictyBase/go-genproto v0.0.0-20250812211349-c01bdbe25058
-	github.com/dictyBase/go-obograph v1.6.0
+	github.com/dictyBase/go-obograph v1.6.1
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/nats-io/nats.go v1.52.0
@@ -55,4 +55,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-go 1.25.9
+go 1.26
