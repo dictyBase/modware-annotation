@@ -248,7 +248,7 @@ func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        added.AnnoID,
 		UpdatedBy: "updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Name:     "updated name",
 			Synonyms: []string{"new_syn1", "new_syn2"},
 		},
@@ -280,7 +280,7 @@ func TestUpdateNonExistentFeatureAnnotation(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        "non_existent_id",
 		UpdatedBy: "updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Name: "will not update",
 		},
 	}
@@ -300,7 +300,7 @@ func TestReplacePropertiesInExistingFeature(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        added.AnnoID,
 		UpdatedBy: "updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Properties: []*feature.TagProperty{
 				{
 					Tag:       "description",
@@ -344,7 +344,7 @@ func TestUpdatePublications_AppendDOI(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        added.AnnoID,
 		UpdatedBy: "doi_updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Publications: newDOIs,
 		},
 	}
@@ -378,7 +378,7 @@ func TestUpdatePublications_AppendPubmed(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        added.AnnoID,
 		UpdatedBy: "pubmed_updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Pubmed: newPubmedIDs,
 		},
 	}
@@ -423,7 +423,7 @@ func TestUpdatePublications_AddInitial(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        added.AnnoID,
 		UpdatedBy: "initial_pub_adder@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Publications: newDOIs,
 			Pubmed:       newPubmedIDs,
 		},
@@ -462,7 +462,7 @@ func TestUpdatePublications_Simultaneous(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id:        added.AnnoID,
 		UpdatedBy: "simul_updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Publications: newDOIs,
 			Pubmed:       newPubmedIDs,
 		},
@@ -506,7 +506,7 @@ func TestUpdateFeatureAnnotation_InvalidInput(t *testing.T) {
 	update := &feature.FeatureAnnotationUpdate{
 		Id: added.AnnoID,
 		// UpdatedBy: "missing@email.com", // Intentionally missing
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Name: "updated name",
 		},
 	}
