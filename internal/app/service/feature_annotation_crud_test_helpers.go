@@ -173,7 +173,7 @@ func testUpdateExistingFeature(params *testParams) {
 	updateReq := &feature.FeatureAnnotationUpdate{
 		Id:        "DDB_G0285427",
 		UpdatedBy: "anotheruser@dictybase.org",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Name:     "Updated Feature",
 			Synonyms: []string{"new1", "new2"},
 		},
@@ -204,7 +204,7 @@ func testUpdateNonExistentFeature(params *testParams) {
 	req := &feature.FeatureAnnotationUpdate{
 		Id:        "DDB_G0000000",
 		UpdatedBy: "testuser@dictybase.org",
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Name: "Non-existent Feature",
 		},
 	}
@@ -220,7 +220,7 @@ func testUpdateWithInvalidData(params *testParams) {
 	params.t.Helper()
 	req := &feature.FeatureAnnotationUpdate{
 		Id: "", // Empty ID
-		Attributes: &feature.FeatureAnnotationAttributes{
+		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
 			Name: "Invalid Feature",
 		},
 	}
