@@ -1,0 +1,14 @@
+name: Tag Build
+on:
+  push:
+    tags:
+      - "*"
+jobs:
+  build-publish-image:
+    uses: dictyBase/workflows/.github/workflows/build-publish-image.yaml@develop
+    secrets: inherit
+    with:
+      repository: ${{ github.repository }}
+      image: modware-annotation
+      ref: ${{ github.ref_name }}
+      dockerfile: build/package/Dockerfile
