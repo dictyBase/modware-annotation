@@ -1,4 +1,4 @@
-FROM golang:1.25-trixie AS builder
+FROM golang:1.26-trixie AS builder
 LABEL maintainer="Siddhartha Basu <siddhartha-basu@northwestern.edu>"
 ENV GOPROXY https://proxy.golang.org
 ENV GO111MODULE=on \
