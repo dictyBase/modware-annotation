@@ -15,6 +15,9 @@ const maxTransactionSize = 10000
 
 func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*model.AnnoDoc, error) {
 	mann := &model.AnnoDoc{}
+	if na.Data == nil || na.Data.Attributes == nil {
+		return mann, errors.New("expect annotation attributes")
+	}
 	attr := na.Data.Attributes
 	// check if the tag and ontology exist
 	cvtid, err := ar.termID(attr.Ontology, attr.Tag)
@@ -42,6 +45,9 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 
 func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error) {
 	mann := &model.AnnoDoc{}
+	if uat.Data == nil || uat.Data.Attributes == nil {
+		return mann, errors.New("expect annotation attributes")
+	}
 	attr := uat.Data.Attributes
 	rgt, err := ar.database.Get(
 		fmt.Sprintf(

@@ -33,6 +33,42 @@ func TestEditAnnotation(t *testing.T) {
 	assert.Equal(uan.Data.Attributes.CreatedBy, um.CreatedBy, "should matches created by")
 }
 
+func TestAddAnnotationMissingAttributes(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
+	na := &annotation.NewTaggedAnnotation{
+		Data: &annotation.NewTaggedAnnotation_Data{Type: "annotations"},
+	}
+	_, err := anrepo.AddAnnotation(na)
+	assert.Errorf(
+		err,
+		"expect error for missing attributes, received %s",
+		err,
+	)
+}
+
+func TestEditAnnotationMissingAttributes(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
+	nta := newTestTaggedAnnotation()
+	mda, err := anrepo.AddAnnotation(nta)
+	assert.NoErrorf(err, "expect no error, received %s", err)
+	uan := &annotation.TaggedAnnotationUpdate{
+		Data: &annotation.TaggedAnnotationUpdate_Data{
+			Type: "annotations",
+			Id:   mda.Key,
+		},
+	}
+	_, err = anrepo.EditAnnotation(uan)
+	assert.Errorf(
+		err,
+		"expect error for missing attributes, received %s",
+		err,
+	)
+}
+
 func TestAddAnnotationGroup(t *testing.T) {
 	t.Parallel()
 	assert, anrepo := setUp(t)
