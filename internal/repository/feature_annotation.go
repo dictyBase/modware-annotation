@@ -40,7 +40,4 @@ type FeatureAnnotationRepository interface {
 	// Publication-based queries
 	// ListByPublicationID retrieves all feature annotations associated with the given publication ID and source
 	ListByPublicationID(id string, source string) ([]*model.FeatureAnnotationDoc, error)
-
-	// Embed deprecated interface for backward compatibility during transition period
-	DeprecatedFeatureAnnotationRepository
 }
