@@ -69,6 +69,54 @@ func TestEditAnnotationMissingAttributes(t *testing.T) {
 	)
 }
 
+func TestAddAnnotationNilRequest(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
+	_, err := anrepo.AddAnnotation(nil)
+	assert.Errorf(
+		err,
+		"expect error for nil request, received %s",
+		err,
+	)
+}
+
+func TestAddAnnotationMissingData(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
+	_, err := anrepo.AddAnnotation(&annotation.NewTaggedAnnotation{})
+	assert.Errorf(
+		err,
+		"expect error for missing data, received %s",
+		err,
+	)
+}
+
+func TestEditAnnotationNilRequest(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
+	_, err := anrepo.EditAnnotation(nil)
+	assert.Errorf(
+		err,
+		"expect error for nil request, received %s",
+		err,
+	)
+}
+
+func TestEditAnnotationMissingData(t *testing.T) {
+	t.Parallel()
+	assert, anrepo := setUp(t)
+	defer tearDown(anrepo)
+	_, err := anrepo.EditAnnotation(&annotation.TaggedAnnotationUpdate{})
+	assert.Errorf(
+		err,
+		"expect error for missing data, received %s",
+		err,
+	)
+}
+
 func TestAddAnnotationGroup(t *testing.T) {
 	t.Parallel()
 	assert, anrepo := setUp(t)
