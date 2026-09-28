@@ -38,6 +38,7 @@ func RunFeatureServer(clt *cli.Context) error {
 		grpc.ChainUnaryInterceptor(
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpc_logrus.UnaryServerInterceptor(getLogger(clt)),
+			DeprecatedMethodInterceptor,
 		),
 	)
 	srv, err := service.NewFeatureAnnotationService(
