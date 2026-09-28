@@ -15,7 +15,7 @@ const maxTransactionSize = 10000
 
 func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*model.AnnoDoc, error) {
 	mann := &model.AnnoDoc{}
-	if na.Data == nil || na.Data.Attributes == nil {
+	if na == nil || na.Data == nil || na.Data.Attributes == nil {
 		return mann, errors.New("expect annotation attributes")
 	}
 	attr := na.Data.Attributes
@@ -45,7 +45,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 
 func (ar *arangorepository) EditAnnotation(uat *annotation.TaggedAnnotationUpdate) (*model.AnnoDoc, error) {
 	mann := &model.AnnoDoc{}
-	if uat.Data == nil || uat.Data.Attributes == nil {
+	if uat == nil || uat.Data == nil || uat.Data.Attributes == nil {
 		return mann, errors.New("expect annotation attributes")
 	}
 	attr := uat.Data.Attributes
