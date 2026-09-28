@@ -151,6 +151,9 @@ func testGetFeatureWithInvalidID(params *testParams) {
 	params.assert.Equal(codes.InvalidArgument, sts.Code())
 }
 
+// testUpdateExistingFeature updates an existing feature annotation using the
+// deprecated full `attributes` field and verifies the update succeeded for
+// backward compatibility.
 func testUpdateExistingFeature(params *testParams) {
 	params.t.Helper()
 	// First create a feature
@@ -169,14 +172,16 @@ func testUpdateExistingFeature(params *testParams) {
 	)
 	params.assert.NoError(err)
 
-	// Then update it
+	// Then update it, exercising the deprecated attributes field for
+	// backward compatibility
+	updateAttrs := &feature.FeatureAnnotationAttributes{
+		Name:     "Updated Feature",
+		Synonyms: []string{"new1", "new2"},
+	}
 	updateReq := &feature.FeatureAnnotationUpdate{
-		Id:        "DDB_G0285427",
-		UpdatedBy: "anotheruser@dictybase.org",
-		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
-			Name:     "Updated Feature",
-			Synonyms: []string{"new1", "new2"},
-		},
+		Id:         "DDB_G0285427",
+		UpdatedBy:  "anotheruser@dictybase.org",
+		Attributes: updateAttrs, //nolint:staticcheck // Test uses deprecated field for backward compatibility
 	}
 	resp, err := params.client.UpdateFeatureAnnotation(
 		params.ctx,
@@ -186,13 +191,13 @@ func testUpdateExistingFeature(params *testParams) {
 	params.assert.Equal(updateReq.Id, resp.Id)
 	params.assert.Equal(updateReq.UpdatedBy, resp.UpdatedBy)
 	params.assert.Equal(
-		updateReq.Attributes.Name, //nolint:staticcheck // Test uses deprecated field for backward compatibility
+		updateAttrs.Name,
 		resp.Attributes.Name,
 	)
 	params.assert.ElementsMatch(
 		slices.Concat(
 			createReq.Attributes.Synonyms,
-			updateReq.Attributes.Synonyms, //nolint:staticcheck // Test uses deprecated field for backward compatibility
+			updateAttrs.Synonyms,
 		),
 		resp.Attributes.Synonyms,
 	)

@@ -160,6 +160,32 @@ func stepBeginTransaction(state *editState) *editState {
 	return state
 }
 
+// legacyUpdateAttributes returns the deprecated full-attributes payload of a
+// feature annotation update. It exists so clients that still send the old
+// `attributes` field keep working alongside the newer `update_attributes`
+// field, which always takes precedence.
+//
+// The field is read through protoreflect because the generated static
+// accessor is marked deprecated.
+func legacyUpdateAttributes(
+	doc *feature.FeatureAnnotationUpdate,
+) *feature.FeatureAnnotationAttributes {
+	if doc == nil {
+		return nil
+	}
+	m := doc.ProtoReflect()
+	fd := m.Descriptor().Fields().ByName("attributes")
+	if fd == nil || !m.Has(fd) {
+		return nil
+	}
+	attrs, ok := m.Get(fd).Message().Interface().(*feature.FeatureAnnotationAttributes)
+	if !ok {
+		return nil
+	}
+
+	return attrs
+}
+
 // stepUpdateDocFields updates the document fields with new values.
 func stepUpdateDocFields(state *editState) *editState {
 	if state.Err != nil {
@@ -179,10 +205,9 @@ func stepUpdateDocFields(state *editState) *editState {
 			updatedDoc,
 			state.doc.UpdateAttributes,
 		)
-	} else if state.doc.Attributes != nil { //nolint:staticcheck // Backward compatibility with deprecated field
+	} else if attrs := legacyUpdateAttributes(state.doc); attrs != nil { //nolint:staticcheck // backward compatibility
 		// Fall back to deprecated full update for backward compatibility
-		//nolint:staticcheck // Backward compatibility with deprecated field
-		updatedDoc = updateAttributes(updatedDoc, state.doc.Attributes)
+		updatedDoc = updateAttributes(updatedDoc, attrs)
 	}
 
 	// Store the updated document in state
@@ -236,16 +261,16 @@ func stepHandlePublications(state *editState) *editState {
 	// Determine which attributes to use - prefer UpdateAttributes over deprecated Attributes
 	var pubmedIDs []string
 	var doiPublications []string
-
+	legacyAttrs := legacyUpdateAttributes(state.doc) //nolint:staticcheck // backward compatibility
 	switch {
 	case state.doc.UpdateAttributes != nil:
 		// Use publications from the new UpdateAttributes field
 		pubmedIDs = state.doc.UpdateAttributes.Pubmed
 		doiPublications = state.doc.UpdateAttributes.Publications
-	case state.doc.Attributes != nil: //nolint:staticcheck // Backward compatibility with deprecated field
+	case legacyAttrs != nil:
 		// Fall back to deprecated Attributes field for backward compatibility
-		pubmedIDs = state.doc.Attributes.Pubmed             //nolint:staticcheck // Backward compatibility with deprecated field
-		doiPublications = state.doc.Attributes.Publications //nolint:staticcheck // Backward compatibility with deprecated field
+		pubmedIDs = legacyAttrs.Pubmed
+		doiPublications = legacyAttrs.Publications
 	default:
 		// No attributes to process
 		return state
