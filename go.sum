@@ -32,8 +32,8 @@ github.com/dictyBase/aphgrpc v1.4.2 h1:jkNyIpUBATNVNTM99TfAHln8UEpzyvNNNuM2+UY6t
 github.com/dictyBase/aphgrpc v1.4.2/go.mod h1:rzi2U95QntAuS6XpqespgZmQ8Ujo2Sq2R5FyhW5adA8=
 github.com/dictyBase/arangomanager v0.8.0 h1:wXWmq7QYBn37eGs0nELPxqccMbTvx9G99k/crHwfDAw=
 github.com/dictyBase/arangomanager v0.8.0/go.mod h1:Fm3AuYBeMccsYcu8M6iq2a96XlPIe4Y55x95TAWmGs4=
-github.com/dictyBase/go-genproto v0.0.0-20250812211349-c01bdbe25058 h1:+tJZbSiQi6XfhbRSHDFT9uue0x37SW4hOh7ypD0OQaM=
-github.com/dictyBase/go-genproto v0.0.0-20250812211349-c01bdbe25058/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
+github.com/dictyBase/go-genproto v0.0.0-20260928171459-163a42bcacab h1:JyX/8SiQ1wZ5oCCjMvjS0QxgcuwYwJZwsuZm1Bw8684=
+github.com/dictyBase/go-genproto v0.0.0-20260928171459-163a42bcacab/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-obograph v1.6.1 h1:2qWF1OPVUAV20OeCZxi6bEQyMFzKdV7DNzmG7qT9otE=
 github.com/dictyBase/go-obograph v1.6.1/go.mod h1:GJjVU6iquV7OUsMLAZFFqI64gN+GyXOfdnOWdR/Bj4A=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
