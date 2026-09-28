@@ -6,7 +6,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.9.0
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.8.0
-	github.com/dictyBase/go-genproto v0.0.0-20250812211349-c01bdbe25058
+	github.com/dictyBase/go-genproto v0.0.0-20260928171459-163a42bcacab
 	github.com/dictyBase/go-obograph v1.6.1
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
