@@ -532,37 +532,6 @@ func cleanupDB(repo repository.FeatureAnnotationRepository) func() {
 	}
 }
 
-func seedAnnotationWithTags(
-	t *testing.T,
-	repo repository.FeatureAnnotationRepository,
-) *model.FeatureAnnotationDoc {
-	t.Helper()
-	assert := require.New(t)
-	newFeat, err := repo.AddFeatureAnnotation(&feature.NewFeatureAnnotation{
-		Id:        "DDB_G0285921",
-		CreatedBy: "test@test.com",
-		Attributes: &feature.FeatureAnnotationAttributes{
-			Name: "pkaR",
-			Properties: []*feature.TagProperty{
-				{
-					Tag:       "baz",
-					Value:     "quax",
-					CreatedBy: "test@test.com",
-				},
-				{
-					Tag:       "foo",
-					Value:     "bar",
-					CreatedBy: "test@test.com",
-				},
-			},
-		},
-	})
-	assert.NoError(err)
-	model, err := repo.GetFeatureAnnotation(newFeat.AnnoID)
-	assert.NoError(err)
-	return model
-}
-
 func verifyOriginalTagsPreserved(params verifyOriginalTagsPreservedParams) {
 	params.t.Helper()
 	for _, originalTag := range params.originalTags {

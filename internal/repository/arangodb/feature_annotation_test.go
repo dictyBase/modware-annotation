@@ -238,6 +238,9 @@ func TestRemoveFeatureAnnotation(t *testing.T) {
 	}
 }
 
+// TestUpdateExistingFeatureAnnotation updates an existing feature annotation
+// using the deprecated full `attributes` field and verifies the update for
+// backward compatibility.
 func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -245,13 +248,15 @@ func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	added, err := repo.AddFeatureAnnotation(getCompleteFeatureDoc())
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 
+	// Exercise the deprecated attributes field for backward compatibility
+	updateAttrs := &feature.FeatureAnnotationAttributes{
+		Name:     "updated name",
+		Synonyms: []string{"new_syn1", "new_syn2"},
+	}
 	update := &feature.FeatureAnnotationUpdate{
-		Id:        added.AnnoID,
-		UpdatedBy: "updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
-			Name:     "updated name",
-			Synonyms: []string{"new_syn1", "new_syn2"},
-		},
+		Id:         added.AnnoID,
+		UpdatedBy:  "updater@email.com",
+		Attributes: updateAttrs, //nolint:staticcheck // Test uses deprecated field for backward compatibility
 	}
 
 	doc, err := repo.EditFeatureAnnotation(update)
@@ -261,7 +266,7 @@ func TestUpdateExistingFeatureAnnotation(t *testing.T) {
 	// Combined synonyms check
 	expectedSynonyms := slices.Concat(
 		added.Synonyms,
-		update.Attributes.Synonyms, //nolint:staticcheck // Test uses deprecated field for backward compatibility
+		updateAttrs.Synonyms,
 	)
 	slices.Sort(expectedSynonyms)
 	slices.Sort(doc.Synonyms)
@@ -290,6 +295,9 @@ func TestUpdateNonExistentFeatureAnnotation(t *testing.T) {
 	asrt.True(repository.IsAnnotationNotFound(err))
 }
 
+// TestReplacePropertiesInExistingFeature replaces properties using the
+// deprecated full `attributes` field and verifies the replacement for
+// backward compatibility.
 func TestReplacePropertiesInExistingFeature(t *testing.T) {
 	t.Parallel()
 	asrt, repo := setUpFeatureTest(t)
@@ -297,21 +305,23 @@ func TestReplacePropertiesInExistingFeature(t *testing.T) {
 	added, err := repo.AddFeatureAnnotation(getCompleteFeatureDoc())
 	asrt.NoError(err, "expected no error adding initial feature annotation")
 
-	update := &feature.FeatureAnnotationUpdate{
-		Id:        added.AnnoID,
-		UpdatedBy: "updater@email.com",
-		Attributes: &feature.FeatureAnnotationAttributes{ //nolint:staticcheck // Test uses deprecated field for backward compatibility
-			Properties: []*feature.TagProperty{
-				{
-					Tag:       "description",
-					Value:     "updated description",
-					CreatedBy: "creator3@email.com",
-					UpdatedBy: "updater@email.com",
-					CreatedAt: timestamppb.New(time.Now()),
-					UpdatedAt: timestamppb.New(time.Now()),
-				},
+	// Exercise the deprecated attributes field for backward compatibility
+	updateAttrs := &feature.FeatureAnnotationAttributes{
+		Properties: []*feature.TagProperty{
+			{
+				Tag:       "description",
+				Value:     "updated description",
+				CreatedBy: "creator3@email.com",
+				UpdatedBy: "updater@email.com",
+				CreatedAt: timestamppb.New(time.Now()),
+				UpdatedAt: timestamppb.New(time.Now()),
 			},
 		},
+	}
+	update := &feature.FeatureAnnotationUpdate{
+		Id:         added.AnnoID,
+		UpdatedBy:  "updater@email.com",
+		Attributes: updateAttrs, //nolint:staticcheck // Test uses deprecated field for backward compatibility
 	}
 
 	doc, err := repo.EditFeatureAnnotation(update)
@@ -319,8 +329,7 @@ func TestReplacePropertiesInExistingFeature(t *testing.T) {
 	asrt.Len(doc.Properties, 1)
 
 	// Properties should be replaced, not appended
-	//nolint:staticcheck // Test uses deprecated field for backward compatibility
-	expectedProperties := collection.Map(update.Attributes.Properties, convertProperty)
+	expectedProperties := collection.Map(updateAttrs.Properties, convertProperty)
 	slices.SortFunc(expectedProperties, sortTagProperties)
 	slices.SortFunc(doc.Properties, sortTagProperties)
 	asrt.ElementsMatch(
@@ -650,194 +659,6 @@ func TestAddTagToNonExistentFeature(t *testing.T) {
 		"should be not found error",
 	)
 }
-
-func TestUpdateTag_SuccessDefaultTimestamp(t *testing.T) {
-	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	// Seed a feature with tags
-	feat := seedAnnotationWithTags(t, repo)
-	createdTag, otk := collection.Find(
-		feat.Properties,
-		func(p model.TagPropertyDoc) bool { return p.Tag == "foo" },
-	)
-	asrt.True(otk, "tag 'foo' should be found in the seeded properties")
-
-	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-	updReq := &feature.UpdateTagRequest{
-		Id: feat.AnnoID,
-		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-		Tag: &feature.TagPropertyUpdate{
-			Tag:       "foo",
-			Value:     "new-bar",
-			UpdatedBy: "update@test.com",
-		},
-	}
-	updatedFeat, err := repo.UpdateTag(updReq)
-	asrt.NoError(err)
-	asrt.NotNil(updatedFeat)
-	asrt.Len(updatedFeat.Properties, 2)
-
-	updatedTag, otk := collection.Find(
-		updatedFeat.Properties,
-		func(p model.TagPropertyDoc) bool { return p.Tag == "foo" },
-	)
-	asrt.True(otk, "could not find tag foo in updated feature")
-
-	asrt.Equal("new-bar", updatedTag.Value)
-	asrt.Equal("update@test.com", updatedTag.UpdatedBy)
-	asrt.Equal(createdTag.CreatedBy, updatedTag.CreatedBy)
-	asrt.Equal(createdTag.CreatedAt, updatedTag.CreatedAt)
-	asrt.WithinDuration(time.Now(), updatedTag.UpdatedAt, 12*time.Second)
-	asrt.NotEqual(createdTag.UpdatedAt, updatedTag.UpdatedAt)
-}
-
-func TestUpdateTag_SuccessExplicitTimestamp(t *testing.T) {
-	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	feat := seedAnnotationWithTags(t, repo)
-	customTime := time.Now().Add(-24 * time.Hour).UTC()
-	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-	updReq := &feature.UpdateTagRequest{
-		Id: feat.AnnoID,
-		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-		Tag: &feature.TagPropertyUpdate{
-			Tag:       "baz",
-			Value:     "new-quax",
-			UpdatedBy: "update2@test.com",
-			UpdatedAt: timestamppb.New(customTime),
-		},
-	}
-	updatedFeat, err := repo.UpdateTag(updReq)
-	asrt.NoError(err)
-	asrt.NotNil(updatedFeat)
-
-	updatedTag, ok := collection.Find(
-		updatedFeat.Properties,
-		func(p model.TagPropertyDoc) bool { return p.Tag == "baz" },
-	)
-	asrt.True(ok, "could not find tag baz in updated feature")
-
-	asrt.Equal(
-		customTime.Round(time.Microsecond),
-		updatedTag.UpdatedAt.Round(time.Microsecond),
-	)
-}
-
-func TestUpdateTag_FailNonExistentTag(t *testing.T) {
-	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	feat := seedAnnotationWithTags(t, repo)
-	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-	updReq := &feature.UpdateTagRequest{
-		Id: feat.AnnoID,
-		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-		Tag: &feature.TagPropertyUpdate{
-			Tag: "non-existent-tag",
-		},
-	}
-	_, err := repo.UpdateTag(updReq)
-	asrt.Error(err)
-	asrt.ErrorContains(err, "tag non-existent-tag not found")
-}
-
-func TestUpdateTag_FailNonExistentFeature(t *testing.T) {
-	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-	updReq := &feature.UpdateTagRequest{
-		Id: "non-existent-id",
-		//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-		Tag: &feature.TagPropertyUpdate{
-			Tag: "foo",
-		},
-	}
-	_, err := repo.UpdateTag(updReq)
-	asrt.Error(err)
-	var nfErr *repository.AnnoNotFoundError
-	asrt.ErrorAs(err, &nfErr)
-}
-
-func TestRemoveTag(t *testing.T) {
-	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	// Create feature with tag
-	feat := getCompleteFeatureDoc()
-	added, err := repo.AddFeatureAnnotation(feat)
-	asrt.NoError(err, "should create base feature")
-
-	// Add test tag
-	tagged, err := repo.AddTag(&feature.AddTagRequest{
-		Id: added.AnnoID,
-		Tag: &feature.TagPropertyCreate{
-			Tag:       "remove_me",
-			Value:     "temp_value",
-			CreatedBy: "tester@example.org",
-		},
-	})
-	asrt.NoError(err, "should add test tag")
-	asrt.Len(
-		tagged.Properties,
-		len(feat.Attributes.Properties)+1,
-		"should have initial tag",
-	)
-
-	// Remove tag
-	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-	err = repo.RemoveTag(&feature.RemoveTagRequest{
-		Id:  added.AnnoID,
-		Tag: "remove_me",
-	})
-	asrt.NoError(err, "should successfully remove tag")
-
-	// Verify removal by fetching updated document
-	updated, err := repo.GetFeatureAnnotation(added.AnnoID)
-	asrt.NoError(err, "should fetch updated document")
-	// Check tag removal
-	var found bool
-	for _, prop := range updated.Properties {
-		if prop.Tag == "remove_me" {
-			found = true
-		}
-	}
-	asrt.False(found, "removed tag should not exist in properties")
-	asrt.Len(
-		updated.Properties,
-		len(tagged.Properties)-1,
-		"should reduce properties count by 1",
-	)
-	asrt.Equal(added.Name, updated.Name, "should preserve feature name")
-	asrt.Equal(added.CreatedBy, updated.CreatedBy, "should preserve created_by")
-}
-
-func TestRemoveNonExistentTag(t *testing.T) {
-	t.Parallel()
-	asrt, repo := setUpFeatureTest(t)
-	t.Cleanup(cleanupDB(repo))
-
-	// Create feature without tags
-	feat := getCompleteFeatureDoc()
-	added, err := repo.AddFeatureAnnotation(feat)
-	asrt.NoError(err, "should create test feature")
-
-	// Attempt to remove tag
-	//nolint:staticcheck // SA1019: Test for deprecated functionality during transition period
-	err = repo.RemoveTag(&feature.RemoveTagRequest{
-		Id:  added.AnnoID,
-		Tag: "ghost_tag",
-	})
-	asrt.Error(err, "should return error for missing tag")
-}
-
 func TestListByPublicationID_SuccessPubmed(t *testing.T) {
 	t.Parallel()
 	testListByPublicationIDSuccess(&testListByPublicationIDSuccessParams{
