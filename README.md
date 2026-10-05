@@ -678,3 +678,5 @@ Edge collections and their graphs:
 | Edge Collection | Graph | From → To | Purpose |
 |-----------------|-------|-----------|---------|
 | `feature_publication` | `feature_pub_graph` | `feature` → `publication` | Links a feature annotation to its associated publications |
+
+Deploy path: buildless deploy with named just arguments (deploy refactor P0.2/P0.3).
