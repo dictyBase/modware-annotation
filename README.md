@@ -26,6 +26,7 @@ On every create, update, or delete mutation the service publishes a protobuf-ser
   - [List Annotations with Pagination and Filters](#list-annotations-with-pagination-and-filters)
   - [Filtering](#filtering)
   - [Annotation Groups](#annotation-groups)
+  - [Autocomplete Annotation](#autocomplete-annotation)
   - [Create a Feature Annotation](#create-a-feature-annotation)
   - [Get a Feature Annotation](#get-a-feature-annotation)
   - [Update a Feature Annotation](#update-a-feature-annotation)
@@ -169,7 +170,47 @@ Full protobuf definitions: [dictybaseapis/annotation.proto](https://github.com/d
 | `DeleteAnnotationGroup` | `GroupEntryId` | `Empty` | Delete an annotation group |
 | `ListAnnotationGroups` | `ListGroupParameters` | `TaggedAnnotationGroupCollection` | Paginated group listing with filters |
 | `GetAnnotationTag` | `TagRequest` | `AnnotationTag` | Retrieve an ontology tag by ID |
+| `AutocompleteAnnotation` | `AnnotationAutocompleteParameters` | `AnnotationSuggestionCollection` | Suggest strain synonyms and genotypes for partial text |
 | `OboJSONFileUpload` | `stream FileUploadRequest` | `FileUploadResponse` | Stream-upload an OBO JSON ontology file |
+
+### Autocomplete Annotation
+
+The `AutocompleteAnnotation` method returns short suggestions for a partial strain synonym or a partial strain genotype. The request is an `AnnotationAutocompleteParameters` message. The response is an `AnnotationSuggestionCollection` message.
+
+Request fields:
+
+| Field | Value | Behavior |
+|-------|-------|----------|
+| `data.type` | `annotation` | The resource name of the request. |
+| `data.attributes.query` | 3 characters or more | The service trims the text, converts it to lower case, and removes accents. |
+| `data.attributes.limit` | 5 by default, 50 maximum | The service uses 5 when the value is 0. The service rejects a value above 50 with `InvalidArgument`. |
+
+Search behavior:
+
+- The service searches the `synonym` and `genotype` tags of the `dicty_annotation` ontology.
+- The service searches strain entries only. The entry identifier starts with `DBS`.
+- The service uses active annotations only. The `is_obsolete` attribute is `false`.
+- The service ignores annotations with other tags, for example `description`.
+- The service returns one suggestion for each strain. It keeps the suggestion with the best score.
+- The service accepts a whole-value prefix and an allele prefix inside a multi-allele genotype value. The query `axea` and the query `sada` both match the genotype `axeA1, axeB1, sadA-`.
+- The service accepts a small typographical error. A fuzzy match uses an n-gram similarity of 0.3 or more.
+
+Order of results:
+
+1. A prefix match comes before a fuzzy match. A prefix match has a score of 1000 or more.
+2. A fuzzy match has a score less than 1000.
+3. The metadata gives the number of suggestions in `meta.total` and the effective limit in `meta.limit`.
+
+Response fields of one `AnnotationSuggestion` message:
+
+| Field | Meaning |
+|-------|---------|
+| `entry_id` | The strain identifier of the match, for example `DBS0236126`. |
+| `field` | The tag of the match. The value is `ANNOTATION_SEARCH_FIELD_SYNONYM` or `ANNOTATION_SEARCH_FIELD_GENOTYPE`. |
+| `display_text` | The annotation value. |
+| `score` | The rank of the match. |
+
+The method returns an empty collection and no error when no annotation matches. The method does not return `NotFound` for an empty result.
 
 ### Feature Annotation Service Methods
 
@@ -640,6 +681,29 @@ Edge collections and their graphs:
 |-----------------|-------|-----------|---------|
 | `annotation_cvterm` | `annotation_tag` | `annotation` → `cvterm` | Links an annotation to its ontology term |
 | `annotation_version` | `annotation_history` | `annotation` → `annotation` (old → new) | Tracks annotation revision history |
+
+### Autocomplete Search Assets
+
+The `AutocompleteAnnotation` method uses an ArangoSearch view and three analyzers. `NewTaggedAnnotationRepo` creates the view and the analyzers at server start. The start is idempotent, so a restart does not change the assets.
+
+| Asset | Type | Purpose |
+|-------|------|---------|
+| `annotation_autocomplete_norm` | `norm` analyzer | Converts a value to lower case and removes the accents. |
+| `annotation_autocomplete_delim` | `pipeline` analyzer | Splits a value at the commas and the spaces. Then it applies the norm step. |
+| `annotation_autocomplete_ngram` | `pipeline` analyzer | Applies the norm step. Then it indexes the n-grams of 2 and 3 characters. |
+| `annotation_autocomplete` | `arangosearch` view | Indexes the `annotation` collection. |
+
+The view indexes these attributes of the `annotation` collection:
+
+| Attribute | Analyzers | Purpose |
+|-----------|-----------|---------|
+| `value` | `annotation_autocomplete_norm`, `annotation_autocomplete_delim`, `annotation_autocomplete_ngram` | Whole-value prefix, allele prefix, and fuzzy matches |
+| `entry_id` | `annotation_autocomplete_norm` | The strain filter inside the search |
+| `is_obsolete` | `identity` | The active-annotation filter inside the search |
+
+At each start the service compares the stored links of the view with the links that the search needs. The service updates the view in place with `SetProperties` when the links differ. The service does not delete the view, so the view identifier does not change.
+
+The search resolves the `_id` of the `synonym` and `genotype` terms before it runs the statement. The statement then filters the annotations on the tag edges. Therefore the statement does not scan the `cvterm` collection.
 
 ### Feature Annotations
 
