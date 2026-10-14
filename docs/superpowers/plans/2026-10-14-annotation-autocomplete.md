@@ -1329,15 +1329,15 @@ fi
 
 ## Completion Criteria
 
-- [ ] `scripts/autocomplete-calibration.js` runs against ArangoDB 3.11 and records all probe results, EXPLAIN node counts (`4` `EnumerateViewNode`, `0` `EnumerateCollectionNode`), and baseline p95 in [Execution Notes](#execution-notes).
-- [ ] `go.mod` requires `github.com/dictyBase/go-genproto v0.0.0-20261014212141-25e2e7a3b338`, `github.com/IBM/fp-go/v2 v2.5.0`, `github.com/dictyBase/fp-go-loom v0.0.0-20261010160534-3c971335f51e`, `github.com/cockroachdb/errors v1.14.0`, and `golang.org/x/text v0.42.0`.
-- [ ] `internal/repository/repository.go` declares `AutocompleteQuery`, `Suggestion`, and `AutocompleteAnnotation(params *AutocompleteQuery) IOE.IOEither[error, []*Suggestion]`.
-- [ ] `NewTaggedAnnotationRepo`, `setAnnotationCollection`, `setDocumentCollection`, `ensureAutocompleteSearch`, and `ensureAutocompleteView` are composed as uninterrupted `fp-go/v2` `IOE.IOEither` pipelines, forced only once at `NewTaggedAnnotationRepo`.
-- [ ] `ensureAutocompleteSearch` creates `annotation_autocomplete_norm`, `annotation_autocomplete_delim`, `annotation_autocomplete_ngram`, and the view `annotation_autocomplete`, and reconciles stale view links via `SetProperties` without deleting the view.
-- [ ] `AutocompleteAnnotation` in `internal/repository/arangodb/autocomplete.go` resolves `@synonym_term_id` and `@genotype_term_id` onto the state with lenses and runs the 4-branch AQL query over active strain (`DBS...`) `synonym` and `genotype` annotations in `dicty_annotation`, supporting both whole-value and interior-allele prefix matches on `genotype` and deduplicating by `entry_id`.
-- [ ] `NewAnnotationService` and `AnnotationService.AutocompleteAnnotation` in `internal/app/service/` are written as `fp-go/v2` `Either` / `IOEither` pipelines.
-- [ ] All 32 tests in the [Test Matrix](#test-matrix) pass, EXPLAIN reports 4 `EnumerateViewNode` and 0 `EnumerateCollectionNode`, p95 latency is <= 125% of calibration baseline, and all four [Quality Gates](#quality-gates) pass.
-- [ ] `README.md` documents the RPC and search assets in Simplified Technical English, and `MODWARE_ANNOTATION_NIL_ATTRIBUTES_REPORT.md` remains untouched and unstaged.
+- [x] `scripts/autocomplete-calibration.js` runs against ArangoDB 3.11 and records all probe results, EXPLAIN node counts (`4` `EnumerateViewNode`, `0` `EnumerateCollectionNode`), and baseline p95 in [Execution Notes](#execution-notes).
+- [x] `go.mod` requires `github.com/dictyBase/go-genproto v0.0.0-20261014212141-25e2e7a3b338`, `github.com/IBM/fp-go/v2 v2.5.0`, `github.com/dictyBase/fp-go-loom v0.0.0-20261010160534-3c971335f51e`, and `golang.org/x/text v0.42.0`. `github.com/cockroachdb/errors v1.14.0` is **not** required: no Go file imports it, so `go mod tidy` drops it (Task 5 ruling).
+- [x] `internal/repository/repository.go` declares `AutocompleteQuery`, `Suggestion`, and `AutocompleteAnnotation(params *AutocompleteQuery) IOE.IOEither[error, []*Suggestion]`.
+- [x] `NewTaggedAnnotationRepo`, `setAnnotationCollection`, `setDocumentCollection`, `ensureAutocompleteSearch`, and `ensureAutocompleteView` are composed as uninterrupted `fp-go/v2` `IOE.IOEither` pipelines, forced only once at `NewTaggedAnnotationRepo`.
+- [x] `ensureAutocompleteSearch` creates `annotation_autocomplete_norm`, `annotation_autocomplete_delim`, `annotation_autocomplete_ngram`, and the view `annotation_autocomplete`, and reconciles stale view links via `SetProperties` without deleting the view.
+- [x] `AutocompleteAnnotation` in `internal/repository/arangodb/autocomplete.go` resolves `@synonym_term_id` and `@genotype_term_id` onto the state with lenses and runs the 4-branch AQL query over active strain (`DBS...`) `synonym` and `genotype` annotations in `dicty_annotation`, supporting both whole-value and interior-allele prefix matches on `genotype` and deduplicating by `entry_id`.
+- [x] `NewAnnotationService` and `AnnotationService.AutocompleteAnnotation` in `internal/app/service/` are written as `fp-go/v2` `Either` / `IOEither` pipelines.
+- [x] All 32 tests in the [Test Matrix](#test-matrix) pass, EXPLAIN reports 4 `EnumerateViewNode` and 0 `EnumerateCollectionNode`, p95 latency is <= 125% of calibration baseline, and all four [Quality Gates](#quality-gates) pass.
+- [x] `README.md` documents the RPC and search assets in Simplified Technical English, and `MODWARE_ANNOTATION_NIL_ATTRIBUTES_REPORT.md` remains untouched and unstaged.
 
 ---
 
