@@ -217,8 +217,9 @@ func NewTaggedAnnotationRepo(
 	ontoP *ontoarango.CollectionParams,
 ) (repo.TaggedAnnotationRepository, error) {
 	placeholder := &arangorepository{}
+	onLeft := failedAnnotationRepo(placeholder)
 
-	build := F.Pipe7(
+	result := F.Pipe9(
 		annotationRepoState{connP: connP, collP: collP, ontoP: ontoP},
 		validatedAnnotationRepoState,
 		IOE.Bind(handlesLens.Set, openAnnotationSession),
@@ -227,13 +228,9 @@ func NewTaggedAnnotationRepo(
 		IOE.Bind(annoLens.Set, setAnnotationCollection),
 		IOE.ChainFirst(ensureAutocompleteSearch),
 		IOE.Map[error](toTaggedAnnotationRepo),
-	)
-	either := F.Pipe1(
-		build,
 		ioeutils.ToEither[error, repo.TaggedAnnotationRepository],
+		E.Fold(onLeft, successfulAnnotationRepo),
 	)
-	onLeft := failedAnnotationRepo(placeholder)
-	result := F.Pipe1(either, E.Fold(onLeft, successfulAnnotationRepo))
 
 	return result.repo, result.err
 }
@@ -260,13 +257,21 @@ func openAnnotationSession(
 ) IOE.IOEither[error, sessionHandles] {
 	return F.Pipe1(
 		IOE.TryCatchError(func() (sessionHandles, error) {
-			sess, dbh, err := manager.NewSessionDb(st.connP)
-			return sessionHandles{sess: sess, dbh: dbh}, err
+			return openSessionDB(st.connP)
 		}),
 		IOE.MapLeft[sessionHandles](func(err error) error {
 			return fmt.Errorf("error in creating new session %s", err)
 		}),
 	)
+}
+
+// openSessionDB is the raw session call. The driver reports the session and its
+// database together, so the raw shell pairs them and the pipeline step only
+// lifts the result.
+func openSessionDB(connP *manager.ConnectParams) (sessionHandles, error) {
+	sess, dbh, err := manager.NewSessionDb(connP)
+
+	return sessionHandles{sess: sess, dbh: dbh}, err
 }
 
 // annotationDriverDatabase exposes the driver database handle that carries
@@ -275,7 +280,9 @@ func openAnnotationSession(
 func annotationDriverDatabase(
 	st annotationRepoState,
 ) IOE.IOEither[error, driver.Database] {
-	return IOE.Of[error](st.handles.dbh.Handler())
+	handle := st.handles.dbh.Handler()
+
+	return IOE.Of[error](handle)
 }
 
 // createOntologyCollection finds or creates the ontology collection set that
@@ -462,18 +469,37 @@ func createAnnotationTagGraph(
 }
 
 // ensureAnnotationIndexes creates the persistent indexes of the annotation
-// collection.
+// collection. The step reports a flag that the pipeline does not need, so
+// ChainFirst keeps the collection state flowing.
 func ensureAnnotationIndexes(
 	st annotationCollectionState,
 ) IOE.IOEither[error, annotationCollectionState] {
-	return IOE.TryCatchError(func() (annotationCollectionState, error) {
-		_, _, err := st.dbh.EnsurePersistentIndex(
-			st.anno.annot.Name(),
-			st.collP.AnnoIndexes,
-			&driver.EnsurePersistentIndexOptions{InBackground: true},
-		)
-		return st, err
+	return F.Pipe1(
+		IOE.Of[error](st),
+		IOE.ChainFirst(createAnnotationIndexesStep),
+	)
+}
+
+// createAnnotationIndexesStep lifts the raw index call into the pipeline.
+func createAnnotationIndexesStep(
+	st annotationCollectionState,
+) IOE.IOEither[error, bool] {
+	return IOE.TryCatchError(func() (bool, error) {
+		return createAnnotationIndexes(st)
 	})
+}
+
+// createAnnotationIndexes is the raw index call. The driver reports three
+// values, so the raw shell lives here and the pipeline step only lifts it.
+func createAnnotationIndexes(st annotationCollectionState) (bool, error) {
+	collName := st.anno.annot.Name()
+	_, created, err := st.dbh.EnsurePersistentIndex(
+		collName,
+		st.collP.AnnoIndexes,
+		&driver.EnsurePersistentIndexOptions{InBackground: true},
+	)
+
+	return created, err
 }
 
 // toAnnotationCollection assembles the collection bundle with its graphs, so

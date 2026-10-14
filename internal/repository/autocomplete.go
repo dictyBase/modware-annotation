@@ -1,4 +1,4 @@
-package arangodb
+package repository
 
 import (
 	"strings"
@@ -11,10 +11,14 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// normalizeAutocompleteQuery trims the caller's query, lowercases it, and
-// strips its combining marks, so the query lines up with the normalized field
-// the analyzers index. Case and accent then make no difference to a match.
-func normalizeAutocompleteQuery(q string) string {
+// NormalizeAutocompleteQuery trims an autocomplete query, lowercases it, and
+// strips its combining marks, so the text lines up with the normalized field
+// the search index holds.
+//
+// The service guards on this canonical form and the repository searches with
+// it, so both must share one implementation. A copy in each package would let
+// the minimum-length guard and the search text drift apart.
+func NormalizeAutocompleteQuery(q string) string {
 	trimmed := strings.TrimSpace(q)
 	lowered := strings.ToLower(trimmed)
 	decomposed := norm.NFD.String(lowered)

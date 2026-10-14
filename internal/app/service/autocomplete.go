@@ -2,17 +2,18 @@ package service
 
 import (
 	"context"
-	"strings"
 
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
-	N "github.com/IBM/fp-go/v2/number"
 	L "github.com/IBM/fp-go/v2/optics/lens"
 	O "github.com/IBM/fp-go/v2/option"
+	ORD "github.com/IBM/fp-go/v2/ord"
 	P "github.com/IBM/fp-go/v2/predicate"
+	S "github.com/IBM/fp-go/v2/string"
 	"github.com/bufbuild/protovalidate-go"
 	ioeutils "github.com/dictyBase/fp-go-loom/ioeitherutils"
+	predarrays "github.com/dictyBase/fp-go-loom/predicate/array"
 	predord "github.com/dictyBase/fp-go-loom/predicate/ord"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
 	"github.com/dictyBase/modware-annotation/internal/repository"
@@ -22,8 +23,16 @@ import (
 
 const (
 	// msgEmptyAutocompleteQuery is the client-facing message for a query that
-	// holds no searchable text once it is trimmed.
+	// holds no searchable text once it is normalized.
 	msgEmptyAutocompleteQuery = "expect a non-empty autocomplete query"
+	// msgShortAutocompleteQuery is the client-facing message for a query that
+	// keeps too few searchable characters after normalization. The protobuf
+	// rule counts the raw request, so a query of three characters that pads or
+	// marks is caught here instead.
+	msgShortAutocompleteQuery = "expect an autocomplete query of at least 3 characters"
+	// minAutocompleteQueryLength is the documented minimum length, in
+	// characters, of the normalized query.
+	minAutocompleteQueryLength = 3
 	// defaultAutocompleteLimit is the list length a non-positive request gets.
 	defaultAutocompleteLimit = 5
 	// fieldSynonym and fieldGenotype are the tag labels the search reports.
@@ -76,12 +85,21 @@ var (
 
 	// isPositiveLimit guards the limit default: a non-positive request becomes
 	// the service default.
-	isPositiveLimit = N.MoreThan(0)
+	isPositiveLimit = F.Pipe1(0, ORD.Gt(predord.IntOrd))
 
-	// hasAutocompleteQueryText reports whether the trimmed query still holds
-	// text, which is the one guard the request validator cannot express.
+	// hasAutocompleteQueryText reports whether the normalized query still
+	// holds text, which is the one guard the request validator cannot express.
 	hasAutocompleteQueryText = F.Pipe1(
 		predord.MinStrLen(1),
+		P.ContraMap(autocompleteQueryText),
+	)
+
+	// hasLongEnoughAutocompleteQuery reports whether the normalized query
+	// reaches the documented minimum length. The count is in characters, to
+	// match the protobuf character rule rather than the byte count.
+	hasLongEnoughAutocompleteQuery = F.Pipe2(
+		predarrays.MinLen[rune](minAutocompleteQueryLength),
+		P.ContraMap(S.ToRunes),
 		P.ContraMap(autocompleteQueryText),
 	)
 )
@@ -93,17 +111,14 @@ func (srv *AnnotationService) AutocompleteAnnotation(
 	_ context.Context,
 	r *annotation.AnnotationAutocompleteParameters,
 ) (*annotation.AnnotationSuggestionCollection, error) {
-	build := F.Pipe4(
+	result := F.Pipe5(
 		IOE.Of[error](autocompleteInput{request: r, repo: srv.repo}),
 		IOE.ChainEitherK(validatedAutocompleteSearch),
 		IOE.Bind(rowsLens.Set, searchSuggestions),
 		IOE.Map[error](toSuggestionCollection),
 		ioeutils.ToEither[error, *annotation.AnnotationSuggestionCollection],
+		E.Fold(failedAutocompleteResult, successfulAutocompleteResult),
 	)
-	result := F.Pipe1(build, E.Fold(
-		failedAutocompleteResult,
-		successfulAutocompleteResult,
-	))
 
 	return result.collection, result.err
 }
@@ -114,13 +129,19 @@ func (srv *AnnotationService) AutocompleteAnnotation(
 func validatedAutocompleteSearch(
 	in autocompleteInput,
 ) E.Either[error, autocompleteSearch] {
-	return F.Pipe4(
+	return F.Pipe5(
 		E.TryCatchError(in.request, protovalidate.Validate(in.request)),
 		E.Map[error](newAutocompleteParams),
 		E.Chain(E.FromPredicate(
 			hasAutocompleteQueryText,
 			invalidParamStatusOf[autocompleteParams](
 				msgEmptyAutocompleteQuery,
+			),
+		)),
+		E.Chain(E.FromPredicate(
+			hasLongEnoughAutocompleteQuery,
+			invalidParamStatusOf[autocompleteParams](
+				msgShortAutocompleteQuery,
 			),
 		)),
 		E.Map[error](F.Bind1st(newAutocompleteSearch, in.repo)),
@@ -142,7 +163,7 @@ func newAutocompleteParams(
 		O.GetOrElse(F.Constant(defaultAutocompleteLimit)),
 	)
 	rawQuery := attrs.GetQuery()
-	query := strings.TrimSpace(rawQuery)
+	query := repository.NormalizeAutocompleteQuery(rawQuery)
 
 	return autocompleteParams{
 		query: query,
@@ -196,11 +217,14 @@ func toSuggestionCollection(
 		})
 	}
 
+	limit := int64(s.query.Limit)
+	total := int64(len(s.rows))
+
 	return &annotation.AnnotationSuggestionCollection{
 		Data: collection,
 		Meta: &annotation.Meta{
-			Limit: int64(s.query.Limit),
-			Total: int64(len(s.rows)),
+			Limit: limit,
+			Total: total,
 		},
 	}
 }
@@ -234,13 +258,17 @@ func successfulAutocompleteResult(
 // caller sees. status.Convert keeps the message of a fault that already carries
 // a status, so a guard status is never nested inside a second one.
 func invalidParamStatus(err error) error {
-	return status.Error(codes.InvalidArgument, status.Convert(err).Message())
+	message := status.Convert(err).Message()
+
+	return status.Error(codes.InvalidArgument, message)
 }
 
 // serverErrorStatus maps a repository fault onto the Internal status the caller
 // sees.
 func serverErrorStatus(err error) error {
-	return status.Error(codes.Internal, err.Error())
+	message := err.Error()
+
+	return status.Error(codes.Internal, message)
 }
 
 // invalidParamStatusOf is a guard's error factory: it drops the rejected value

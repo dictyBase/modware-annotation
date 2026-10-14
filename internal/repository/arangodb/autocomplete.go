@@ -263,16 +263,24 @@ func ensureAnalyzer(
 
 	return F.Pipe1(
 		IOE.TryCatchError(func() (string, error) {
-			_, _, err := dbh.EnsureCreatedAnalyzer(
-				context.Background(),
-				&def,
-			)
-			return name, err
+			return createArangoSearchAnalyzer(dbh, def)
 		}),
 		IOE.MapLeft[string](func(err error) error {
 			return fmt.Errorf("error in creating analyzer %s %s", name, err)
 		}),
 	)
+}
+
+// createArangoSearchAnalyzer is the raw analyzer call. The driver reports three
+// values, so the raw shell lives here and the pipeline step only lifts it.
+func createArangoSearchAnalyzer(
+	dbh driver.Database,
+	def driver.ArangoSearchAnalyzerDefinition,
+) (string, error) {
+	ctx := context.Background()
+	_, _, err := dbh.EnsureCreatedAnalyzer(ctx, &def)
+
+	return def.Name, err
 }
 
 // ensureAutocompleteView creates the annotation_autocomplete view when the
@@ -298,12 +306,11 @@ func ensureAutocompleteView(
 func autocompleteViewExists(
 	st annotationRepoState,
 ) IOE.IOEither[error, bool] {
+	ctx := context.Background()
+
 	return F.Pipe1(
 		IOE.TryCatchError(func() (bool, error) {
-			return st.db.ViewExists(
-				context.Background(),
-				autocompleteViewName,
-			)
+			return st.db.ViewExists(ctx, autocompleteViewName)
 		}),
 		IOE.MapLeft[bool](func(err error) error {
 			return fmt.Errorf(
@@ -333,19 +340,22 @@ func createAutocompleteViewIfMissing(
 func createAutocompleteView(
 	st annotationRepoState,
 ) IOE.IOEither[error, annotationRepoState] {
-	collName := st.anno.annot.Name()
-	props := autocompleteViewProperties(collName)
-
 	return F.Pipe1(
-		IOE.TryCatchError(func() (annotationRepoState, error) {
-			_, err := st.db.CreateArangoSearchView(
-				context.Background(),
-				autocompleteViewName,
-				&props,
-			)
-			return st, err
+		IOE.Of[error](st),
+		IOE.ChainFirst(createAutocompleteViewStep),
+	)
+}
+
+// createAutocompleteViewStep lifts the raw view creation into the pipeline. The
+// step reports an empty value, so ChainFirst keeps the repository state.
+func createAutocompleteViewStep(
+	st annotationRepoState,
+) IOE.IOEither[error, struct{}] {
+	return F.Pipe1(
+		IOE.TryCatchError(func() (struct{}, error) {
+			return createAutocompleteViewRecord(st)
 		}),
-		IOE.MapLeft[annotationRepoState](func(err error) error {
+		IOE.MapLeft[struct{}](func(err error) error {
 			return fmt.Errorf(
 				"error in creating view %s %s",
 				autocompleteViewName,
@@ -355,16 +365,27 @@ func createAutocompleteView(
 	)
 }
 
+// createAutocompleteViewRecord is the raw view creation call. The driver
+// reports two values, so the raw shell lives here and the pipeline step only
+// lifts the result.
+func createAutocompleteViewRecord(st annotationRepoState) (struct{}, error) {
+	collName := st.anno.annot.Name()
+	props := autocompleteViewProperties(collName)
+	ctx := context.Background()
+	_, err := st.db.CreateArangoSearchView(ctx, autocompleteViewName, &props)
+
+	return struct{}{}, err
+}
+
 // findAutocompleteView reads the view that the previous step ensured exists.
 func findAutocompleteView(
 	st annotationRepoState,
 ) IOE.IOEither[error, driver.View] {
+	ctx := context.Background()
+
 	return F.Pipe1(
 		IOE.TryCatchError(func() (driver.View, error) {
-			return st.db.View(
-				context.Background(),
-				autocompleteViewName,
-			)
+			return st.db.View(ctx, autocompleteViewName)
 		}),
 		IOE.MapLeft[driver.View](func(err error) error {
 			return fmt.Errorf(
@@ -436,21 +457,46 @@ func setAutocompleteViewLinks(
 	desired driver.ArangoSearchViewProperties,
 	st annotationRepoState,
 ) IOE.IOEither[error, annotationRepoState] {
+	step := setViewLinksStep(desired)
+
 	return F.Pipe1(
-		IOE.TryCatchError(func() (annotationRepoState, error) {
-			return st, st.searchView.SetProperties(
-				context.Background(),
-				desired,
-			)
-		}),
-		IOE.MapLeft[annotationRepoState](func(err error) error {
-			return fmt.Errorf(
-				"error in updating view %s %s",
-				autocompleteViewName,
-				err,
-			)
-		}),
+		IOE.Of[error](st),
+		IOE.ChainFirst(step),
 	)
+}
+
+// setViewLinksStep curries the desired links into the pipeline step that
+// writes them. The step reports an empty value, so ChainFirst keeps the
+// repository state.
+func setViewLinksStep(
+	desired driver.ArangoSearchViewProperties,
+) func(annotationRepoState) IOE.IOEither[error, struct{}] {
+	return func(st annotationRepoState) IOE.IOEither[error, struct{}] {
+		return F.Pipe1(
+			IOE.TryCatchError(func() (struct{}, error) {
+				return setViewLinksRecord(desired, st)
+			}),
+			IOE.MapLeft[struct{}](func(err error) error {
+				return fmt.Errorf(
+					"error in updating view %s %s",
+					autocompleteViewName,
+					err,
+				)
+			}),
+		)
+	}
+}
+
+// setViewLinksRecord is the raw view update call. The driver reports one value,
+// so the raw shell lives here and the pipeline step only lifts the result.
+func setViewLinksRecord(
+	desired driver.ArangoSearchViewProperties,
+	st annotationRepoState,
+) (struct{}, error) {
+	ctx := context.Background()
+	err := st.searchView.SetProperties(ctx, desired)
+
+	return struct{}{}, err
 }
 
 // autocompleteViewProperties is the desired view shape: the annotation
@@ -609,7 +655,7 @@ func isPresentAutocompleteQuery(params *repo.AutocompleteQuery) bool {
 // hasAutocompleteQueryText reports whether the query still holds searchable
 // text once whitespace, case, and combining marks are gone.
 func hasAutocompleteQueryText(params *repo.AutocompleteQuery) bool {
-	normalized := normalizeAutocompleteQuery(params.Query)
+	normalized := repo.NormalizeAutocompleteQuery(params.Query)
 	isSearchable := predord.MinStrLen(1)
 
 	return isSearchable(normalized)
@@ -618,7 +664,7 @@ func hasAutocompleteQueryText(params *repo.AutocompleteQuery) bool {
 // newAutocompleteRequest normalizes the query and clamps the limit.
 func newAutocompleteRequest(params *repo.AutocompleteQuery) autocompleteRequest {
 	return autocompleteRequest{
-		query: normalizeAutocompleteQuery(params.Query),
+		query: repo.NormalizeAutocompleteQuery(params.Query),
 		limit: clampAutocompleteLimit(params.Limit),
 	}
 }

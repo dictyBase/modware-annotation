@@ -107,22 +107,6 @@ func autocompleteEndToEndSetup(
 	)
 	loadAutocompleteOntology(t, tra)
 
-	_, err = repo.AddAnnotation(&annotation.NewTaggedAnnotation{
-		Data: &annotation.NewTaggedAnnotation_Data{
-			Type: "annotations",
-			Attributes: &annotation.NewTaggedAnnotationAttributes{
-				Value:         "axeA1, axeB1, sadA-",
-				EditableValue: "axeA1, axeB1, sadA-",
-				CreatedBy:     "siddbasu@gmail.com",
-				Tag:           "genotype",
-				Ontology:      "dicty_annotation",
-				EntryId:       "DBS0236126",
-				Rank:          0,
-			},
-		},
-	})
-	assert.NoError(err, "expect the genotype annotation to be stored")
-
 	svc, err := NewAnnotationService(&Params{
 		Repository: repo,
 		Publisher:  &MockTaggedMessage{},
@@ -162,7 +146,29 @@ func autocompleteEndToEndSetup(
 		server.Stop()
 	})
 
-	return annotation.NewTaggedAnnotationServiceClient(conn), repo
+	// Seed through the create RPC rather than the repository, so the test also
+	// covers the create path that production writes take.
+	client := annotation.NewTaggedAnnotationServiceClient(conn)
+	_, err = client.CreateAnnotation(
+		context.Background(),
+		&annotation.NewTaggedAnnotation{
+			Data: &annotation.NewTaggedAnnotation_Data{
+				Type: "annotations",
+				Attributes: &annotation.NewTaggedAnnotationAttributes{
+					Value:         "axeA1, axeB1, sadA-",
+					EditableValue: "axeA1, axeB1, sadA-",
+					CreatedBy:     "siddbasu@gmail.com",
+					Tag:           "genotype",
+					Ontology:      "dicty_annotation",
+					EntryId:       "DBS0236126",
+					Rank:          0,
+				},
+			},
+		},
+	)
+	assert.NoError(err, "expect the genotype annotation to be stored")
+
+	return client, repo
 }
 
 // waitForAutocomplete polls the RPC until the search view serves the seeded
