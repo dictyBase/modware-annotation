@@ -263,3 +263,36 @@ func TestAutocompleteFieldMapping(t *testing.T) {
 		toAnnotationSearchField("description"),
 	)
 }
+
+func TestAutocompleteAnnotationHandlerRejectsPaddedShortQuery(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	repo := &stubAutocompleteRepo{}
+	svc := newAutocompleteTestService(t, repo)
+
+	// " a " passes the protobuf minimum of three characters, but only one
+	// searchable character remains after normalization.
+	_, err := svc.AutocompleteAnnotation(
+		context.Background(),
+		autocompleteParamsWith(" a ", 5),
+	)
+	assert.Equal(codes.InvalidArgument, status.Code(err))
+	assert.Zero(repo.calls, "expect no repository call")
+}
+
+func TestAutocompleteAnnotationHandlerRejectsMarkOnlyQuery(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	repo := &stubAutocompleteRepo{}
+	svc := newAutocompleteTestService(t, repo)
+
+	// Three combining marks are three characters to the protobuf validator and
+	// none after accent folding, so the request must fail as a client fault
+	// rather than reach the repository.
+	_, err := svc.AutocompleteAnnotation(
+		context.Background(),
+		autocompleteParamsWith("\u0301\u0301\u0301", 5),
+	)
+	assert.Equal(codes.InvalidArgument, status.Code(err))
+	assert.Zero(repo.calls, "expect no repository call")
+}

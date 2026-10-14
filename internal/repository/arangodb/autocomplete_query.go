@@ -5,7 +5,6 @@ import (
 
 	A "github.com/IBM/fp-go/v2/array"
 	F "github.com/IBM/fp-go/v2/function"
-	monoid "github.com/IBM/fp-go/v2/monoid"
 	L "github.com/IBM/fp-go/v2/optics/lens"
 	P "github.com/IBM/fp-go/v2/predicate"
 	S "github.com/IBM/fp-go/v2/string"
@@ -161,10 +160,19 @@ func mergeBlock(branches []queryBranch) string {
 	return format(names)
 }
 
-// joinAutocompleteParts joins strings with sep through the fp-go string
-// monoid, so query assembly stays point-free.
+// joinAutocompleteParts separates the parts with sep and then concatenates
+// them through the loom string helper, so query assembly stays point-free
+// without reaching outside the house allowlist.
 func joinAutocompleteParts(sep string) func([]string) string {
-	return monoid.Fold(S.IntersperseMonoid(sep))
+	return F.Flow2(
+		A.Intersperse(sep),
+		joinAllParts,
+	)
+}
+
+// joinAllParts concatenates parts that already carry their separators.
+func joinAllParts(parts []string) string {
+	return strutils.JoinStrings(parts...)
 }
 
 // buildAutocompleteQuery builds the complete 4-branch autocomplete statement.

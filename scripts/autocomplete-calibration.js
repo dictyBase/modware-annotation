@@ -58,7 +58,7 @@ function sleepSeconds(seconds) {
 }
 
 var results = {
-  arangoVersion: db._version().version,
+  arangoVersion: db._version(),
   database: CALIB.dbName,
   probes: [],
   thresholdSweep: [],
@@ -611,7 +611,7 @@ function main() {
 
   // --------------------------------------------------------------- EXPLAIN
 
-  var explained = db._connection.POST(
+  var explainResponse = db._connection.POST(
     '/_api/explain',
     JSON.stringify({
       query: query,
@@ -626,6 +626,10 @@ function main() {
     }),
     { 'content-type': 'application/json' }
   );
+  // ArangoDB answers this request with an object on some versions and with a
+  // response body string on others, so accept both shapes.
+  var explained =
+    typeof explainResponse === 'string' ? JSON.parse(explainResponse) : explainResponse;
   var counts = {};
   (explained.plan ? explained.plan.nodes : []).forEach(function (node) {
     counts[node.type] = (counts[node.type] || 0) + 1;
