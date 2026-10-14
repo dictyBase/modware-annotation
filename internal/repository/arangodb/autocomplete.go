@@ -2,14 +2,48 @@ package arangodb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 
+	E "github.com/IBM/fp-go/v2/either"
+	fperrors "github.com/IBM/fp-go/v2/errors"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	L "github.com/IBM/fp-go/v2/optics/lens"
+	O "github.com/IBM/fp-go/v2/option"
+	ORD "github.com/IBM/fp-go/v2/ord"
 	driver "github.com/arangodb/go-driver"
+	eithererr "github.com/dictyBase/fp-go-loom/eithererr"
+	MO "github.com/dictyBase/fp-go-loom/matchopt"
+	predord "github.com/dictyBase/fp-go-loom/predicate/ord"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
+)
+
+type (
+	// autocompleteRequest is the state of one autocomplete search once the
+	// query is normalized and the ontology term identifiers are resolved.
+	autocompleteRequest struct {
+		query          string
+		limit          int
+		synonymTermID  string
+		genotypeTermID string
+	}
+
+	// autocompleteQueryParams is the finished AQL statement together with
+	// the bind parameters it needs.
+	autocompleteQueryParams struct {
+		statement  string
+		bindParams map[string]any
+	}
+
+	// suggestionRow is one raw row of the autocomplete statement. The field
+	// names are the short aliases the statement returns.
+	suggestionRow struct {
+		ID    string  `json:"id"`
+		Field string  `json:"f"`
+		Value string  `json:"v"`
+		Score float64 `json:"s"`
+	}
 )
 
 const (
@@ -42,6 +76,32 @@ const (
 	docFieldEntryID = "entry_id"
 	// docFieldIsObsolete is the indexed is_obsolete attribute on the annotation document.
 	docFieldIsObsolete = "is_obsolete"
+	// autocompleteNgramThreshold is the minimum n-gram similarity of a
+	// fuzzy match, confirmed in Task 1 calibration on ArangoDB.
+	autocompleteNgramThreshold = 0.3
+	// defaultAutocompleteLimit is the list length for a non-positive limit.
+	defaultAutocompleteLimit = 5
+	// maxAutocompleteLimit is the hard cap of the list length.
+	maxAutocompleteLimit = 50
+	// autocompletePrefixScore is the score bonus of a prefix branch.
+	autocompletePrefixScore = "1000 + BM25(d)"
+	// autocompleteFuzzyScore is the score of a fuzzy branch.
+	autocompleteFuzzyScore = "BM25(d)"
+	// dictyAnnotationOntology is the ontology namespace of strain
+	// synonym and genotype annotations.
+	dictyAnnotationOntology = "dicty_annotation"
+	// fieldSynonym is the cvterm label of strain synonym annotations.
+	fieldSynonym = "synonym"
+	// fieldGenotype is the cvterm label of strain genotype annotations.
+	fieldGenotype = "genotype"
+	// bindSynonymTermID is the bind parameter name for the synonym cvterm _id.
+	bindSynonymTermID = "synonym_term_id"
+	// bindGenotypeTermID is the bind parameter name for the genotype cvterm _id.
+	bindGenotypeTermID = "genotype_term_id"
+	// msgNilAutocompleteQuery is the error message for a nil query struct.
+	msgNilAutocompleteQuery = "expect a non-nil autocomplete query"
+	// msgEmptyAutocompleteQuery is the error message for an empty query string.
+	msgEmptyAutocompleteQuery = "expect a non-empty autocomplete query"
 )
 
 var (
@@ -116,6 +176,41 @@ var (
 		},
 		Features: autocompleteAnalyzerFeatures(),
 	}
+	// synonymTermIDLens and genotypeTermIDLens focus the resolved ontology
+	// term identifiers of a request, so IOE.Bind can fill them in.
+	synonymTermIDLens = L.MakeLens(
+		func(r autocompleteRequest) string { return r.synonymTermID },
+		func(r autocompleteRequest, id string) autocompleteRequest {
+			r.synonymTermID = id
+			return r
+		},
+	)
+	genotypeTermIDLens = L.MakeLens(
+		func(r autocompleteRequest) string { return r.genotypeTermID },
+		func(r autocompleteRequest, id string) autocompleteRequest {
+			r.genotypeTermID = id
+			return r
+		},
+	)
+
+	// isNonPositiveLimit and isAboveMaxLimit guard the two limit clamps.
+	isNonPositiveLimit = F.Pipe1(0, ORD.Leq(predord.IntOrd))
+	isAboveMaxLimit    = F.Pipe1(
+		maxAutocompleteLimit,
+		ORD.Gt(predord.IntOrd),
+	)
+
+	// clampAutocompleteLimit turns a requested limit into the effective one:
+	// a non-positive request becomes the default and an oversized request is
+	// capped. A value inside the range is used unchanged.
+	clampAutocompleteLimit = MO.Match(
+		defaultAutocompleteLimit,
+		[]O.Kleisli[int, int]{
+			MO.Const(isNonPositiveLimit, defaultAutocompleteLimit),
+			MO.Const(isAboveMaxLimit, maxAutocompleteLimit),
+			MO.Default(F.Identity[int]),
+		},
+	)
 )
 
 // ensureAutocompleteSearch creates the three analyzers of the autocomplete
@@ -455,14 +550,155 @@ func autocompleteAnalyzerFeatures() []driver.ArangoSearchAnalyzerFeature {
 }
 
 // AutocompleteAnnotation returns suggestions for a partial strain synonym or
-// genotype value.
-//
-// TODO(task 5): replace this stub with the search statement, term-id
-// resolution, and row mapping.
+// genotype value. The pipeline normalizes and validates the query, resolves
+// the two ontology term identifiers onto the request state with lenses, and
+// runs the 4-branch statement. It is forced only once, by the caller.
 func (ar *arangorepository) AutocompleteAnnotation(
 	params *repo.AutocompleteQuery,
 ) IOE.IOEither[error, []*repo.Suggestion] {
-	_ = params
+	rowFault := scanSearchRows[suggestionRow](
+		"error in reading autocomplete row",
+	)
 
-	return IOE.Left[[]*repo.Suggestion](errors.New("not implemented"))
+	return F.Pipe7(
+		params,
+		validateAutocompleteRequest,
+		IOE.Bind(synonymTermIDLens.Set, ar.resolveSynonymTermID),
+		IOE.Bind(genotypeTermIDLens.Set, ar.resolveGenotypeTermID),
+		IOE.Map[error](ar.buildAutocompleteQueryParams),
+		IOE.Chain(ar.executeAutocompleteQuery),
+		IOE.Chain(rowFault),
+		IOE.Map[error](toSuggestions),
+	)
+}
+
+// validateAutocompleteRequest rejects a nil query and a query that holds no
+// searchable text once it is normalized, before any ontology lookup or AQL
+// statement runs.
+func validateAutocompleteRequest(
+	params *repo.AutocompleteQuery,
+) IOE.IOEither[error, autocompleteRequest] {
+	present := F.Pipe1(
+		params,
+		E.FromPredicate(
+			isPresentAutocompleteQuery,
+			eithererr.ConstErr[*repo.AutocompleteQuery](
+				msgNilAutocompleteQuery,
+			),
+		),
+	)
+	withText := F.Pipe1(
+		present,
+		E.Chain(E.FromPredicate(
+			hasAutocompleteQueryText,
+			eithererr.ConstErr[*repo.AutocompleteQuery](
+				msgEmptyAutocompleteQuery,
+			),
+		)),
+	)
+	request := F.Pipe1(withText, E.Map[error](newAutocompleteRequest))
+
+	return IOE.FromEither(request)
+}
+
+// isPresentAutocompleteQuery reports whether the caller sent a query struct.
+func isPresentAutocompleteQuery(params *repo.AutocompleteQuery) bool {
+	return params != nil
+}
+
+// hasAutocompleteQueryText reports whether the query still holds searchable
+// text once whitespace, case, and combining marks are gone.
+func hasAutocompleteQueryText(params *repo.AutocompleteQuery) bool {
+	normalized := normalizeAutocompleteQuery(params.Query)
+	isSearchable := predord.MinStrLen(1)
+
+	return isSearchable(normalized)
+}
+
+// newAutocompleteRequest normalizes the query and clamps the limit.
+func newAutocompleteRequest(params *repo.AutocompleteQuery) autocompleteRequest {
+	return autocompleteRequest{
+		query: normalizeAutocompleteQuery(params.Query),
+		limit: clampAutocompleteLimit(params.Limit),
+	}
+}
+
+// resolveTermID looks up the cvterm identifier of one ontology tag.
+func (ar *arangorepository) resolveTermID(
+	onto, tag string,
+) IOE.IOEither[error, string] {
+	termFault := fperrors.OnError(
+		"error in resolving autocomplete ontology term",
+	)
+
+	return F.Pipe1(
+		IOE.TryCatchError(func() (string, error) {
+			return ar.termID(onto, tag)
+		}),
+		IOE.MapLeft[string](termFault),
+	)
+}
+
+// resolveSynonymTermID resolves the synonym cvterm identifier of the request.
+func (ar *arangorepository) resolveSynonymTermID(
+	autocompleteRequest,
+) IOE.IOEither[error, string] {
+	return ar.resolveTermID(dictyAnnotationOntology, fieldSynonym)
+}
+
+// resolveGenotypeTermID resolves the genotype cvterm identifier of the request.
+func (ar *arangorepository) resolveGenotypeTermID(
+	autocompleteRequest,
+) IOE.IOEither[error, string] {
+	return ar.resolveTermID(dictyAnnotationOntology, fieldGenotype)
+}
+
+// buildAutocompleteQueryParams finishes the statement and its bind parameters.
+// The graph name and the analyzer and view names come from the repository, so
+// a renamed collection never leaks a stale literal into a query.
+func (ar *arangorepository) buildAutocompleteQueryParams(
+	req autocompleteRequest,
+) autocompleteQueryParams {
+	graphName := ar.anno.annotg.Name()
+
+	return autocompleteQueryParams{
+		statement: buildAutocompleteQuery(),
+		bindParams: map[string]any{
+			"q":                 req.query,
+			"th":                autocompleteNgramThreshold,
+			"limit":             req.limit,
+			"anno_cvterm_graph": graphName,
+			bindSynonymTermID:   req.synonymTermID,
+			bindGenotypeTermID:  req.genotypeTermID,
+		},
+	}
+}
+
+// executeAutocompleteQuery runs the statement and hands back the row reader.
+func (ar *arangorepository) executeAutocompleteQuery(
+	params autocompleteQueryParams,
+) IOE.IOEither[error, dbRows] {
+	queryFault := fperrors.OnError("error in running autocomplete query")
+
+	return F.Pipe1(
+		IOE.TryCatchError(func() (dbRows, error) {
+			return ar.database.SearchRows(params.statement, params.bindParams)
+		}),
+		IOE.MapLeft[dbRows](queryFault),
+	)
+}
+
+// toSuggestions projects the scanned statement rows onto the repository result.
+func toSuggestions(rows []suggestionRow) []*repo.Suggestion {
+	out := make([]*repo.Suggestion, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, &repo.Suggestion{
+			EntryID:     row.ID,
+			Field:       row.Field,
+			DisplayText: row.Value,
+			Score:       row.Score,
+		})
+	}
+
+	return out
 }
