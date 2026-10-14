@@ -6,6 +6,8 @@ import (
 	"io"
 	"time"
 
+	E "github.com/IBM/fp-go/v2/either"
+	F "github.com/IBM/fp-go/v2/function"
 	"github.com/dictyBase/aphgrpc"
 	"github.com/dictyBase/arangomanager/query"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
@@ -67,31 +69,84 @@ type Params struct {
 	Group      string                                `validate:"required"`
 }
 
+// serviceBuildState carries the validated parameters and the derived service
+// container through the constructor pipeline.
+type serviceBuildState struct {
+	params  *Params
+	options *aphgrpc.ServiceOptions
+	handle  *aphgrpc.Service
+}
+
+// serviceBuildResult is the boundary record the constructor folds into.
+type serviceBuildResult struct {
+	service *AnnotationService
+	err     error
+}
+
 func defaultOptions() *aphgrpc.ServiceOptions {
 	return &aphgrpc.ServiceOptions{Resource: "annotations"}
 }
 
 // NewAnnotationService is the constructor for creating a new instance of AnnotationService.
+// The whole construction is one Either pipeline forced once, at the boundary.
 func NewAnnotationService(srvP *Params) (*AnnotationService, error) {
-	if err := validator.New().Struct(srvP); err != nil {
-		return &AnnotationService{}, fmt.Errorf(
-			"error in validating struct %s",
-			err,
-		)
-	}
-	so := defaultOptions()
-	for _, optfn := range srvP.Options {
-		optfn(so)
-	}
-	srv := &aphgrpc.Service{}
-	aphgrpc.AssignFieldsToStructs(so, srv)
+	build := F.Pipe4(
+		E.TryCatchError(srvP, validator.New().Struct(srvP)),
+		E.Map[error](newServiceBuildState),
+		E.Map[error](withServiceHandle),
+		E.Map[error](assembleAnnotationService),
+		E.Fold(
+			failedAnnotationService,
+			successfulAnnotationService,
+		),
+	)
 
+	return build.service, build.err
+}
+
+// newServiceBuildState validates nothing further and resolves the service
+// options of the request.
+func newServiceBuildState(srvP *Params) serviceBuildState {
+	options := defaultOptions()
+	for _, optfn := range srvP.Options {
+		optfn(options)
+	}
+
+	return serviceBuildState{params: srvP, options: options}
+}
+
+// withServiceHandle assigns the resolved options onto a fresh aphgrpc service.
+func withServiceHandle(st serviceBuildState) serviceBuildState {
+	handle := &aphgrpc.Service{}
+	aphgrpc.AssignFieldsToStructs(st.options, handle)
+	st.handle = handle
+
+	return st
+}
+
+// assembleAnnotationService builds the service from the validated parameters.
+func assembleAnnotationService(st serviceBuildState) *AnnotationService {
 	return &AnnotationService{
-		Service:   srv,
-		repo:      srvP.Repository,
-		publisher: srvP.Publisher,
-		group:     srvP.Group,
-	}, nil
+		Service:   st.handle,
+		repo:      st.params.Repository,
+		publisher: st.params.Publisher,
+		group:     st.params.Group,
+	}
+}
+
+// failedAnnotationService is the boundary projection of a failed constructor:
+// an empty service and the validation fault.
+func failedAnnotationService(err error) serviceBuildResult {
+	return serviceBuildResult{
+		service: &AnnotationService{},
+		err:     fmt.Errorf("error in validating struct %s", err),
+	}
+}
+
+// successfulAnnotationService is the boundary projection of a completed
+// constructor.
+func successfulAnnotationService(srv *AnnotationService) serviceBuildResult {
+	return serviceBuildResult{service: srv}
 }
 
 // GetGroupResourceName returns the resource name used for annotation groups.
@@ -175,7 +230,8 @@ func filterStrToQuery(filter string) (string, error) {
 	if err != nil {
 		return empty, fmt.Errorf("error in parsing filter string")
 	}
-	q, err := query.GenQualifiedAQLFilterStatement(arangodb.FilterMap(), p)
+	filterMap := arangodb.FilterMap()
+	q, err := query.GenQualifiedAQLFilterStatement(filterMap, p)
 	if err != nil {
 		return empty, fmt.Errorf("error in generating aql statement")
 	}
