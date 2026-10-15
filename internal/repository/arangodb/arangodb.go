@@ -219,7 +219,7 @@ func NewTaggedAnnotationRepo(
 	placeholder := &arangorepository{}
 	onLeft := failedAnnotationRepo(placeholder)
 
-	result := F.Pipe9(
+	result := F.Pipe10(
 		annotationRepoState{connP: connP, collP: collP, ontoP: ontoP},
 		validatedAnnotationRepoState,
 		IOE.Bind(handlesLens.Set, openAnnotationSession),
@@ -227,6 +227,7 @@ func NewTaggedAnnotationRepo(
 		IOE.Bind(ontoLens.Set, createOntologyCollection),
 		IOE.Bind(annoLens.Set, setAnnotationCollection),
 		IOE.ChainFirst(ensureAutocompleteSearch),
+		IOE.ChainFirst(ensureFullSearch),
 		IOE.Map[error](toTaggedAnnotationRepo),
 		ioeutils.ToEither[error, repo.TaggedAnnotationRepository],
 		E.Fold(onLeft, successfulAnnotationRepo),
