@@ -35,9 +35,18 @@ const (
 	minAutocompleteQueryLength = 3
 	// defaultAutocompleteLimit is the list length a non-positive request gets.
 	defaultAutocompleteLimit = 5
-	// fieldSynonym and fieldGenotype are the tag labels the search reports.
-	fieldSynonym  = "synonym"
-	fieldGenotype = "genotype"
+	// fieldSynonym through fieldPublicNote are the canonical field labels
+	// reported by autocomplete and full search.
+	fieldSynonym             = "synonym"
+	fieldGenotype            = "genotype"
+	fieldSystematicName      = "systematic_name"
+	fieldGeneticModification = "genetic_modification"
+	fieldMutagenesisMethod   = "mutagenesis_method"
+	fieldPhenotype           = "phenotype"
+	fieldEnvironment         = "environment"
+	fieldAssay               = "assay"
+	fieldCharacteristic      = "characteristic"
+	fieldPublicNote          = "public_note"
 )
 
 type (
@@ -230,12 +239,30 @@ func toSuggestionCollection(
 }
 
 // toAnnotationSearchField maps a repository field label onto the proto enum.
+//
+//nolint:cyclop // exhaustively maps all 10 AnnotationSearchField enum cases
 func toAnnotationSearchField(field string) annotation.AnnotationSearchField {
 	switch field {
 	case fieldSynonym:
 		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_SYNONYM
 	case fieldGenotype:
 		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_GENOTYPE
+	case fieldSystematicName:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_SYSTEMATIC_NAME
+	case fieldGeneticModification:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_GENETIC_MODIFICATION
+	case fieldMutagenesisMethod:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_MUTAGENESIS_METHOD
+	case fieldPhenotype:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_PHENOTYPE
+	case fieldEnvironment:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_ENVIRONMENT
+	case fieldAssay:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_ASSAY
+	case fieldCharacteristic:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_CHARACTERISTIC
+	case fieldPublicNote:
+		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_PUBLIC_NOTE
 	default:
 		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_UNSPECIFIED
 	}
