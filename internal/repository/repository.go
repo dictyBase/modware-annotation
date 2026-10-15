@@ -41,6 +41,33 @@ type Suggestion struct {
 	Score float64
 }
 
+// FullSearchQuery holds the input of an annotation full search.
+// The repository normalizes Query, rejects all-stopword queries, and clamps Limit.
+type FullSearchQuery struct {
+	// Query is the search text. The caller sends it untrimmed;
+	// the repository trims it, lowercases it, and strips combining marks.
+	Query string
+	// Limit is the maximum number of results. A value at or below 0
+	// becomes 50. A value above 50 becomes 50.
+	Limit int
+}
+
+// FullSearchResult is one annotation full search match, deduplicated by EntryID.
+type FullSearchResult struct {
+	// EntryID is the strain identifier of the matched annotation, for
+	// example DBS0236126.
+	EntryID string
+	// Field is the canonical field label that matched (for example,
+	// "synonym", "genotype", "phenotype", or "public_note").
+	Field string
+	// DisplayText is the stored annotation value or cvterm label shown
+	// in the user interface.
+	DisplayText string
+	// Score ranks the match across the four bands (prefix >= 1000,
+	// phrase >= 500, token >= 250, fuzzy >= 0).
+	Score float64
+}
+
 // TaggedAnnotationRepository is an interface for accessing annotation
 // data from its data sources.
 type TaggedAnnotationRepository interface {
