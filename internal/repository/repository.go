@@ -115,6 +115,11 @@ type TaggedAnnotationRepository interface {
 	AutocompleteAnnotation(
 		params *AutocompleteQuery,
 	) IOE.IOEither[error, []*Suggestion]
+	// SearchAnnotation returns at most Limit ranked results for the
+	// normalized query of params as a lazy IOEither pipeline.
+	SearchAnnotation(
+		params *FullSearchQuery,
+	) IOE.IOEither[error, []*FullSearchResult]
 	Dbh() *manager.Database
 	LoadOboJSON(r io.Reader) (*storage.UploadInformation, error)
 }

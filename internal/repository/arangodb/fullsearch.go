@@ -4,9 +4,52 @@ import (
 	"context"
 	"fmt"
 
+	A "github.com/IBM/fp-go/v2/array"
+	E "github.com/IBM/fp-go/v2/either"
+	fperrors "github.com/IBM/fp-go/v2/errors"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	L "github.com/IBM/fp-go/v2/optics/lens"
+	O "github.com/IBM/fp-go/v2/option"
+	ORD "github.com/IBM/fp-go/v2/ord"
+	P "github.com/IBM/fp-go/v2/predicate"
 	driver "github.com/arangodb/go-driver"
+	manager "github.com/dictyBase/arangomanager"
+	eithererr "github.com/dictyBase/fp-go-loom/eithererr"
+	MO "github.com/dictyBase/fp-go-loom/matchopt"
+	predarrays "github.com/dictyBase/fp-go-loom/predicate/array"
+	predord "github.com/dictyBase/fp-go-loom/predicate/ord"
+	repo "github.com/dictyBase/modware-annotation/internal/repository"
+)
+
+type (
+	// fullSearchTargets holds the resolved cvterm _id and ontology cv _id values
+	// returned by fullSearchTargetsQ.
+	fullSearchTargets struct {
+		Tags   map[string]string `json:"tags"`
+		Graphs map[string]string `json:"graphs"`
+	}
+
+	// fullSearchRequest is the validated state of one full search call.
+	fullSearchRequest struct {
+		query   string
+		limit   int
+		targets fullSearchTargets
+	}
+
+	// fullSearchQueryParams holds the finished AQL statement and bind map.
+	fullSearchQueryParams struct {
+		statement  string
+		bindParams map[string]any
+	}
+
+	// fullSearchRow is one raw row of the full search projection.
+	fullSearchRow struct {
+		ID    string  `json:"id"`
+		Field string  `json:"f"`
+		Value string  `json:"v"`
+		Score float64 `json:"s"`
+	}
 )
 
 const (
@@ -32,6 +75,53 @@ const (
 	docFieldLabel      = "label"
 	docFieldGraphID    = "graph_id"
 	docFieldDeprecated = "deprecated"
+
+	// Limits and thresholds.
+	fullSearchNgramThreshold = 0.3
+	defaultFullSearchLimit   = 50
+	maxFullSearchLimit       = 50
+
+	// Score bands (250 apart: prefix > phrase > token > fuzzy).
+	fullSearchPrefixBand = "1000 + BM25(d)"
+	fullSearchPhraseBand = "500 + BM25(d)"
+	//nolint:gosec // G101 false positive on ArangoSearch score band expression
+	fullSearchTokenBand = "250 + BM25(d)"
+	fullSearchFuzzyBand = "BM25(d)"
+
+	// Canonical field labels reported in FullSearchResult.Field.
+	fieldSystematicName      = "systematic_name"
+	fieldGeneticModification = "genetic_modification"
+	fieldMutagenesisMethod   = "mutagenesis_method"
+	fieldPhenotype           = "phenotype"
+	fieldEnvironment         = "environment"
+	fieldAssay               = "assay"
+	fieldCharacteristic      = "characteristic"
+	fieldPublicNote          = "public_note"
+
+	// Ontology namespaces and cvterm tag labels in ArangoDB.
+	mutagenesisOntology    = "Dd Mutagenesis Method"
+	phenotypeOntology      = "Dicty Phenotypes"
+	environmentOntology    = "Dicty Environment"
+	assayOntology          = "Dictyostelium Assay"
+	characteristicOntology = "dicty_strain_characteristics"
+	tagSystematicName      = "systematic name"
+	tagMutantType          = "mutant type"
+	tagMutagenesisMethod   = "mutagenesis method"
+	tagPublicNote          = "public note"
+
+	// Bind parameter names for resolved cvterm _id and cv _id targets.
+	bindSysnameTermID    = "sysname_term_id"
+	bindMuttypeTermID    = "muttype_term_id"
+	bindMutmethodTermID  = "mutmethod_term_id"
+	bindPubnoteTermID    = "pubnote_term_id"
+	bindPhenotypeGraphID = "phenotype_graph_id"
+	bindEnvGraphID       = "env_graph_id"
+	bindAssayGraphID     = "assay_graph_id"
+	bindCharGraphID      = "char_graph_id"
+
+	// Validation error messages.
+	msgNilFullSearchQuery   = "expect a non-nil full search query"
+	msgEmptyFullSearchQuery = "expect a non-empty full search query"
 )
 
 var (
@@ -410,4 +500,313 @@ func fullSearchViewProperties(
 			},
 		},
 	}
+}
+
+var (
+	fullSearchQueryLens = L.MakeLens(
+		func(r fullSearchRequest) string { return r.query },
+		func(r fullSearchRequest, q string) fullSearchRequest {
+			r.query = q
+			return r
+		},
+	)
+	fullSearchLimitLens = L.MakeLens(
+		func(r fullSearchRequest) int { return r.limit },
+		func(r fullSearchRequest, l int) fullSearchRequest {
+			r.limit = l
+			return r
+		},
+	)
+	fullSearchTargetsLens = L.MakeLens(
+		func(r fullSearchRequest) fullSearchTargets { return r.targets },
+		func(r fullSearchRequest, t fullSearchTargets) fullSearchRequest {
+			r.targets = t
+			return r
+		},
+	)
+	fullSearchStmtLens = L.MakeLens(
+		func(p fullSearchQueryParams) string { return p.statement },
+		func(p fullSearchQueryParams, s string) fullSearchQueryParams {
+			p.statement = s
+			return p
+		},
+	)
+	fullSearchBindLens = L.MakeLens(
+		func(p fullSearchQueryParams) map[string]any { return p.bindParams },
+		func(
+			p fullSearchQueryParams,
+			b map[string]any,
+		) fullSearchQueryParams {
+			p.bindParams = b
+			return p
+		},
+	)
+
+	isAboveFullSearchMaxLimit = F.Pipe1(
+		maxFullSearchLimit,
+		ORD.Gt(predord.IntOrd),
+	)
+
+	// clampFullSearchLimit turns a requested limit into the effective one:
+	// a non-positive request becomes defaultFullSearchLimit (50) and an
+	// oversized request is capped at maxFullSearchLimit (50).
+	clampFullSearchLimit = MO.Match(
+		defaultFullSearchLimit,
+		[]O.Kleisli[int, int]{
+			MO.Const(isNonPositiveLimit, defaultFullSearchLimit),
+			MO.Const(isAboveFullSearchMaxLimit, maxFullSearchLimit),
+			MO.Default(F.Identity[int]),
+		},
+	)
+
+	keepsNonStopword = F.Pipe2(
+		repo.IsAllStopwords,
+		P.Not,
+		P.ContraMap(fullSearchQueryLens.Get),
+	)
+
+	isNonEmptyFullSearchRows  = predarrays.IsNonEmpty[fullSearchRow]()
+	mapFullSearchRows         = A.Map(toFullSearchResult)
+	runFullSearchTargetsFault = fperrors.OnError(
+		"error in resolving full search targets",
+	)
+	readFullSearchTargetsFault = fperrors.OnError(
+		"error in reading full search targets",
+	)
+	runFullSearchQueryFault = fperrors.OnError(
+		"error in running full search query",
+	)
+)
+
+// isPresentFullSearchQuery reports whether the caller sent a query struct.
+func isPresentFullSearchQuery(params *repo.FullSearchQuery) bool {
+	return params != nil
+}
+
+// hasFullSearchQueryText reports whether the normalized query retains at least
+// one character.
+func hasFullSearchQueryText(req fullSearchRequest) bool {
+	pred := predord.MinStrLen(1)
+
+	return F.Pipe1(req.query, pred)
+}
+
+// stopwordFullSearchError reports a query whose tokens are all English stopwords.
+func stopwordFullSearchError(req fullSearchRequest) error {
+	return fmt.Errorf(
+		"expect a query with at least one non-stopword, received %q",
+		req.query,
+	)
+}
+
+// newFullSearchRequest normalizes the query and clamps the limit.
+func newFullSearchRequest(params *repo.FullSearchQuery) fullSearchRequest {
+	normalized := F.Pipe1(params.Query, repo.NormalizeAutocompleteQuery)
+	limit := F.Pipe1(params.Limit, clampFullSearchLimit)
+
+	return F.Pipe2(
+		fullSearchRequest{},
+		fullSearchQueryLens.Set(normalized),
+		fullSearchLimitLens.Set(limit),
+	)
+}
+
+// validateFullSearchRequest rejects a nil request, an empty normalized query,
+// and an all-stopword query before any AQL statement runs.
+func validateFullSearchRequest(
+	params *repo.FullSearchQuery,
+) E.Either[error, fullSearchRequest] {
+	nilErr := eithererr.ConstErr[*repo.FullSearchQuery](msgNilFullSearchQuery)
+	emptyErr := eithererr.ConstErr[fullSearchRequest](msgEmptyFullSearchQuery)
+	checkNotEmpty := E.FromPredicate(hasFullSearchQueryText, emptyErr)
+	checkNotStopword := E.FromPredicate(keepsNonStopword, stopwordFullSearchError)
+
+	return F.Pipe4(
+		params,
+		E.FromPredicate(isPresentFullSearchQuery, nilErr),
+		E.Map[error](newFullSearchRequest),
+		E.Chain(checkNotEmpty),
+		E.Chain(checkNotStopword),
+	)
+}
+
+// fullSearchTargetBindParams builds the bind parameters for fullSearchTargetsQ.
+func (ar *arangorepository) fullSearchTargetBindParams() map[string]any {
+	return map[string]any{
+		cvCollectionBind:     ar.onto.Cv.Name(),
+		cvtermCollectionBind: ar.onto.Term.Name(),
+		"tag_ontologies": []string{
+			dictyAnnotationOntology,
+			mutagenesisOntology,
+		},
+		"tag_labels": []string{
+			fieldSynonym,
+			fieldGenotype,
+			tagSystematicName,
+			tagMutantType,
+			tagMutagenesisMethod,
+			tagPublicNote,
+		},
+		"term_ontologies": []string{
+			phenotypeOntology,
+			environmentOntology,
+			assayOntology,
+			characteristicOntology,
+		},
+	}
+}
+
+// queryFullSearchTargetsRow executes fullSearchTargetsQ in one round trip.
+func (ar *arangorepository) queryFullSearchTargetsRow() (
+	*manager.Result,
+	error,
+) {
+	bindParams := ar.fullSearchTargetBindParams()
+
+	return ar.database.GetRow(fullSearchTargetsQ, bindParams)
+}
+
+// decodeFullSearchTargetsRow reads the single row returned by fullSearchTargetsQ
+// into a fullSearchTargets struct.
+func decodeFullSearchTargetsRow(
+	row *manager.Result,
+) (fullSearchTargets, error) {
+	var targets fullSearchTargets
+	err := row.Read(&targets)
+
+	return targets, err
+}
+
+// readFullSearchTargetsRow lifts decodeFullSearchTargetsRow into IOEither.
+func readFullSearchTargetsRow(
+	row *manager.Result,
+) IOE.IOEither[error, fullSearchTargets] {
+	return F.Pipe1(
+		IOE.TryCatchError(func() (fullSearchTargets, error) {
+			return decodeFullSearchTargetsRow(row)
+		}),
+		IOE.MapLeft[fullSearchTargets](readFullSearchTargetsFault),
+	)
+}
+
+// resolveFullSearchTargets resolves the 6 tag cvterm._id values and the 4
+// ontology cv._id values in a single AQL round trip. Unloaded ontologies or
+// tags are absent from the returned maps and default to "" when bound.
+func (ar *arangorepository) resolveFullSearchTargets(
+	_ fullSearchRequest,
+) IOE.IOEither[error, fullSearchTargets] {
+	return F.Pipe2(
+		IOE.TryCatchError(func() (*manager.Result, error) {
+			return ar.queryFullSearchTargetsRow()
+		}),
+		IOE.MapLeft[*manager.Result](runFullSearchTargetsFault),
+		IOE.Chain(readFullSearchTargetsRow),
+	)
+}
+
+// fullSearchBindParams builds the 14-entry bind map for the 28-branch query.
+func (ar *arangorepository) fullSearchBindParams(
+	req fullSearchRequest,
+) map[string]any {
+	targets := fullSearchTargetsLens.Get(req)
+	tags := targets.Tags
+	graphs := targets.Graphs
+
+	return map[string]any{
+		"q":                  fullSearchQueryLens.Get(req),
+		"th":                 fullSearchNgramThreshold,
+		"limit":              fullSearchLimitLens.Get(req),
+		"anno_cvterm_graph":  ar.anno.annotg.Name(),
+		bindSynonymTermID:    tags["dicty_annotation:synonym"],
+		bindGenotypeTermID:   tags["dicty_annotation:genotype"],
+		bindSysnameTermID:    tags["dicty_annotation:systematic name"],
+		bindMuttypeTermID:    tags["dicty_annotation:mutant type"],
+		bindMutmethodTermID:  tags["Dd Mutagenesis Method:mutagenesis method"],
+		bindPubnoteTermID:    tags["dicty_annotation:public note"],
+		bindPhenotypeGraphID: graphs[phenotypeOntology],
+		bindEnvGraphID:       graphs[environmentOntology],
+		bindAssayGraphID:     graphs[assayOntology],
+		bindCharGraphID:      graphs[characteristicOntology],
+	}
+}
+
+// buildFullSearchQueryParams assembles the 28-branch statement and bind map.
+func (ar *arangorepository) buildFullSearchQueryParams(
+	req fullSearchRequest,
+) fullSearchQueryParams {
+	statement := buildFullSearchQuery()
+	bindParams := ar.fullSearchBindParams(req)
+
+	return F.Pipe2(
+		fullSearchQueryParams{},
+		fullSearchStmtLens.Set(statement),
+		fullSearchBindLens.Set(bindParams),
+	)
+}
+
+// runFullSearchRows is the raw SearchRows adapter for executeFullSearchQuery.
+func (ar *arangorepository) runFullSearchRows(
+	params fullSearchQueryParams,
+) (dbRows, error) {
+	stmt := fullSearchStmtLens.Get(params)
+	binds := fullSearchBindLens.Get(params)
+
+	return ar.database.SearchRows(stmt, binds)
+}
+
+// executeFullSearchQuery runs the 28-branch full search statement.
+func (ar *arangorepository) executeFullSearchQuery(
+	params fullSearchQueryParams,
+) IOE.IOEither[error, dbRows] {
+	return F.Pipe1(
+		IOE.TryCatchError(func() (dbRows, error) {
+			return ar.runFullSearchRows(params)
+		}),
+		IOE.MapLeft[dbRows](runFullSearchQueryFault),
+	)
+}
+
+// emptyFullSearchResults returns a non-nil empty slice when no rows match.
+func emptyFullSearchResults() []*repo.FullSearchResult {
+	return []*repo.FullSearchResult{}
+}
+
+// toFullSearchResult maps one projection row to a repository FullSearchResult.
+func toFullSearchResult(row fullSearchRow) *repo.FullSearchResult {
+	return &repo.FullSearchResult{
+		EntryID:     row.ID,
+		Field:       row.Field,
+		DisplayText: row.Value,
+		Score:       row.Score,
+	}
+}
+
+// toFullSearchResults projects scanned rows into FullSearchResult pointers
+// without imperative loops, preserving a non-nil empty slice for zero hits.
+func toFullSearchResults(rows []fullSearchRow) []*repo.FullSearchResult {
+	return F.Pipe2(
+		rows,
+		O.FromPredicate(isNonEmptyFullSearchRows),
+		O.Fold(emptyFullSearchResults, mapFullSearchRows),
+	)
+}
+
+// SearchAnnotation returns at most Limit ranked results for the normalized
+// query of params as a lazy IOEither pipeline.
+func (ar *arangorepository) SearchAnnotation(
+	params *repo.FullSearchQuery,
+) IOE.IOEither[error, []*repo.FullSearchResult] {
+	rowFault := scanSearchRows[fullSearchRow](
+		"error in reading full search row",
+	)
+
+	return F.Pipe6(
+		IOE.Of[error](params),
+		IOE.ChainEitherK(validateFullSearchRequest),
+		IOE.Bind(fullSearchTargetsLens.Set, ar.resolveFullSearchTargets),
+		IOE.Map[error](ar.buildFullSearchQueryParams),
+		IOE.Chain(ar.executeFullSearchQuery),
+		IOE.Chain(rowFault),
+		IOE.Map[error](toFullSearchResults),
+	)
 }
