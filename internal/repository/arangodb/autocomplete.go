@@ -607,8 +607,8 @@ func (ar *arangorepository) AutocompleteAnnotation(
 	)
 
 	return F.Pipe7(
-		params,
-		validateAutocompleteRequest,
+		IOE.Of[error](params),
+		IOE.ChainEitherK(validateAutocompleteRequest),
 		IOE.Bind(synonymTermIDLens.Set, ar.resolveSynonymTermID),
 		IOE.Bind(genotypeTermIDLens.Set, ar.resolveGenotypeTermID),
 		IOE.Map[error](ar.buildAutocompleteQueryParams),
@@ -623,8 +623,8 @@ func (ar *arangorepository) AutocompleteAnnotation(
 // statement runs.
 func validateAutocompleteRequest(
 	params *repo.AutocompleteQuery,
-) IOE.IOEither[error, autocompleteRequest] {
-	present := F.Pipe1(
+) E.Either[error, autocompleteRequest] {
+	return F.Pipe3(
 		params,
 		E.FromPredicate(
 			isPresentAutocompleteQuery,
@@ -632,19 +632,14 @@ func validateAutocompleteRequest(
 				msgNilAutocompleteQuery,
 			),
 		),
-	)
-	withText := F.Pipe1(
-		present,
 		E.Chain(E.FromPredicate(
 			hasAutocompleteQueryText,
 			eithererr.ConstErr[*repo.AutocompleteQuery](
 				msgEmptyAutocompleteQuery,
 			),
 		)),
+		E.Map[error](newAutocompleteRequest),
 	)
-	request := F.Pipe1(withText, E.Map[error](newAutocompleteRequest))
-
-	return IOE.FromEither(request)
 }
 
 // isPresentAutocompleteQuery reports whether the caller sent a query struct.
