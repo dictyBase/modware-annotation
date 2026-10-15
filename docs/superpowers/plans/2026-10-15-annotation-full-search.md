@@ -1604,3 +1604,28 @@ Zero collection scans across all 28 branches (12 OUTBOUND traversals from annota
 - Max: 17 ms
 
 Hard gate status: **PASSED**. No score band adjustment required (`max(BM25(d)) = 65.35 < 250`).
+
+### Task 7 End-to-End Validation & Client-Path Latency Gate (ArangoDB 3.11.14)
+
+Executed on 2026-10-15 via `TestSearchAnnotationExplainAndLatency` and `TestSearchAnnotationEndToEnd`.
+
+#### End-to-End bufconn Test Results (`TestSearchAnnotationEndToEnd`)
+- `interior_allele_genotype_prefix` (`"sada"`): matched `DBS0236126`, field `ANNOTATION_SEARCH_FIELD_GENOTYPE`, score `1000.0 >= 1000.0`.
+- `public_note_phrase` (`"forms culminants"`): matched `DBS0236127`, field `ANNOTATION_SEARCH_FIELD_PUBLIC_NOTE`, score `509.2 >= 500.0`.
+- `phenotype_term_phrase` (`"fruiting body"`): matched `DBS0236128`, field `ANNOTATION_SEARCH_FIELD_PHENOTYPE`, score `504.3 >= 500.0`.
+
+#### EXPLAIN Plan Node Counts (`TestSearchAnnotationExplainAndLatency`)
+- `EnumerateViewNode`: 28 (expected 28) — PASS
+- `EnumerateCollectionNode`: 0 (expected 0) — PASS
+- `TraversalNode`: 28 (expected 28: 12 OUTBOUND + 16 INBOUND) — PASS
+
+#### Client-Path Latency Baseline & Gate (50 runs against 1,000 fixtures through go-driver)
+- Calibration in-process baseline (arangosh): 17 ms p95
+- Client-path measured runs (3 samples of 50 runs):
+  - Sample 1: min 17.32 ms, median 17.67 ms, p95 19.14 ms
+  - Sample 2: min 17.38 ms, median 17.68 ms, p95 18.34 ms
+  - Sample 3: min 17.57 ms, median 17.81 ms, p95 19.54 ms
+- `fullSearchClientBaselineP95Ms`: 20.0 ms (worst sample 19.54 ms rounded up)
+- Gate ceiling (`20.0 * 1.25`): 25.0 ms
+- Status: **PASSED** (all runs under 20.0 ms, clearing the 25.0 ms ceiling with >= 21% headroom)
+

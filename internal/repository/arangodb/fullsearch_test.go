@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	E "github.com/IBM/fp-go/v2/either"
 	driver "github.com/arangodb/go-driver"
@@ -1036,4 +1038,186 @@ func TestSearchAnnotationRejectsNilWhitespaceAndStopwordQuery(t *testing.T) {
 		&repository.FullSearchQuery{Query: "the and", Limit: 10},
 	)
 	assert.Error(err, "expect a stopword-only query to be rejected")
+}
+
+const (
+	fullSearchCalibrationP95Ms    = 17.0
+	fullSearchClientBaselineP95Ms = 20.0
+)
+
+func addFullSearchLatencyFixture(
+	t *testing.T,
+	ar *arangorepository,
+	synonymID, genotypeID, noteID string,
+) {
+	t.Helper()
+	ctx := context.Background()
+	dbh := ar.database.Handler()
+
+	annotColl, err := dbh.Collection(ctx, ar.anno.annot.Name())
+	require.NoError(t, err)
+	edgeColl, err := dbh.Collection(ctx, ar.anno.term.Name())
+	require.NoError(t, err)
+
+	docs := make([]map[string]any, 0, latencyFixtureDocuments+1)
+	targets := make([]string, 0, latencyFixtureDocuments+1)
+	for i := range latencyFixtureDocuments {
+		target := synonymID
+		value := fmt.Sprintf("zzfill%d allele", i)
+		switch i % 3 {
+		case 0:
+			target = genotypeID
+			value = fmt.Sprintf("zzfill%dA1, zzfill%dB2, zzfill%dC3", i, i, i)
+		case 1:
+			target = noteID
+			value = fmt.Sprintf("filler note %d description text", i)
+		}
+		docs = append(docs, map[string]any{
+			"value":          value,
+			"editable_value": value,
+			"created_by":     "siddbasu@gmail.com",
+			"entry_id":       fmt.Sprintf("DBS02%05d", i),
+			"rank":           0,
+			"is_obsolete":    false,
+			"version":        1,
+			"created_at":     time.Now().UTC().Format(time.RFC3339),
+		})
+		targets = append(targets, target)
+	}
+	// One searchable probe document, so the measured statement returns a row.
+	docs = append(docs, map[string]any{
+		"value":          "gammaS13",
+		"editable_value": "gammaS13",
+		"created_by":     "siddbasu@gmail.com",
+		"entry_id":       "DBS0236125",
+		"rank":           0,
+		"is_obsolete":    false,
+		"version":        1,
+		"created_at":     time.Now().UTC().Format(time.RFC3339),
+	})
+	targets = append(targets, synonymID)
+
+	metas, docErrs, err := annotColl.CreateDocuments(ctx, docs)
+	require.NoError(t, err)
+	for _, docErr := range docErrs {
+		require.NoError(t, docErr)
+	}
+
+	edges := make([]map[string]any, 0, len(metas))
+	for i, meta := range metas {
+		edges = append(edges, map[string]any{
+			"_from": meta.ID.String(),
+			"_to":   targets[i],
+		})
+	}
+	_, edgeErrs, err := edgeColl.CreateDocuments(ctx, edges)
+	require.NoError(t, err)
+	for _, edgeErr := range edgeErrs {
+		require.NoError(t, edgeErr)
+	}
+}
+
+func TestSearchAnnotationExplainAndLatency(t *testing.T) {
+	assert, repo := setUp(t)
+	defer tearDown(repo)
+
+	ar, isArangoRepo := repo.(*arangorepository)
+	require.True(t, isArangoRepo, "expect the concrete arangodb repository")
+
+	seedFullSearchOntologies(t, repo)
+
+	synonymID, err := ar.termID(dictyAnnotationOntology, fieldSynonym)
+	assert.NoError(err)
+	genotypeID, err := ar.termID(dictyAnnotationOntology, fieldGenotype)
+	assert.NoError(err)
+	noteID, err := ar.termID(dictyAnnotationOntology, tagPublicNote)
+	assert.NoError(err)
+
+	addFullSearchLatencyFixture(t, ar, synonymID, genotypeID, noteID)
+	waitForFullSearchResults(
+		t,
+		repo,
+		"gammas",
+		defaultFullSearchLimit,
+		oneFullSearchResult,
+	)
+
+	ctx := context.Background()
+	either := ioeutils.ToEither(ar.resolveFullSearchTargets(fullSearchRequest{}))
+	targets, err := E.UnwrapError(either)
+	assert.NoError(err)
+
+	req := fullSearchRequest{
+		query:   "gammas",
+		limit:   defaultFullSearchLimit,
+		targets: targets,
+	}
+	statement := buildFullSearchQuery()
+	bindParams := ar.fullSearchBindParams(req)
+
+	dbh := repo.Dbh().Handler()
+	explained, err := dbh.ExplainQuery(ctx, statement, bindParams, nil)
+	assert.NoError(err)
+
+	counts := map[string]int{}
+	for _, node := range explained.Plan.NodesRaw {
+		nodeType, isString := node["type"].(string)
+		if !isString {
+			continue
+		}
+		counts[nodeType]++
+	}
+	assert.Equal(
+		28,
+		counts["EnumerateViewNode"],
+		"expect 28 view scans (one per branch) in the explain plan",
+	)
+	assert.Equal(
+		0,
+		counts["EnumerateCollectionNode"],
+		"expect no collection scan in the explain plan",
+	)
+	assert.Equal(
+		28,
+		counts["TraversalNode"],
+		"expect 28 traversals (12 outbound + 16 inbound) in the explain plan",
+	)
+
+	timings := make([]float64, 0, latencyRuns)
+	for range latencyRuns {
+		started := time.Now()
+		cursor, queryErr := dbh.Query(ctx, statement, bindParams)
+		assert.NoError(queryErr)
+		for cursor.HasMore() {
+			var row fullSearchRow
+			_, readErr := cursor.ReadDocument(ctx, &row)
+			assert.NoError(readErr)
+		}
+		assert.NoError(cursor.Close())
+		elapsed := time.Since(started)
+		timings = append(timings, float64(elapsed.Microseconds())/1000)
+	}
+	slices.Sort(timings)
+	p95Index := int(math.Ceil(float64(len(timings))*0.95)) - 1
+	p95 := timings[p95Index]
+	median := timings[len(timings)/2]
+	ceiling := fullSearchClientBaselineP95Ms * latencyCeilingRatio
+	t.Logf(
+		"full search statement min %.2f ms median %.2f ms p95 %.2f ms"+
+			" over %d runs (calibration baseline %.0f ms, client-path baseline"+
+			" %.2f ms, ceiling %.2f ms)",
+		timings[0],
+		median,
+		p95,
+		len(timings),
+		fullSearchCalibrationP95Ms,
+		fullSearchClientBaselineP95Ms,
+		ceiling,
+	)
+
+	assert.LessOrEqual(
+		p95,
+		ceiling,
+		"expect the statement p95 within 125% of the client-path baseline",
+	)
 }
