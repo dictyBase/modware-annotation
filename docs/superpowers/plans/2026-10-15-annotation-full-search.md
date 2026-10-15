@@ -1553,4 +1553,54 @@ fi
 
 ## Execution Notes
 
-*(To be filled during Task 2 and Task 7 execution.)*
+### Task 2 Calibration Results (ArangoDB 3.11.14)
+
+Calibration executed on 2026-10-15 via `scripts/full-search-calibration.js` against real ArangoDB 3.11.14 (`arango311` container, disposable database `annotation_fullsearch_calib`, 1,000 fixture documents).
+
+#### 15 Calibration Probes
+
+| # | Probe | Query | Expected Field(s) | Score Band | Rows | Status | Notes |
+|---|---|---|---|---|---|---|---|
+| 1 | `1_synonym_value_prefix` | `"gammas"` | `"synonym"` | `>= 1000` | 1 | PASS | `DBS0236125` matched `gammaS13`, score `1000` |
+| 2 | `2_genotype_allele_prefix` | `"axea"`, `"sada"` | `"genotype"` | `>= 1000` | >= 1 | PASS | Whole (`axeA1`) and interior (`sadA-[sadA-KO]`) allele prefixes matched |
+| 3 | `3_anno_other_prefixes` | `"ax4"`, `"endogenous"`, `"restriction"` | `"systematic_name"`, `"genetic_modification"`, `"mutagenesis_method"` | `>= 1000` | 1 each | PASS | `DBS0236130`, `DBS0236131`, `DBS0236132` top-ranked with score `1000` |
+| 4 | `4_cvterm_prefixes` | `"aberrant"`, `"in suspension"`, `"confocal"`, `"axenic"` | `"phenotype"`, `"environment"`, `"assay"`, `"characteristic"` | `>= 1000` | >= 1 each | PASS | All 4 ontology term prefixes matched via INBOUND traversal |
+| 5 | `5_public_note_phrase_vs_token` | `"forms culminants"` | `"public_note"` | phrase `>= 500`, token `[250, 500)` | 2 | PASS | `DBS0236150` (509.20) ranked #1 over `DBS0236151` (259.20) |
+| 6 | `6_ontology_term_interior_phrase_and_token` | `"fruiting body"`, `"morphogenesis"` | `"phenotype"` | phrase `>= 500`, token `>= 250` | 1 each | PASS | Phrase (504.33) and token (502.77) matched on `cvterm.label` |
+| 7 | `7_four_band_ordering` | `"slug migration"` | band order | `1000 > 500 > 250 > 0` | 4 | PASS | `1000` (`DBS0236181`) > `508.49` (`DBS0236182`) > `258.49` (`DBS0236183`) > `65.35` (`DBS0236184`) |
+| 8 | `8_fuzzy_typo_value_and_cvterm` | `"gammas14"`, `"axenik"` | `"synonym"`, `"characteristic"` | `(0, 250)` | 1 each | PASS | `DBS0236125` (52.63), `DBS0236143` (15.51) |
+| 9 | `9_editable_value_exclusion` | `"slateonlymarker"` | none | — | 0 | PASS | `editable_value` is never indexed |
+| 10 | `10_obsolete_and_deprecated_exclusion` | `"oldalias"`, `"obsoletephenoterm"` | none | — | 0 | PASS | Obsolete annotation and deprecated cvterm excluded |
+| 11 | `11_non_strain_and_unsearched_tag_exclusion` | `"xylose"` | `"synonym"` | `>= 1000` | 1 | PASS | Only `DBS0236999` returned under `@limit = 1` |
+| 12 | `12_high_fan_out_term_order_and_limit` | `"popularpheno"` | `"phenotype"` | `>= 1000` | 50 | PASS | Exactly 50 strains returned, strictly ascending order (`DBS0239000`..`DBS0239049`) |
+| 13 | `13_cross_collection_deduplication` | `"cordax"` | `"synonym"` | `>= 1000` | 1 | PASS | Deduplicated to single highest-scoring row (`DBS0236170`, synonym) |
+| 14 | `14_unloaded_ontology_resilience` | `"gammas"` (`@env_graph_id = ""`) | `"synonym"` | `>= 1000` | 1 | PASS | Query succeeds with empty graph binding |
+| 15 | `15_stopword_and_bm25_band_width_check` | `"the and"` | — | `max(BM25) < 250` | non-empty tokens | PASS | `TOKENS` returned `["the", "and"]`; observed `max(BM25(d)) = 65.35 < 250` |
+
+#### EXPLAIN Plan Node Counts
+
+Full 28-branch AQL statement analyzed via `/_api/explain`:
+
+| Node Type | Count | Expected | Status |
+|---|---|---|---|
+| `EnumerateViewNode` | 28 | 28 | PASS |
+| `EnumerateCollectionNode` | 0 | 0 | PASS |
+| `TraversalNode` | 28 | 28 | PASS |
+| `CalculationNode` | 146 | — | PASS |
+| `SubqueryStartNode` / `SubqueryEndNode` | 42 / 42 | — | PASS |
+| `FilterNode` | 40 | — | PASS |
+| `LimitNode` | 42 | — | PASS |
+| `SortNode` | 31 | — | PASS |
+| `CollectNode` | 1 | 1 | PASS |
+| `ReturnNode` | 1 | 1 | PASS |
+
+Zero collection scans across all 28 branches (12 OUTBOUND traversals from annotation, 16 INBOUND traversals from cvterm).
+
+#### Latency Baseline (20 runs against 1,000 fixtures)
+
+- Min: 16 ms
+- Median: 16 ms
+- p95: 17 ms
+- Max: 17 ms
+
+Hard gate status: **PASSED**. No score band adjustment required (`max(BM25(d)) = 65.35 < 250`).
