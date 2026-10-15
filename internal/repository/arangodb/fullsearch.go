@@ -656,34 +656,15 @@ func (ar *arangorepository) fullSearchTargetBindParams() map[string]any {
 	}
 }
 
-// queryFullSearchTargetsRow executes fullSearchTargetsQ in one round trip.
-func (ar *arangorepository) queryFullSearchTargetsRow() (
-	*manager.Result,
-	error,
-) {
-	bindParams := ar.fullSearchTargetBindParams()
-
-	return ar.database.GetRow(fullSearchTargetsQ, bindParams)
-}
-
-// decodeFullSearchTargetsRow reads the single row returned by fullSearchTargetsQ
-// into a fullSearchTargets struct.
-func decodeFullSearchTargetsRow(
-	row *manager.Result,
-) (fullSearchTargets, error) {
-	var targets fullSearchTargets
-	err := row.Read(&targets)
-
-	return targets, err
-}
-
 // readFullSearchTargetsRow lifts decodeFullSearchTargetsRow into IOEither.
 func readFullSearchTargetsRow(
 	row *manager.Result,
 ) IOE.IOEither[error, fullSearchTargets] {
 	return F.Pipe1(
 		IOE.TryCatchError(func() (fullSearchTargets, error) {
-			return decodeFullSearchTargetsRow(row)
+			var targets fullSearchTargets
+			err := row.Read(&targets)
+			return targets, err
 		}),
 		IOE.MapLeft[fullSearchTargets](readFullSearchTargetsFault),
 	)
@@ -697,7 +678,11 @@ func (ar *arangorepository) resolveFullSearchTargets(
 ) IOE.IOEither[error, fullSearchTargets] {
 	return F.Pipe2(
 		IOE.TryCatchError(func() (*manager.Result, error) {
-			return ar.queryFullSearchTargetsRow()
+			bindParams := ar.fullSearchTargetBindParams()
+			return ar.database.GetRow(
+				fullSearchTargetsQ,
+				bindParams,
+			)
 		}),
 		IOE.MapLeft[*manager.Result](runFullSearchTargetsFault),
 		IOE.Chain(readFullSearchTargetsRow),
