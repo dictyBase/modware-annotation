@@ -4,8 +4,25 @@ import (
 	"fmt"
 	"io"
 
+	fperrors "github.com/IBM/fp-go/v2/errors"
+	F "github.com/IBM/fp-go/v2/function"
+	IOE "github.com/IBM/fp-go/v2/ioeither"
+	P "github.com/IBM/fp-go/v2/predicate"
+	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-obograph/storage"
 	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
+)
+
+var (
+	runTermIDQueryFault = fperrors.OnError(
+		"error in running obograph retrieving query",
+	)
+	readTermIDFault = fperrors.OnError(
+		"error in retrieving obograph id",
+	)
+	isNonEmptyTermRow = P.Not(func(row *manager.Result) bool {
+		return row.IsEmpty()
+	})
 )
 
 func (ar *arangorepository) LoadOboJSON(rde io.Reader) (*storage.UploadInformation, error) {
@@ -16,15 +33,57 @@ func (ar *arangorepository) LoadOboJSON(rde io.Reader) (*storage.UploadInformati
 		Term:         ar.onto.Term.Name(),
 	})
 	if err != nil {
-		return &storage.UploadInformation{}, fmt.Errorf("error in creating new data source %s", err)
+		return &storage.UploadInformation{}, fmt.Errorf(
+			"error in creating new data source %s",
+			err,
+		)
 	}
 
 	info, err := storage.LoadOboJSONFromDataSource(rde, dsb)
 	if err != nil {
-		return &storage.UploadInformation{}, fmt.Errorf("error in uploading JSON %s", err)
+		return &storage.UploadInformation{}, fmt.Errorf(
+			"error in uploading JSON %s",
+			err,
+		)
 	}
 
 	return info, nil
+}
+
+func (ar *arangorepository) lookupTermID(
+	onto, term string,
+) IOE.IOEither[error, string] {
+	missingTermFault := F.Constant1[*manager.Result](
+		fmt.Errorf(
+			"ontology %s and tag %s does not exist",
+			onto,
+			term,
+		),
+	)
+
+	return F.Pipe4(
+		IOE.TryCatchError(func() (*manager.Result, error) {
+			return ar.database.GetRow(annExistTagQ, map[string]any{
+				cvCollectionBind:     ar.onto.Cv.Name(),
+				cvtermCollectionBind: ar.onto.Term.Name(),
+				"ontology":           onto,
+				"tag":                term,
+			})
+		}),
+		IOE.MapLeft[*manager.Result](runTermIDQueryFault),
+		IOE.FilterOrElse(isNonEmptyTermRow, missingTermFault),
+		IOE.Chain(func(
+			row *manager.Result,
+		) IOE.IOEither[error, string] {
+			return IOE.TryCatchError(func() (string, error) {
+				var tid string
+				err := row.Read(&tid)
+
+				return tid, err
+			})
+		}),
+		IOE.MapLeft[string](readTermIDFault),
+	)
 }
 
 func (ar *arangorepository) termID(onto, term string) (string, error) {

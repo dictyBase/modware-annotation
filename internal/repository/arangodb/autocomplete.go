@@ -605,12 +605,20 @@ func (ar *arangorepository) AutocompleteAnnotation(
 	rowFault := scanSearchRows[suggestionRow](
 		"error in reading autocomplete row",
 	)
+	synonymTermID := ar.lookupTermID(dictyAnnotationOntology, fieldSynonym)
+	genotypeTermID := ar.lookupTermID(dictyAnnotationOntology, fieldGenotype)
 
 	return F.Pipe7(
 		IOE.Of[error](params),
 		IOE.ChainEitherK(validateAutocompleteRequest),
-		IOE.Bind(synonymTermIDLens.Set, ar.resolveSynonymTermID),
-		IOE.Bind(genotypeTermIDLens.Set, ar.resolveGenotypeTermID),
+		IOE.Bind(
+			synonymTermIDLens.Set,
+			F.Constant1[autocompleteRequest](synonymTermID),
+		),
+		IOE.Bind(
+			genotypeTermIDLens.Set,
+			F.Constant1[autocompleteRequest](genotypeTermID),
+		),
 		IOE.Map[error](ar.buildAutocompleteQueryParams),
 		IOE.Chain(ar.executeAutocompleteQuery),
 		IOE.Chain(rowFault),
@@ -662,36 +670,6 @@ func newAutocompleteRequest(params *repo.AutocompleteQuery) autocompleteRequest 
 		query: repo.NormalizeAutocompleteQuery(params.Query),
 		limit: clampAutocompleteLimit(params.Limit),
 	}
-}
-
-// resolveTermID looks up the cvterm identifier of one ontology tag.
-func (ar *arangorepository) resolveTermID(
-	onto, tag string,
-) IOE.IOEither[error, string] {
-	termFault := fperrors.OnError(
-		"error in resolving autocomplete ontology term",
-	)
-
-	return F.Pipe1(
-		IOE.TryCatchError(func() (string, error) {
-			return ar.termID(onto, tag)
-		}),
-		IOE.MapLeft[string](termFault),
-	)
-}
-
-// resolveSynonymTermID resolves the synonym cvterm identifier of the request.
-func (ar *arangorepository) resolveSynonymTermID(
-	autocompleteRequest,
-) IOE.IOEither[error, string] {
-	return ar.resolveTermID(dictyAnnotationOntology, fieldSynonym)
-}
-
-// resolveGenotypeTermID resolves the genotype cvterm identifier of the request.
-func (ar *arangorepository) resolveGenotypeTermID(
-	autocompleteRequest,
-) IOE.IOEither[error, string] {
-	return ar.resolveTermID(dictyAnnotationOntology, fieldGenotype)
 }
 
 // buildAutocompleteQueryParams finishes the statement and its bind parameters.
