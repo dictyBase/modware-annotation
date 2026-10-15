@@ -251,47 +251,29 @@ func fuzzyBranch(spec autocompleteFieldSpec) queryBranch {
 	)
 }
 
-// mergeBlock builds the merge block that deduplicates the branches by
-// entry_id and returns the top rows.
-func mergeBlock(branches []queryBranch) string {
-	return F.Pipe3(
-		branches,
-		A.Map(nameLens.Get),
-		joinAutocompleteParts(", "),
-		S.Format[string](AutocompleteMergeQ),
-	)
-}
-
-// joinAutocompleteParts separates the parts with sep and then concatenates
-// them through the loom string helper, so query assembly stays point-free
-// without reaching outside the house allowlist.
-func joinAutocompleteParts(sep string) func([]string) string {
-	return F.Flow2(
-		A.Intersperse(sep),
-		joinAllParts,
-	)
-}
-
-// joinAllParts concatenates parts that already carry their separators.
-func joinAllParts(parts []string) string {
-	return strutils.JoinStrings(parts...)
-}
-
 // appendMergeBranch builds the merge block from the branch names and appends it as a branch.
 func appendMergeBranch(branches []queryBranch) []queryBranch {
-	mergeBody := mergeBlock(branches)
-	mergeBranch := F.Pipe1(queryBranch{}, bodyLens.Set(mergeBody))
+	setBody := F.Pipe1(queryBranch{}, F.Flip(bodyLens.Set))
 
-	return F.Pipe1(branches, A.Push(mergeBranch))
+	return F.Pipe6(
+		branches,
+		A.Map(nameLens.Get),
+		A.Intersperse(", "),
+		A.Fold(S.Monoid),
+		S.Format[string](AutocompleteMergeQ),
+		setBody,
+		F.Bind1st(A.Append, branches),
+	)
 }
 
 // buildAutocompleteQuery builds the complete 4-branch autocomplete statement.
 func buildAutocompleteQuery() string {
-	return F.Pipe4(
+	return F.Pipe5(
 		autocompleteBranchBuilders,
 		A.Ap[queryBranch](autocompleteFields),
 		appendMergeBranch,
 		A.Map(bodyLens.Get),
-		joinAutocompleteParts("\n"),
+		A.Intersperse("\n"),
+		A.Fold(S.Monoid),
 	)
 }
