@@ -15,6 +15,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	eithererr "github.com/dictyBase/fp-go-loom/eithererr"
 	MO "github.com/dictyBase/fp-go-loom/matchopt"
+	predarrays "github.com/dictyBase/fp-go-loom/predicate/array"
 	predord "github.com/dictyBase/fp-go-loom/predicate/ord"
 	repo "github.com/dictyBase/modware-annotation/internal/repository"
 )
@@ -569,6 +570,33 @@ func autocompleteViewProperties(
 	}
 }
 
+// defaultIdentityAnalyzers returns the default link analyzer list when
+// ArangoDB omits the inherited identity analyzer from stored view properties.
+func defaultIdentityAnalyzers() []string {
+	return []string{autocompleteIdentityAnalyzer}
+}
+
+// effectiveLinkAnalyzers returns a link's analyzer list, defaulting an empty
+// list to the built-in identity analyzer.
+func effectiveLinkAnalyzers(analyzers []string) []string {
+	pred := predarrays.IsNonEmpty[string]()
+
+	return F.Pipe2(
+		analyzers,
+		O.FromPredicate(pred),
+		O.GetOrElse(defaultIdentityAnalyzers),
+	)
+}
+
+// sameLinkAnalyzers reports whether two collection links carry the same
+// link-level analyzers after normalizing the default identity analyzer.
+func sameLinkAnalyzers(a, b []string) bool {
+	left := effectiveLinkAnalyzers(a)
+	right := effectiveLinkAnalyzers(b)
+
+	return sameAnalyzers(left, right)
+}
+
 // sameLinkShape reports whether two view property sets index the same
 // collections and fields with the same analyzers. Unrelated view settings are
 // ignored, so they never force a rewrite.
@@ -580,7 +608,9 @@ func sameLinkShape(
 	}
 	for coll, left := range a.Links {
 		right, ok := b.Links[coll]
-		if !ok || !sameFieldShape(left.Fields, right.Fields) {
+		if !ok ||
+			!sameLinkAnalyzers(left.Analyzers, right.Analyzers) ||
+			!sameFieldShape(left.Fields, right.Fields) {
 			return false
 		}
 	}

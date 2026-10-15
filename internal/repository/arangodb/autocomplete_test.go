@@ -140,6 +140,84 @@ func TestEnsureAutocompleteSearchReconcilesStaleView(t *testing.T) {
 	)
 }
 
+func TestEnsureAutocompleteSearchReconcilesStaleLinkAnalyzer(t *testing.T) {
+	assert := require.New(t)
+	tra, err := testarango.NewTestArangoFromEnv(true)
+	assert.NoError(err)
+
+	dbr, err := tra.DB(tra.Database)
+	assert.NoError(err)
+	db := dbr.Handler()
+	ctx := context.Background()
+	collP := getCollectionParams()
+
+	_, err = db.CreateCollection(ctx, collP.Annotation, nil)
+	assert.NoError(err)
+
+	_, _, err = db.EnsureCreatedAnalyzer(ctx, &autocompleteNormDef)
+	assert.NoError(err)
+	_, _, err = db.EnsureCreatedAnalyzer(ctx, &autocompleteDelimDef)
+	assert.NoError(err)
+	_, _, err = db.EnsureCreatedAnalyzer(ctx, &autocompleteNgramDef)
+	assert.NoError(err)
+
+	// Pre-create annotation_autocomplete with correct field analyzers but a
+	// non-default link-level analyzer.
+	stale, err := db.CreateArangoSearchView(
+		ctx,
+		autocompleteViewName,
+		&driver.ArangoSearchViewProperties{
+			Links: driver.ArangoSearchLinks{
+				collP.Annotation: {
+					Analyzers: []string{autocompleteNormAnalyzer},
+					Fields: driver.ArangoSearchFields{
+						docFieldValue: {
+							Analyzers: []string{
+								autocompleteNormAnalyzer,
+								autocompleteDelimAnalyzer,
+								autocompleteNgramAnalyzer,
+							},
+						},
+						docFieldEntryID:    {Analyzers: []string{autocompleteNormAnalyzer}},
+						docFieldIsObsolete: {},
+					},
+				},
+			},
+		},
+	)
+	assert.NoError(err)
+	staleProps, err := stale.Properties(ctx)
+	assert.NoError(err)
+
+	repo, err := NewTaggedAnnotationRepo(
+		GetConnectParamsFromDB(tra),
+		collP,
+		getOntoParams(),
+	)
+	assert.NoError(err)
+	defer tearDown(repo)
+
+	fresh, err := db.View(ctx, autocompleteViewName)
+	assert.NoError(err)
+	freshAsv, err := fresh.ArangoSearchView()
+	assert.NoError(err)
+	freshProps, err := freshAsv.Properties(ctx)
+	assert.NoError(err)
+
+	assert.Equal(
+		staleProps.ID,
+		freshProps.ID,
+		"expect the same view identifier, proving SetProperties updated in place without delete",
+	)
+
+	freshLink := freshProps.Links[collP.Annotation]
+	assert.True(
+		slices.Equal(freshLink.Analyzers, []string{autocompleteIdentityAnalyzer}) ||
+			len(freshLink.Analyzers) == 0,
+		"expect link-level analyzer reconciled back to identity default",
+	)
+}
+
 func TestNewTaggedAnnotationRepoFailsWhenSetupFails(t *testing.T) {
 	assert := require.New(t)
 	tra, err := testarango.NewTestArangoFromEnv(true)
