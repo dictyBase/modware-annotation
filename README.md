@@ -27,6 +27,7 @@ On every create, update, or delete mutation the service publishes a protobuf-ser
   - [Filtering](#filtering)
   - [Annotation Groups](#annotation-groups)
   - [Autocomplete Annotation](#autocomplete-annotation)
+  - [Search Annotation](#search-annotation)
   - [Create a Feature Annotation](#create-a-feature-annotation)
   - [Get a Feature Annotation](#get-a-feature-annotation)
   - [Update a Feature Annotation](#update-a-feature-annotation)
@@ -171,6 +172,7 @@ Full protobuf definitions: [dictybaseapis/annotation.proto](https://github.com/d
 | `ListAnnotationGroups` | `ListGroupParameters` | `TaggedAnnotationGroupCollection` | Paginated group listing with filters |
 | `GetAnnotationTag` | `TagRequest` | `AnnotationTag` | Retrieve an ontology tag by ID |
 | `AutocompleteAnnotation` | `AnnotationAutocompleteParameters` | `AnnotationSuggestionCollection` | Suggest strain synonyms and genotypes for partial text |
+| `SearchAnnotation` | `AnnotationSearchParameters` | `AnnotationSearchResultCollection` | Search strain annotations across 10 fields and 4 score bands |
 | `OboJSONFileUpload` | `stream FileUploadRequest` | `FileUploadResponse` | Stream-upload an OBO JSON ontology file |
 
 ### Autocomplete Annotation
@@ -208,6 +210,65 @@ Response fields of one `AnnotationSuggestion` message:
 | `entry_id` | The strain identifier of the match, for example `DBS0236126`. |
 | `field` | The tag of the match. The value is `ANNOTATION_SEARCH_FIELD_SYNONYM` or `ANNOTATION_SEARCH_FIELD_GENOTYPE`. |
 | `display_text` | The annotation value. |
+| `score` | The rank of the match. |
+
+The method returns an empty collection and no error when no annotation matches. The method does not return `NotFound` for an empty result.
+
+### Search Annotation
+
+The `SearchAnnotation` method searches 10 strain annotation fields. The request is an `AnnotationSearchParameters` message. The response is an `AnnotationSearchResultCollection` message.
+
+Request fields:
+
+| Field | Value | Behavior |
+|-------|-------|----------|
+| `data.type` | `annotation` | The resource name of the request. |
+| `data.attributes.query` | 2 characters or more | The service trims the text, converts it to lower case, and removes accents. The service rejects a query that has only stopwords. |
+| `data.attributes.limit` | 50 by default, 50 maximum | The service uses 50 when the value is 0. The service rejects a value below 0 or above 50 with `InvalidArgument`. |
+
+Searched strain fields:
+
+The service searches 10 strain fields across active strain annotations (`DBS...` entry identifiers):
+
+- 6 annotation value fields:
+  - `synonym` (`dicty_annotation` ontology)
+  - `genotype` (`dicty_annotation` ontology, whole-value and interior allele prefix)
+  - `systematic_name` (`dicty_annotation` ontology, tag `systematic name`)
+  - `genetic_modification` (`dicty_annotation` ontology, tag `mutant type`)
+  - `mutagenesis_method` (`Dd Mutagenesis Method` ontology, tag `mutagenesis method`)
+  - `public_note` (`dicty_annotation` ontology, tag `public note`, token and phrase match)
+- 4 ontology term fields (term label matched through a 1-hop inbound traversal):
+  - `phenotype` (`Dicty Phenotypes` ontology)
+  - `environment` (`Dicty Environment` ontology)
+  - `assay` (`Dictyostelium Assay` ontology)
+  - `characteristic` (`dicty_strain_characteristics` ontology)
+
+Search behavior:
+
+- The service searches strain entries only. The entry identifier starts with `DBS`.
+- The service uses active annotations only. The `is_obsolete` attribute is `false`.
+- The service uses active ontology terms only. The `deprecated` attribute is `false`.
+- The service ignores annotations with other tags. It also ignores non-strain annotations (`DDB_G...`, `DBP...`).
+- The service returns one result for each strain. It keeps the result with the best score.
+- The service tolerates missing ontologies. If an ontology is not loaded, its branches return zero results and other branches continue.
+- The service accepts a whole-value prefix and an allele prefix inside a multi-allele genotype value.
+- The service accepts a small typographical error. A fuzzy match uses an n-gram similarity of 0.3 or more.
+
+Order of results (4 score bands):
+
+1. A prefix match comes first. A prefix match has a score of 1000 or more (`1000 + BM25(d)`).
+2. A phrase match comes second. A phrase match has a score between 500 and 750 (`500 + BM25(d)`).
+3. A token match comes third. A token match has a score between 250 and 500 (`250 + BM25(d)`).
+4. A fuzzy match comes fourth. A fuzzy match has a score less than 250 (`BM25(d)`).
+5. The metadata gives the number of results in `meta.total` and the effective limit in `meta.limit`.
+
+Response fields of one `AnnotationSearchResult` message:
+
+| Field | Meaning |
+|-------|---------|
+| `entry_id` | The strain identifier of the match, for example `DBS0236126`. |
+| `field` | The field enum of the match, for example `ANNOTATION_SEARCH_FIELD_PHENOTYPE`. |
+| `display_text` | The matched annotation value or ontology term label. |
 | `score` | The rank of the match. |
 
 The method returns an empty collection and no error when no annotation matches. The method does not return `NotFound` for an empty result.
@@ -704,6 +765,41 @@ The view indexes these attributes of the `annotation` collection:
 At each start the service compares the stored links of the view with the links that the search needs. The service updates the view in place with `SetProperties` when the links differ. The service does not delete the view, so the view identifier does not change.
 
 The search resolves the `_id` of the `synonym` and `genotype` terms before it runs the statement. The statement then filters the annotations on the tag edges. Therefore the statement does not scan the `cvterm` collection.
+
+### Full Search Assets
+
+The `SearchAnnotation` method uses an ArangoSearch view, three custom analyzers, and two built-in analyzers. `NewTaggedAnnotationRepo` creates the view and the custom analyzers at server start. The start is idempotent, so a restart does not change the assets.
+
+| Asset | Type | Purpose |
+|-------|------|---------|
+| `annotation_search_norm` | `norm` analyzer | Converts a value to lower case and removes accents. |
+| `annotation_search_delim` | `pipeline` analyzer | Splits a value at commas and spaces. Then it applies the norm step. |
+| `annotation_search_ngram` | `pipeline` analyzer | Applies the norm step. Then it indexes n-grams of 2 and 3 characters. |
+| `text_en` | Built-in `text` analyzer | English stemming and tokenization for token and phrase branches. |
+| `identity` | Built-in `identity` analyzer | Exact match for boolean and filter attributes. |
+| `annotation_full_search` | `arangosearch` view | Indexes the `annotation` and `cvterm` collections. |
+
+The view links two collections:
+
+`annotation` collection link:
+
+| Attribute | Analyzers | Purpose |
+|-----------|-----------|---------|
+| `value` | `annotation_search_norm`, `annotation_search_delim`, `annotation_search_ngram`, `text_en` | Prefix, allele prefix, fuzzy, token, and phrase matches on annotation values |
+| `entry_id` | `annotation_search_norm` | In-index strain prefix filter `STARTS_WITH(d.entry_id, "dbs")` |
+| `is_obsolete` | `identity` | In-index active-annotation filter `d.is_obsolete == false` |
+
+`cvterm` collection link:
+
+| Attribute | Analyzers | Purpose |
+|-----------|-----------|---------|
+| `label` | `annotation_search_norm`, `annotation_search_ngram`, `text_en` | Prefix, fuzzy, token, and phrase matches on ontology term labels |
+| `graph_id` | `identity` | In-index ontology filter `d.graph_id == @<onto>_graph_id` |
+| `deprecated` | `identity` | In-index active-term filter `d.deprecated == false` |
+
+At each start the service compares the stored links of the view with the required links. The service updates the view in place with `SetProperties` when the links differ. The service does not delete the view, so the view identifier does not change.
+
+Before the search statement runs, a single target-resolution query resolves the six tag term identifiers and the four ontology graph identifiers. If an ontology is not loaded, its identifier defaults to an empty string. The search statement executes with 28 view branches, 0 collection scans, and 28 graph traversals.
 
 ### Feature Annotations
 

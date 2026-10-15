@@ -1539,15 +1539,15 @@ fi
 
 ## Completion Criteria
 
-- [ ] `go.mod` requires `github.com/dictyBase/go-genproto v0.0.0-20261015184742-b50113c639f4` and `TestAnnotationSearchProtoContract` passes.
-- [ ] `scripts/full-search-calibration.js` runs against ArangoDB 3.11 and records all 15 probe results, `EXPLAIN` node counts (`28` `EnumerateViewNode`, `0` `EnumerateCollectionNode`, `28` `TraversalNode`), and baseline p95 in [Execution Notes](#execution-notes).
-- [ ] `internal/repository/repository.go` declares `FullSearchQuery`, `FullSearchResult`, and `SearchAnnotation(params *FullSearchQuery) IOE.IOEither[error, []*FullSearchResult]`, and `internal/repository/fullsearch.go` exports `IsAllStopwords`.
-- [ ] `NewTaggedAnnotationRepo` wires `IOE.ChainFirst(ensureFullSearch)` (`F.Pipe10`), creating `annotation_search_norm`, `annotation_search_delim`, `annotation_search_ngram`, and the 2-link view `annotation_full_search` (`annotation` and `cvterm`), and `sameLinkShape` compares both link-level and field-level analyzers.
-- [ ] `buildFullSearchQuery` in `internal/repository/arangodb/fullsearch_query.go` uses the 4-set scalar spec pipeline (`fullSearchSpecSets`) to generate the 28-branch AQL statement across the 4 score bands (`1000`, `500`, `250`, `0`).
-- [ ] `SearchAnnotation` in `internal/repository/arangodb/fullsearch.go` resolves the 6 tag `cvterm._id`s and 4 ontology `cv._id`s in one round trip (`resolveFullSearchTargets`), tolerates unloaded ontologies (`""`), and deduplicates results by `entry_id`.
-- [ ] `AnnotationService.SearchAnnotation` in `internal/app/service/fullsearch.go` is written as an uninterrupted `fp-go/v2` `IOE.IOEither` pipeline (`F.Pipe5`) with `A.Map(toAnnotationSearchResult)`.
-- [ ] All 40 tests in the [Test Matrix](#test-matrix) pass, `EXPLAIN` reports `28` `EnumerateViewNode`, `0` `EnumerateCollectionNode`, and `28` `TraversalNode`, client-path p95 latency is <= 125% of baseline, and all four [Quality Gates](#quality-gates) pass.
-- [ ] `README.md` documents the `SearchAnnotation` RPC and `annotation_full_search` assets in Simplified Technical English, and `MODWARE_ANNOTATION_NIL_ATTRIBUTES_REPORT.md` remains untouched and unstaged.
+- [x] `go.mod` requires `github.com/dictyBase/go-genproto v0.0.0-20261015184742-b50113c639f4` and `TestAnnotationSearchProtoContract` passes.
+- [x] `scripts/full-search-calibration.js` runs against ArangoDB 3.11 and records all 15 probe results, `EXPLAIN` node counts (`28` `EnumerateViewNode`, `0` `EnumerateCollectionNode`, `28` `TraversalNode`), and baseline p95 in [Execution Notes](#execution-notes).
+- [x] `internal/repository/repository.go` declares `FullSearchQuery`, `FullSearchResult`, and `SearchAnnotation(params *FullSearchQuery) IOE.IOEither[error, []*FullSearchResult]`, and `internal/repository/fullsearch.go` exports `IsAllStopwords`.
+- [x] `NewTaggedAnnotationRepo` wires `IOE.ChainFirst(ensureFullSearch)` (`F.Pipe10`), creating `annotation_search_norm`, `annotation_search_delim`, `annotation_search_ngram`, and the 2-link view `annotation_full_search` (`annotation` and `cvterm`), and `sameLinkShape` compares both link-level and field-level analyzers.
+- [x] `buildFullSearchQuery` in `internal/repository/arangodb/fullsearch_query.go` uses the 4-set scalar spec pipeline (`fullSearchSpecSets`) to generate the 28-branch AQL statement across the 4 score bands (`1000`, `500`, `250`, `0`).
+- [x] `SearchAnnotation` in `internal/repository/arangodb/fullsearch.go` resolves the 6 tag `cvterm._id`s and 4 ontology `cv._id`s in one round trip (`resolveFullSearchTargets`), tolerates unloaded ontologies (`""`), and deduplicates results by `entry_id`.
+- [x] `AnnotationService.SearchAnnotation` in `internal/app/service/fullsearch.go` is written as an uninterrupted `fp-go/v2` `IOE.IOEither` pipeline (`F.Pipe5`) with `A.Map(toAnnotationSearchResult)`.
+- [x] All 40 tests in the [Test Matrix](#test-matrix) pass, `EXPLAIN` reports `28` `EnumerateViewNode`, `0` `EnumerateCollectionNode`, and `28` `TraversalNode`, client-path p95 latency is <= 125% of baseline, and all four [Quality Gates](#quality-gates) pass.
+- [x] `README.md` documents the `SearchAnnotation` RPC and `annotation_full_search` assets in Simplified Technical English, and `MODWARE_ANNOTATION_NIL_ATTRIBUTES_REPORT.md` remains untouched and unstaged.
 
 ---
 
