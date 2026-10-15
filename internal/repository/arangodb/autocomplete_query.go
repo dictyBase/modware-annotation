@@ -27,13 +27,6 @@ type (
 		body string
 	}
 
-	// branchSet pairs the fields a stage covers with the builder that turns
-	// one field into one branch.
-	branchSet struct {
-		fields  []autocompleteFieldSpec
-		builder func(autocompleteFieldSpec) queryBranch
-	}
-
 	// branchBuildState carries the field specification and the branch under
 	// construction through the branch builder pipeline.
 	branchBuildState struct {
@@ -118,11 +111,11 @@ var (
 	stateNameLens     = F.Pipe1(branchLens, L.Compose[branchBuildState](nameLens))
 	stateBodyLens     = F.Pipe1(branchLens, L.Compose[branchBuildState](bodyLens))
 
-	// branchSets are the two stages of the statement: the prefix stage and
-	// the fuzzy stage, each covering both fields.
-	branchSets = []branchSet{
-		{fields: autocompleteFields, builder: prefixBranch},
-		{fields: autocompleteFields, builder: fuzzyBranch},
+	// autocompleteBranchBuilders are the two stage builders of the statement:
+	// the prefix stage and the fuzzy stage, each applied across autocompleteFields.
+	autocompleteBranchBuilders = []func(autocompleteFieldSpec) queryBranch{
+		prefixBranch,
+		fuzzyBranch,
 	}
 )
 
@@ -258,16 +251,6 @@ func fuzzyBranch(spec autocompleteFieldSpec) queryBranch {
 	)
 }
 
-// branchesFromSet builds every branch of one stage.
-func branchesFromSet(set branchSet) []queryBranch {
-	return F.Pipe1(set.fields, A.Map(set.builder))
-}
-
-// autocompleteBranches builds all four branches in statement order.
-func autocompleteBranches() []queryBranch {
-	return F.Pipe1(branchSets, A.Chain(branchesFromSet))
-}
-
 // mergeBlock builds the merge block that deduplicates the branches by
 // entry_id and returns the top rows.
 func mergeBlock(branches []queryBranch) string {
@@ -294,21 +277,21 @@ func joinAllParts(parts []string) string {
 	return strutils.JoinStrings(parts...)
 }
 
-// appendMergeBlock appends the rendered merge block to the slice of branch bodies.
-func appendMergeBlock(branches []queryBranch) func([]string) []string {
-	merge := mergeBlock(branches)
+// appendMergeBranch builds the merge block from the branch names and appends it as a branch.
+func appendMergeBranch(branches []queryBranch) []queryBranch {
+	mergeBody := mergeBlock(branches)
+	mergeBranch := F.Pipe1(queryBranch{}, bodyLens.Set(mergeBody))
 
-	return A.Push(merge)
+	return F.Pipe1(branches, A.Push(mergeBranch))
 }
 
 // buildAutocompleteQuery builds the complete 4-branch autocomplete statement.
 func buildAutocompleteQuery() string {
-	branches := autocompleteBranches()
-
-	return F.Pipe3(
-		branches,
+	return F.Pipe4(
+		autocompleteBranchBuilders,
+		A.Ap[queryBranch](autocompleteFields),
+		appendMergeBranch,
 		A.Map(bodyLens.Get),
-		appendMergeBlock(branches),
 		joinAutocompleteParts("\n"),
 	)
 }
