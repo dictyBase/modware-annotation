@@ -176,8 +176,23 @@ var (
 		},
 		Features: autocompleteAnalyzerFeatures(),
 	}
-	// synonymTermIDLens and genotypeTermIDLens focus the resolved ontology
-	// term identifiers of a request, so IOE.Bind can fill them in.
+	// queryLens, limitLens, synonymTermIDLens, and genotypeTermIDLens focus
+	// the fields of an autocomplete request, so pipelines and IOE.Bind can
+	// read and fill them through optics.
+	queryLens = L.MakeLens(
+		func(r autocompleteRequest) string { return r.query },
+		func(r autocompleteRequest, q string) autocompleteRequest {
+			r.query = q
+			return r
+		},
+	)
+	limitLens = L.MakeLens(
+		func(r autocompleteRequest) int { return r.limit },
+		func(r autocompleteRequest, l int) autocompleteRequest {
+			r.limit = l
+			return r
+		},
+	)
 	synonymTermIDLens = L.MakeLens(
 		func(r autocompleteRequest) string { return r.synonymTermID },
 		func(r autocompleteRequest, id string) autocompleteRequest {
@@ -190,6 +205,26 @@ var (
 		func(r autocompleteRequest, id string) autocompleteRequest {
 			r.genotypeTermID = id
 			return r
+		},
+	)
+
+	// statementLens and bindParamsLens focus the two parts of a finished
+	// autocomplete query parameter set.
+	statementLens = L.MakeLens(
+		func(p autocompleteQueryParams) string { return p.statement },
+		func(p autocompleteQueryParams, s string) autocompleteQueryParams {
+			p.statement = s
+			return p
+		},
+	)
+	bindParamsLens = L.MakeLens(
+		func(p autocompleteQueryParams) map[string]any { return p.bindParams },
+		func(
+			p autocompleteQueryParams,
+			b map[string]any,
+		) autocompleteQueryParams {
+			p.bindParams = b
+			return p
 		},
 	)
 
@@ -658,17 +693,36 @@ func isPresentAutocompleteQuery(params *repo.AutocompleteQuery) bool {
 // hasAutocompleteQueryText reports whether the query still holds searchable
 // text once whitespace, case, and combining marks are gone.
 func hasAutocompleteQueryText(params *repo.AutocompleteQuery) bool {
-	normalized := repo.NormalizeAutocompleteQuery(params.Query)
-	isSearchable := predord.MinStrLen(1)
-
-	return isSearchable(normalized)
+	return F.Pipe2(
+		params.Query,
+		repo.NormalizeAutocompleteQuery,
+		predord.MinStrLen(1),
+	)
 }
 
 // newAutocompleteRequest normalizes the query and clamps the limit.
 func newAutocompleteRequest(params *repo.AutocompleteQuery) autocompleteRequest {
-	return autocompleteRequest{
-		query: repo.NormalizeAutocompleteQuery(params.Query),
-		limit: clampAutocompleteLimit(params.Limit),
+	normalized := F.Pipe1(params.Query, repo.NormalizeAutocompleteQuery)
+	limit := F.Pipe1(params.Limit, clampAutocompleteLimit)
+
+	return F.Pipe2(
+		autocompleteRequest{},
+		queryLens.Set(normalized),
+		limitLens.Set(limit),
+	)
+}
+
+// autocompleteBindParams builds the bind parameter map for an autocomplete query.
+func (ar *arangorepository) autocompleteBindParams(
+	req autocompleteRequest,
+) map[string]any {
+	return map[string]any{
+		"q":                 queryLens.Get(req),
+		"th":                autocompleteNgramThreshold,
+		"limit":             limitLens.Get(req),
+		"anno_cvterm_graph": ar.anno.annotg.Name(),
+		bindSynonymTermID:   synonymTermIDLens.Get(req),
+		bindGenotypeTermID:  genotypeTermIDLens.Get(req),
 	}
 }
 
@@ -678,19 +732,14 @@ func newAutocompleteRequest(params *repo.AutocompleteQuery) autocompleteRequest 
 func (ar *arangorepository) buildAutocompleteQueryParams(
 	req autocompleteRequest,
 ) autocompleteQueryParams {
-	graphName := ar.anno.annotg.Name()
+	statement := buildAutocompleteQuery()
+	bindParams := ar.autocompleteBindParams(req)
 
-	return autocompleteQueryParams{
-		statement: buildAutocompleteQuery(),
-		bindParams: map[string]any{
-			"q":                 req.query,
-			"th":                autocompleteNgramThreshold,
-			"limit":             req.limit,
-			"anno_cvterm_graph": graphName,
-			bindSynonymTermID:   req.synonymTermID,
-			bindGenotypeTermID:  req.genotypeTermID,
-		},
-	}
+	return F.Pipe2(
+		autocompleteQueryParams{},
+		statementLens.Set(statement),
+		bindParamsLens.Set(bindParams),
+	)
 }
 
 // executeAutocompleteQuery runs the statement and hands back the row reader.
@@ -701,7 +750,10 @@ func (ar *arangorepository) executeAutocompleteQuery(
 
 	return F.Pipe1(
 		IOE.TryCatchError(func() (dbRows, error) {
-			return ar.database.SearchRows(params.statement, params.bindParams)
+			return ar.database.SearchRows(
+				statementLens.Get(params),
+				bindParamsLens.Get(params),
+			)
 		}),
 		IOE.MapLeft[dbRows](queryFault),
 	)
