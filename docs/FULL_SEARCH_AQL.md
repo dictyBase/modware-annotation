@@ -134,46 +134,30 @@ here.
 ## Visual Overview of the Build Pipeline
 
 The diagram below shows the four steps on one page. Read it from the
-top to the bottom.
+top to the bottom. Each large row is one step of this document, and the
+label on each arrow is the call that performs that step. The colour of
+a box is the score band of its branches: blue for prefix, purple for
+phrase, green for token, and grey for fuzzy.
 
-```
-Step 1   fullSearchPrefixFuzzyFields            fullSearchTextFields
-         9 fields, index 0..8                   5 fields, index 0..4
-              |                                       |
-Step 2   prefixFuzzyBranchBuilders               tokenPhraseBranchBuilders
-         [prefix stage, fuzzy stage]             [token stage, phrase stage]
-              |                                       |
-              | A.Ap -> 2 x 9 = 18 branches           | A.Ap -> 2 x 5 = 10
-              | (each call runs Step 3)               | (each call runs Step 3)
-              v                                       v
-         p0..p8, n0..n8                          t0..t4, h0..h4
-              |                                       |
-              +--------- A.From + A.Flatten ----------+
-                              |
-                              v  28 queryBranch values
-Step 3   buildFullSearchBranch(stage, field)
-           setFullSearchName -> name, "p0" to "h4"
-           setFullSearchBody -> body, from FullSearchAnnoBranchQ (12 branches)
-                                      or from FullSearchTermBranchQ (16 branches)
-                              |
-                              v
-Step 4   appendFullSearchMergeBranch -> a 29th branch from FullSearchMergeQ
-         A.Map(bodyLens.Get) -> A.Intersperse("\n") -> A.Fold(S.Monoid)
-                              |
-                              v
-                   one AQL statement of 532 lines
-                   (IO.Memoize stores it after the first call)
-```
+![Full search AQL build pipeline](images/full-search-aql-pipeline.svg)
 
-- **Step 1** holds two field slices. Each field names its indexed
-  attribute, its collection, and the bind parameter of its required
-  cvterm target.
-- **Step 2** applies two stage builders across each field slice. The
-  cross product gives 18 identifier branches and 10 text branches.
+- **Step 1** holds two field slices and four stage records. A field
+  names its indexed attribute, its collection, and the bind parameter
+  of its required cvterm target. A stage holds the name prefix, the
+  `SEARCH` expression builder, and the score band.
+- **Step 2** applies both stage builders of a slice to every field of
+  that slice. The cross product gives 18 identifier branches and 10
+  text branches. The chips in the diagram stand in statement order:
+  `p0` to `p8`, then `n0` to `n8`, then `t0` to `t4`, then `h0` to
+  `h4`.
 - **Step 3** runs inside each builder call. It writes the `LET`
-  variable name, selects one of the two branch templates, and renders
-  the body.
-- **Step 4** appends the merge tail and joins all bodies with newlines.
+  variable name, fills the five template slots, and selects one of the
+  two branch templates. The collection of the field picks the
+  traversal direction: `OUTBOUND` for the 12 annotation branches, and
+  `INBOUND` for the 16 cvterm branches.
+- **Step 4** adds the merge tail as a 29th branch. The tail flattens
+  the 28 row lists, groups them by `entry_id`, keeps one best row per
+  strain, ranks the survivors, and cuts the list to `@limit`.
 
 ## Step 1: The Field Definitions
 
@@ -1136,3 +1120,4 @@ reader can check one against the other by eye.
 | `internal/repository/arangodb/autocomplete_query.go` | The shared `queryBranch` type with `nameLens` and `bodyLens`. |
 | `internal/repository/arangodb/autocomplete.go` | The shared document attribute constants `docFieldValue`, `docFieldEntryID`, and `docFieldIsObsolete`, and the shared tag constants `fieldSynonym`, `fieldGenotype`, and `dictyAnnotationOntology`. |
 | `internal/repository/arangodb/fullsearch_test.go` | The 4 builder tests and the end-to-end search tests that this document cites. |
+| `docs/images/full-search-aql-pipeline.svg` | The pipeline diagram of this document. |
