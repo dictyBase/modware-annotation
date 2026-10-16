@@ -5,6 +5,7 @@ import (
 
 	A "github.com/IBM/fp-go/v2/array"
 	F "github.com/IBM/fp-go/v2/function"
+	IO "github.com/IBM/fp-go/v2/io"
 	L "github.com/IBM/fp-go/v2/optics/lens"
 	P "github.com/IBM/fp-go/v2/predicate"
 	S "github.com/IBM/fp-go/v2/string"
@@ -117,6 +118,10 @@ var (
 		prefixBranch,
 		fuzzyBranch,
 	}
+
+	// buildAutocompleteQuery memoizes the assembled 4-branch AQL statement so
+	// the query string is built once on first call and reused thereafter.
+	buildAutocompleteQuery = IO.Memoize(assembleAutocompleteQuery)
 )
 
 // synonymPrefixExpr is the whole-value prefix expression of a synonym branch.
@@ -266,8 +271,8 @@ func appendMergeBranch(branches []queryBranch) []queryBranch {
 	)
 }
 
-// buildAutocompleteQuery builds the complete 4-branch autocomplete statement.
-func buildAutocompleteQuery() string {
+// assembleAutocompleteQuery builds the complete 4-branch autocomplete statement.
+func assembleAutocompleteQuery() string {
 	return F.Pipe5(
 		autocompleteBranchBuilders,
 		A.Ap[queryBranch](autocompleteFields),

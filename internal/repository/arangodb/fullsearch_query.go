@@ -6,6 +6,7 @@ import (
 	A "github.com/IBM/fp-go/v2/array"
 	EQ "github.com/IBM/fp-go/v2/eq"
 	F "github.com/IBM/fp-go/v2/function"
+	IO "github.com/IBM/fp-go/v2/io"
 	L "github.com/IBM/fp-go/v2/optics/lens"
 	P "github.com/IBM/fp-go/v2/predicate"
 	S "github.com/IBM/fp-go/v2/string"
@@ -215,6 +216,10 @@ var (
 		F.Bind1st(buildFullSearchBranch, fullSearchTokenStage),
 		F.Bind1st(buildFullSearchBranch, fullSearchPhraseStage),
 	}
+
+	// buildFullSearchQuery memoizes the assembled 28-branch AQL statement so
+	// the query string is built once on first call and reused thereafter.
+	buildFullSearchQuery = IO.Memoize(assembleFullSearchQuery)
 )
 
 // annoDocAttr returns the indexed attribute name on the annotation collection.
@@ -394,8 +399,8 @@ func appendFullSearchMergeBranch(branches []queryBranch) []queryBranch {
 	)
 }
 
-// buildFullSearchQuery generates the complete 28-branch AQL statement.
-func buildFullSearchQuery() string {
+// assembleFullSearchQuery generates the complete 28-branch AQL statement.
+func assembleFullSearchQuery() string {
 	prefixFuzzy := prefixFuzzyBranches()
 	tokenPhrase := tokenPhraseBranches()
 
