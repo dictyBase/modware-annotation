@@ -14,8 +14,10 @@ import (
 type (
 	fullSearchColl int
 
-	// fullSearchField describes one searched annotation or cvterm field.
+	// fullSearchField describes one searched annotation or cvterm field and
+	// its 0-based index within its stage group.
 	fullSearchField struct {
+		index      int
 		label      string
 		coll       fullSearchColl
 		targetBind string
@@ -23,20 +25,17 @@ type (
 	}
 
 	// fullSearchStage describes one of the 4 branch stages (prefix, fuzzy,
-	// token, phrase): its field list, LET variable prefix, SEARCH expression
-	// builder, and score band.
+	// token, phrase): its LET variable prefix, SEARCH expression builder,
+	// and score band.
 	fullSearchStage struct {
-		fields     []fullSearchField
 		namePrefix string
 		searchExpr func(fullSearchField) string
 		band       string
 	}
 
-	// fullSearchBranchState carries the stage, the field index, the field
-	// specification, and the queryBranch under construction through the
-	// branch builder pipeline.
+	// fullSearchBranchState carries the stage, the field specification, and
+	// the queryBranch under construction through the branch builder pipeline.
 	fullSearchBranchState struct {
-		index  int
 		stage  fullSearchStage
 		field  fullSearchField
 		branch queryBranch
@@ -52,28 +51,35 @@ var (
 	// fullSearchPrefixFuzzyFields are the 9 fields that get prefix (p0..p8)
 	// and fuzzy (n0..n8) branches.
 	fullSearchPrefixFuzzyFields = []fullSearchField{
-		{label: fieldSynonym, coll: fullSearchCollAnno, targetBind: bindSynonymTermID},
-		{label: fieldGenotype, coll: fullSearchCollAnno, targetBind: bindGenotypeTermID, isGenotype: true},
-		{label: fieldSystematicName, coll: fullSearchCollAnno, targetBind: bindSysnameTermID},
-		{label: fieldGeneticModification, coll: fullSearchCollAnno, targetBind: bindMuttypeTermID},
-		{label: fieldMutagenesisMethod, coll: fullSearchCollAnno, targetBind: bindMutmethodTermID},
-		{label: fieldPhenotype, coll: fullSearchCollTerm, targetBind: bindPhenotypeGraphID},
-		{label: fieldEnvironment, coll: fullSearchCollTerm, targetBind: bindEnvGraphID},
-		{label: fieldAssay, coll: fullSearchCollTerm, targetBind: bindAssayGraphID},
-		{label: fieldCharacteristic, coll: fullSearchCollTerm, targetBind: bindCharGraphID},
+		{index: 0, label: fieldSynonym, coll: fullSearchCollAnno, targetBind: bindSynonymTermID},
+		{index: 1, label: fieldGenotype, coll: fullSearchCollAnno, targetBind: bindGenotypeTermID, isGenotype: true},
+		{index: 2, label: fieldSystematicName, coll: fullSearchCollAnno, targetBind: bindSysnameTermID},
+		{index: 3, label: fieldGeneticModification, coll: fullSearchCollAnno, targetBind: bindMuttypeTermID},
+		{index: 4, label: fieldMutagenesisMethod, coll: fullSearchCollAnno, targetBind: bindMutmethodTermID},
+		{index: 5, label: fieldPhenotype, coll: fullSearchCollTerm, targetBind: bindPhenotypeGraphID},
+		{index: 6, label: fieldEnvironment, coll: fullSearchCollTerm, targetBind: bindEnvGraphID},
+		{index: 7, label: fieldAssay, coll: fullSearchCollTerm, targetBind: bindAssayGraphID},
+		{index: 8, label: fieldCharacteristic, coll: fullSearchCollTerm, targetBind: bindCharGraphID},
 	}
 
 	// fullSearchTextFields are the 5 fields that get token (t0..t4) and
 	// phrase (h0..h4) branches under text_en.
 	fullSearchTextFields = []fullSearchField{
-		{label: fieldPublicNote, coll: fullSearchCollAnno, targetBind: bindPubnoteTermID},
-		{label: fieldPhenotype, coll: fullSearchCollTerm, targetBind: bindPhenotypeGraphID},
-		{label: fieldEnvironment, coll: fullSearchCollTerm, targetBind: bindEnvGraphID},
-		{label: fieldAssay, coll: fullSearchCollTerm, targetBind: bindAssayGraphID},
-		{label: fieldCharacteristic, coll: fullSearchCollTerm, targetBind: bindCharGraphID},
+		{index: 0, label: fieldPublicNote, coll: fullSearchCollAnno, targetBind: bindPubnoteTermID},
+		{index: 1, label: fieldPhenotype, coll: fullSearchCollTerm, targetBind: bindPhenotypeGraphID},
+		{index: 2, label: fieldEnvironment, coll: fullSearchCollTerm, targetBind: bindEnvGraphID},
+		{index: 3, label: fieldAssay, coll: fullSearchCollTerm, targetBind: bindAssayGraphID},
+		{index: 4, label: fieldCharacteristic, coll: fullSearchCollTerm, targetBind: bindCharGraphID},
 	}
 
 	// Lenses on fullSearchField.
+	fieldIndexLens = L.MakeLens(
+		func(f fullSearchField) int { return f.index },
+		func(f fullSearchField, v int) fullSearchField {
+			f.index = v
+			return f
+		},
+	)
 	fieldLabelLens = L.MakeLens(
 		func(f fullSearchField) string { return f.label },
 		func(f fullSearchField, v string) fullSearchField {
@@ -104,13 +110,6 @@ var (
 	)
 
 	// Lenses on fullSearchBranchState and composed lenses into field and branch.
-	fullSearchIndexLens = L.MakeLens(
-		func(s fullSearchBranchState) int { return s.index },
-		func(s fullSearchBranchState, v int) fullSearchBranchState {
-			s.index = v
-			return s
-		},
-	)
 	fullSearchStageLens = L.MakeLens(
 		func(s fullSearchBranchState) fullSearchStage { return s.stage },
 		func(s fullSearchBranchState, v fullSearchStage) fullSearchBranchState {
@@ -131,6 +130,10 @@ var (
 			s.branch = v
 			return s
 		},
+	)
+	fullSearchStateIndexLens = F.Pipe1(
+		fullSearchFieldLens,
+		L.Compose[fullSearchBranchState](fieldIndexLens),
 	)
 	fullSearchStateLabelLens = F.Pipe1(
 		fullSearchFieldLens,
@@ -177,33 +180,40 @@ var (
 		P.Fold(annoBranchTemplate, termBranchTemplate),
 	)
 
-	// fullSearchStages lists the 4 stages in statement order:
-	// 9 prefix, 9 fuzzy, 5 token, and 5 phrase branches (28 total).
-	fullSearchStages = []fullSearchStage{
-		{
-			fields:     fullSearchPrefixFuzzyFields,
-			namePrefix: "p",
-			searchExpr: prefixExprForField,
-			band:       fullSearchPrefixBand,
-		},
-		{
-			fields:     fullSearchPrefixFuzzyFields,
-			namePrefix: "n",
-			searchExpr: fuzzyExprForField,
-			band:       fullSearchFuzzyBand,
-		},
-		{
-			fields:     fullSearchTextFields,
-			namePrefix: "t",
-			searchExpr: tokenExprForField,
-			band:       fullSearchTokenBand,
-		},
-		{
-			fields:     fullSearchTextFields,
-			namePrefix: "h",
-			searchExpr: phraseExprForField,
-			band:       fullSearchPhraseBand,
-		},
+	// Stage definitions for the 4 full-search branch types.
+	fullSearchPrefixStage = fullSearchStage{
+		namePrefix: "p",
+		searchExpr: prefixExprForField,
+		band:       fullSearchPrefixBand,
+	}
+	fullSearchFuzzyStage = fullSearchStage{
+		namePrefix: "n",
+		searchExpr: fuzzyExprForField,
+		band:       fullSearchFuzzyBand,
+	}
+	fullSearchTokenStage = fullSearchStage{
+		namePrefix: "t",
+		searchExpr: tokenExprForField,
+		band:       fullSearchTokenBand,
+	}
+	fullSearchPhraseStage = fullSearchStage{
+		namePrefix: "h",
+		searchExpr: phraseExprForField,
+		band:       fullSearchPhraseBand,
+	}
+
+	// prefixFuzzyBranchBuilders are the prefix and fuzzy builders applied
+	// across fullSearchPrefixFuzzyFields via A.Ap.
+	prefixFuzzyBranchBuilders = []func(fullSearchField) queryBranch{
+		F.Bind1st(buildFullSearchBranch, fullSearchPrefixStage),
+		F.Bind1st(buildFullSearchBranch, fullSearchFuzzyStage),
+	}
+
+	// tokenPhraseBranchBuilders are the token and phrase builders applied
+	// across fullSearchTextFields via A.Ap.
+	tokenPhraseBranchBuilders = []func(fullSearchField) queryBranch{
+		F.Bind1st(buildFullSearchBranch, fullSearchTokenStage),
+		F.Bind1st(buildFullSearchBranch, fullSearchPhraseStage),
 	}
 )
 
@@ -293,7 +303,7 @@ func phraseExprForField(f fullSearchField) string {
 // setFullSearchName writes the stage LET variable name (<prefix><index>) into s.branch.name.
 func setFullSearchName(s fullSearchBranchState) fullSearchBranchState {
 	stage := fullSearchStageLens.Get(s)
-	name := fmt.Sprintf("%s%d", stage.namePrefix, fullSearchIndexLens.Get(s))
+	name := fmt.Sprintf("%s%d", stage.namePrefix, fullSearchStateIndexLens.Get(s))
 
 	return F.Pipe1(s, fullSearchStateNameLens.Set(name))
 }
@@ -338,16 +348,14 @@ func setFullSearchBody(s fullSearchBranchState) fullSearchBranchState {
 	)
 }
 
-// buildFullSearchBranch builds one queryBranch for stage, field index i, and field f.
+// buildFullSearchBranch builds one queryBranch for stage and field f.
 func buildFullSearchBranch(
 	stage fullSearchStage,
-	i int,
 	f fullSearchField,
 ) queryBranch {
-	return F.Pipe6(
+	return F.Pipe5(
 		fullSearchBranchState{},
 		fullSearchStageLens.Set(stage),
-		fullSearchIndexLens.Set(i),
 		fullSearchFieldLens.Set(f),
 		setFullSearchName,
 		setFullSearchBody,
@@ -355,13 +363,19 @@ func buildFullSearchBranch(
 	)
 }
 
-// branchesFromFullSearchStage expands one stage into its built branches in statement order.
-func branchesFromFullSearchStage(stage fullSearchStage) []queryBranch {
-	builder := F.Pipe1(stage, F.Bind1of3(buildFullSearchBranch))
-
+// prefixFuzzyBranches builds the 18 prefix (p0..p8) and fuzzy (n0..n8) branches.
+func prefixFuzzyBranches() []queryBranch {
 	return F.Pipe1(
-		stage.fields,
-		A.MapWithIndex(builder),
+		prefixFuzzyBranchBuilders,
+		A.Ap[queryBranch](fullSearchPrefixFuzzyFields),
+	)
+}
+
+// tokenPhraseBranches builds the 10 token (t0..t4) and phrase (h0..h4) branches.
+func tokenPhraseBranches() []queryBranch {
+	return F.Pipe1(
+		tokenPhraseBranchBuilders,
+		A.Ap[queryBranch](fullSearchTextFields),
 	)
 }
 
@@ -382,9 +396,12 @@ func appendFullSearchMergeBranch(branches []queryBranch) []queryBranch {
 
 // buildFullSearchQuery generates the complete 28-branch AQL statement.
 func buildFullSearchQuery() string {
+	prefixFuzzy := prefixFuzzyBranches()
+	tokenPhrase := tokenPhraseBranches()
+
 	return F.Pipe5(
-		fullSearchStages,
-		A.Chain(branchesFromFullSearchStage),
+		A.From(prefixFuzzy, tokenPhrase),
+		A.Flatten[queryBranch],
 		appendFullSearchMergeBranch,
 		A.Map(bodyLens.Get),
 		A.Intersperse("\n"),
