@@ -1,7 +1,7 @@
 module github.com/dictyBase/modware-annotation
 
 require (
-	github.com/IBM/fp-go/v2 v2.5.0
+	github.com/IBM/fp-go/v2 v2.5.2
 	github.com/arangodb/go-driver v1.6.9
 	github.com/bufbuild/protovalidate-go v0.10.0
 	github.com/deckarep/golang-set/v2 v2.9.0
