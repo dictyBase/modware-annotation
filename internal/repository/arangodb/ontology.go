@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -8,7 +9,6 @@ import (
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	P "github.com/IBM/fp-go/v2/predicate"
-	manager "github.com/dictyBase/arangomanager"
 	"github.com/dictyBase/go-obograph/storage"
 	ontoarango "github.com/dictyBase/go-obograph/storage/arangodb"
 )
@@ -20,7 +20,7 @@ var (
 	readTermIDFault = fperrors.OnError(
 		"error in retrieving obograph id",
 	)
-	isNonEmptyTermRow = P.Not(func(row *manager.Result) bool {
+	isNonEmptyTermRow = P.Not(func(row *contextResult) bool {
 		return row.IsEmpty()
 	})
 )
@@ -51,9 +51,10 @@ func (ar *arangorepository) LoadOboJSON(rde io.Reader) (*storage.UploadInformati
 }
 
 func (ar *arangorepository) lookupTermID(
+	ctx context.Context,
 	onto, term string,
 ) IOE.IOEither[error, string] {
-	missingTermFault := F.Constant1[*manager.Result](
+	missingTermFault := F.Constant1[*contextResult](
 		fmt.Errorf(
 			"ontology %s and tag %s does not exist",
 			onto,
@@ -62,18 +63,18 @@ func (ar *arangorepository) lookupTermID(
 	)
 
 	return F.Pipe4(
-		IOE.TryCatchError(func() (*manager.Result, error) {
-			return ar.database.GetRow(annExistTagQ, map[string]any{
+		IOE.TryCatchError(func() (*contextResult, error) {
+			return ar.getRow(ctx, annExistTagQ, map[string]any{
 				cvCollectionBind:     ar.onto.Cv.Name(),
 				cvtermCollectionBind: ar.onto.Term.Name(),
 				"ontology":           onto,
 				"tag":                term,
 			})
 		}),
-		IOE.MapLeft[*manager.Result](runTermIDQueryFault),
+		IOE.MapLeft[*contextResult](runTermIDQueryFault),
 		IOE.FilterOrElse(isNonEmptyTermRow, missingTermFault),
 		IOE.Chain(func(
-			row *manager.Result,
+			row *contextResult,
 		) IOE.IOEither[error, string] {
 			return IOE.TryCatchError(func() (string, error) {
 				var tid string

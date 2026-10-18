@@ -95,7 +95,7 @@ func (srv *AnnotationService) ListAnnotationGroups(
 	if err != nil {
 		return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 	}
-	mgc, err := srv.repo.ListAnnotationGroup(rgp.Cursor, searchLimit, astmt)
+	mgc, err := srv.repo.ListAnnotationGroup(ctx, rgp.Cursor, searchLimit, astmt)
 	if err != nil {
 		if repository.IsAnnotationGroupListNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
@@ -152,6 +152,7 @@ func (srv *AnnotationService) ListAnnotations(
 		searchLimit = ral.Limit
 	}
 	mlc, err := srv.repo.ListAnnotations(
+		ctx,
 		&repository.ListAnnotationsParams{
 			Cursor: ral.Cursor,
 			Limit:  searchLimit,

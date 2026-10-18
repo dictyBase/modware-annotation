@@ -291,7 +291,7 @@ func autocompleteOnce(
 	repo repository.TaggedAnnotationRepository,
 	params *repository.AutocompleteQuery,
 ) ([]*repository.Suggestion, error) {
-	either := ioeutils.ToEither(repo.AutocompleteAnnotation(params))
+	either := ioeutils.ToEither(repo.AutocompleteAnnotation(context.Background(), params))
 
 	return E.UnwrapError(either)
 }

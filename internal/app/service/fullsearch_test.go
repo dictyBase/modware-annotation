@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
+	"github.com/dictyBase/modware-annotation/internal/model"
 	"github.com/dictyBase/modware-annotation/internal/repository"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -19,21 +21,45 @@ type stubFullSearchRepo struct {
 	repository.TaggedAnnotationRepository
 	params *repository.FullSearchQuery
 	rows   []*repository.FullSearchResult
+	docs   []*model.AnnoDoc
+	groups []*model.AnnoGroup
 	err    error
 	calls  int
+	gotCtx context.Context
 }
 
 // SearchAnnotation implements the repository method under test.
 func (s *stubFullSearchRepo) SearchAnnotation(
+	ctx context.Context,
 	params *repository.FullSearchQuery,
 ) IOE.IOEither[error, []*repository.FullSearchResult] {
 	s.calls++
+	s.gotCtx = ctx
 	s.params = params
 	if s.err != nil {
 		return IOE.Left[[]*repository.FullSearchResult](s.err)
 	}
 
 	return IOE.Of[error](s.rows)
+}
+
+func (s *stubFullSearchRepo) ListAnnotations(
+	ctx context.Context,
+	_ *repository.ListAnnotationsParams,
+) ([]*model.AnnoDoc, error) {
+	s.gotCtx = ctx
+
+	return s.docs, s.err
+}
+
+func (s *stubFullSearchRepo) ListAnnotationGroup(
+	ctx context.Context,
+	_, _ int64,
+	_ string,
+) ([]*model.AnnoGroup, error) {
+	s.gotCtx = ctx
+
+	return s.groups, s.err
 }
 
 // fullSearchParamsWith builds a full search request around a query and a limit.
@@ -335,4 +361,51 @@ func TestFullSearchFieldMapping(t *testing.T) {
 		annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_UNSPECIFIED,
 		toAnnotationSearchField("description"),
 	)
+}
+
+func TestSearchAnnotationHandlerForwardsContextToRepository(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	repo := &stubFullSearchRepo{}
+	svc := newAutocompleteTestService(t, repo)
+	ctx := t.Context()
+
+	_, err := svc.SearchAnnotation(ctx, fullSearchParamsWith("fruiting", 10))
+	assert.NoError(err)
+	assert.Equal(ctx, repo.gotCtx, "expect handler to forward caller context to SearchAnnotation")
+
+	canceledSvc := newAutocompleteTestService(t, &stubFullSearchRepo{err: fmt.Errorf("wrapped: %w", context.Canceled)})
+	_, err = canceledSvc.SearchAnnotation(ctx, fullSearchParamsWith("fruiting", 10))
+	assert.Equal(codes.Canceled, status.Code(err), "expect Canceled status code for context.Canceled")
+
+	deadlineSvc := newAutocompleteTestService(t, &stubFullSearchRepo{err: fmt.Errorf("wrapped: %w", context.DeadlineExceeded)})
+	_, err = deadlineSvc.SearchAnnotation(ctx, fullSearchParamsWith("fruiting", 10))
+	assert.Equal(codes.DeadlineExceeded, status.Code(err), "expect DeadlineExceeded status code for context.DeadlineExceeded")
+}
+
+func TestListAnnotationHandlersForwardContextToRepository(t *testing.T) {
+	t.Parallel()
+	doc := &model.AnnoDoc{Value: "val", EnrtyID: "DBS0236126"}
+	repo := &stubFullSearchRepo{
+		docs:   []*model.AnnoDoc{doc},
+		groups: []*model.AnnoGroup{{GroupID: "g1", AnnoDocs: []*model.AnnoDoc{doc}}},
+	}
+	svc := newAutocompleteTestService(t, repo)
+
+	t.Run("ListAnnotations", func(t *testing.T) {
+		ctx := t.Context()
+		_, err := svc.ListAnnotations(ctx, &annotation.ListParameters{
+			Limit:  10,
+			Filter: "tag==synonym;ontology==dicty_annotation",
+		})
+		require.NoError(t, err)
+		require.Equal(t, ctx, repo.gotCtx, "expect ListAnnotations to forward caller context")
+	})
+
+	t.Run("ListAnnotationGroups", func(t *testing.T) {
+		ctx := t.Context()
+		_, err := svc.ListAnnotationGroups(ctx, &annotation.ListGroupParameters{Limit: 10})
+		require.NoError(t, err)
+		require.Equal(t, ctx, repo.gotCtx, "expect ListAnnotationGroups to forward caller context")
+	})
 }

@@ -103,6 +103,7 @@ func buildListAnnoBindVars(
 }
 
 func (ar *arangorepository) ListAnnotations(
+	ctx context.Context,
 	params *repository.ListAnnotationsParams,
 ) ([]*model.AnnoDoc, error) {
 	if err := validate.Struct(params); err != nil {
@@ -122,10 +123,11 @@ func (ar *arangorepository) ListAnnotations(
 		params.Limit,
 		params.Cursor,
 	)
-	res, err := ar.database.SearchRows(result.Statement, bindVars)
+	res, err := ar.searchRows(ctx, result.Statement, bindVars)
 	if err != nil {
-		return annoModel, fmt.Errorf("error in searching rows %s", err)
+		return annoModel, fmt.Errorf("error in searching rows %w", err)
 	}
+	defer func() { _ = res.Close() }()
 	if res.IsEmpty() {
 		return annoModel, &repository.AnnoListNotFoundError{}
 	}
@@ -173,6 +175,7 @@ func (ar *arangorepository) GetAnnotationGroup(
 // ListAnnotationGroup provides a paginated list of annotation groups along
 // with optional filtering.
 func (ar *arangorepository) ListAnnotationGroup(
+	ctx context.Context,
 	cursor, limit int64,
 	fstr string,
 ) ([]*model.AnnoGroup, error) {
@@ -210,10 +213,11 @@ func (ar *arangorepository) ListAnnotationGroup(
 			)
 		}
 	}
-	res, err := ar.database.Search(stmt)
+	res, err := ar.searchRows(ctx, stmt, nil)
 	if err != nil {
-		return agrp, fmt.Errorf("error in searching rows %s", err)
+		return agrp, fmt.Errorf("error in searching rows %w", err)
 	}
+	defer func() { _ = res.Close() }()
 	if res.IsEmpty() {
 		return agrp, &repository.AnnoGroupListNotFoundError{}
 	}
