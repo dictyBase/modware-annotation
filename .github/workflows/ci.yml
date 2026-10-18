@@ -3,12 +3,15 @@ on:
   push:
     branches:
       - develop
+  pull_request:
+    branches:
+      - develop
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
       arangodb:
-        image: arangodb:3.11
+        image: arangodb:3.12.12
         env:
           ARANGO_ROOT_PASSWORD: rootpass
         ports:
@@ -33,6 +36,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV }}
   call-build-deploy:
+    # A pull request needs the test job only, so the deploy jobs stay on push.
+    if: github.event_name == 'push'
     needs: test
     uses: dictyBase/workflows/.github/workflows/composite-deploy.yaml@develop
     secrets: inherit
@@ -47,6 +52,7 @@ jobs:
       cluster: ${{ vars.DEV_STAGING_CLUSTER }}
       cluster_state_storage: ${{ vars.DEV_STAGING_KOPS_STATE_STORAGE }}
   call-buildless-deploy:
+    if: github.event_name == 'push'
     needs: call-build-deploy
     uses: dictyBase/workflows/.github/workflows/deploy-buildless-backend.yaml@develop
     secrets: inherit
