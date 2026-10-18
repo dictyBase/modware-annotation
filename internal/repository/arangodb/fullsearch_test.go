@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"slices"
 	"strings"
 	"testing"
@@ -379,7 +381,7 @@ func fullSearchOnce(
 	repo repository.TaggedAnnotationRepository,
 	params *repository.FullSearchQuery,
 ) ([]*repository.FullSearchResult, error) {
-	either := ioeutils.ToEither(repo.SearchAnnotation(params))
+	either := ioeutils.ToEither(repo.SearchAnnotation(context.Background(), params))
 
 	return E.UnwrapError(either)
 }
@@ -1220,4 +1222,119 @@ func TestSearchAnnotationExplainAndLatency(t *testing.T) {
 		ceiling,
 		"expect the statement p95 within 125% of the client-path baseline",
 	)
+}
+
+func TestNormalizeQueryContextAndMaxRuntime(t *testing.T) {
+	assert := require.New(t)
+	var nilCtx context.Context
+	normalizedNil := normalizeQueryContext(nilCtx)
+	assert.NotNil(normalizedNil, "expect nil context to normalize to background context")
+	assert.Equal(context.Background(), normalizedNil)
+
+	customCtx := t.Context()
+	assert.Equal(customCtx, normalizeQueryContext(customCtx), "expect non-nil context to pass through")
+
+	noDeadlineCtx := queryContextWithMaxRuntime(customCtx)
+	assert.Equal(customCtx, noDeadlineCtx, "expect context without deadline to remain unchanged")
+
+	deadlineCtx, cancel := context.WithTimeout(customCtx, time.Second)
+	defer cancel()
+	withRuntime := queryContextWithMaxRuntime(deadlineCtx)
+	assert.NotEqual(deadlineCtx, withRuntime, "expect deadline context to be wrapped with maxRuntime")
+}
+
+func TestAnnotationRepositoryContextCancellationAndDeadline(t *testing.T) {
+	assert, repo := setUp(t)
+	defer tearDown(repo)
+	seedFullSearchOntologies(t, repo)
+
+	canceledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := E.UnwrapError(ioeutils.ToEither(repo.SearchAnnotation(
+		canceledCtx,
+		&repository.FullSearchQuery{Query: "gammas", Limit: 10},
+	)))
+	assert.ErrorIs(err, context.Canceled, "expect SearchAnnotation to fail on canceled context")
+
+	_, err = E.UnwrapError(ioeutils.ToEither(repo.AutocompleteAnnotation(
+		canceledCtx,
+		&repository.AutocompleteQuery{Query: "gammas", Limit: 5},
+	)))
+	assert.ErrorIs(err, context.Canceled, "expect AutocompleteAnnotation to fail on canceled context")
+
+	_, err = repo.ListAnnotations(
+		canceledCtx,
+		&repository.ListAnnotationsParams{Limit: 4, Filter: "tag==synonym;ontology==dicty_annotation"},
+	)
+	assert.ErrorIs(err, context.Canceled, "expect ListAnnotations to fail on canceled context")
+
+	_, err = repo.ListAnnotationGroup(canceledCtx, 0, 4, "")
+	assert.ErrorIs(err, context.Canceled, "expect ListAnnotationGroup to fail on canceled context")
+
+	ar, ok := repo.(*arangorepository)
+	assert.True(ok, "expect concrete arangorepository")
+	shortCtx, shortCancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+	defer shortCancel()
+
+	started := time.Now()
+	_, err = ar.searchRows(shortCtx, "LET y = SLEEP(5) RETURN y", nil)
+	assert.Error(err, "expect SLEEP(5) query to abort under short context deadline")
+	assert.Less(
+		time.Since(started),
+		2*time.Second,
+		"expect short deadline + maxRuntime to abort well before SLEEP(5) finishes",
+	)
+
+	tra, err := testarango.NewTestArangoFromEnv(false)
+	assert.NoError(err)
+	currentURL := fmt.Sprintf(
+		"http://%s:%d/_db/%s/_api/query/current",
+		tra.Host,
+		tra.Port,
+		ar.database.Handler().Name(),
+	)
+	hasRunningQuery := func(substr string) bool {
+		req, reqErr := http.NewRequestWithContext(
+			context.Background(),
+			http.MethodGet,
+			currentURL,
+			nil,
+		)
+		if reqErr != nil {
+			return false
+		}
+		req.SetBasicAuth(tra.User, tra.Pass)
+		resp, doErr := http.DefaultClient.Do(req)
+		if doErr != nil {
+			return false
+		}
+		defer func() { _ = resp.Body.Close() }()
+		body, readErr := io.ReadAll(resp.Body)
+		return readErr == nil && strings.Contains(string(body), substr)
+	}
+	assert.Eventually(func() bool {
+		return !hasRunningQuery("SLEEP(5)")
+	}, 2*time.Second, 50*time.Millisecond, "expect SLEEP(5) query to be absent from _api/query/current")
+
+	pureCtx, pureCancel := context.WithCancel(context.Background())
+	defer pureCancel()
+	errCh := make(chan error, 1)
+	go func() {
+		_, qErr := ar.searchRows(pureCtx, "/* pure-cancel-anno */ LET y = SLEEP(5) RETURN y", nil)
+		errCh <- qErr
+	}()
+	assert.Eventually(func() bool {
+		return hasRunningQuery("pure-cancel-anno")
+	}, 2*time.Second, 20*time.Millisecond, "expect pure-cancel-anno query to appear in _api/query/current")
+	pureCancel()
+	select {
+	case qErr := <-errCh:
+		assert.ErrorIs(qErr, context.Canceled, "expect in-flight query to return context.Canceled")
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for canceled searchRows to return")
+	}
+	assert.Eventually(func() bool {
+		return !hasRunningQuery("pure-cancel-anno")
+	}, 2*time.Second, 20*time.Millisecond, "expect canceled query without deadline to be killed on server")
 }

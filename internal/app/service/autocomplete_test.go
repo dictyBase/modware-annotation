@@ -23,13 +23,16 @@ type stubAutocompleteRepo struct {
 	rows   []*repository.Suggestion
 	err    error
 	calls  int
+	gotCtx context.Context
 }
 
 // AutocompleteAnnotation implements the repository method under test.
 func (s *stubAutocompleteRepo) AutocompleteAnnotation(
+	ctx context.Context,
 	params *repository.AutocompleteQuery,
 ) IOE.IOEither[error, []*repository.Suggestion] {
 	s.calls++
+	s.gotCtx = ctx
 	s.params = params
 	if s.err != nil {
 		return IOE.Left[[]*repository.Suggestion](s.err)
@@ -295,4 +298,16 @@ func TestAutocompleteAnnotationHandlerRejectsMarkOnlyQuery(t *testing.T) {
 	)
 	assert.Equal(codes.InvalidArgument, status.Code(err))
 	assert.Zero(repo.calls, "expect no repository call")
+}
+
+func TestAutocompleteAnnotationHandlerForwardsContextToRepository(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+	repo := &stubAutocompleteRepo{}
+	svc := newAutocompleteTestService(t, repo)
+	ctx := t.Context()
+
+	_, err := svc.AutocompleteAnnotation(ctx, autocompleteParamsWith("axe", 5))
+	assert.NoError(err)
+	assert.Equal(ctx, repo.gotCtx, "expect handler to forward caller context to AutocompleteAnnotation")
 }

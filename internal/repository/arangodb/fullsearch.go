@@ -14,7 +14,6 @@ import (
 	ORD "github.com/IBM/fp-go/v2/ord"
 	P "github.com/IBM/fp-go/v2/predicate"
 	driver "github.com/arangodb/go-driver"
-	manager "github.com/dictyBase/arangomanager"
 	eithererr "github.com/dictyBase/fp-go-loom/eithererr"
 	MO "github.com/dictyBase/fp-go-loom/matchopt"
 	predarrays "github.com/dictyBase/fp-go-loom/predicate/array"
@@ -32,6 +31,7 @@ type (
 
 	// fullSearchRequest is the validated state of one full search call.
 	fullSearchRequest struct {
+		ctx     context.Context
 		query   string
 		limit   int
 		targets fullSearchTargets
@@ -39,6 +39,7 @@ type (
 
 	// fullSearchQueryParams holds the finished AQL statement and bind map.
 	fullSearchQueryParams struct {
+		ctx        context.Context
 		statement  string
 		bindParams map[string]any
 	}
@@ -503,6 +504,23 @@ func fullSearchViewProperties(
 }
 
 var (
+	fullSearchCtxLens = L.MakeLens(
+		func(r fullSearchRequest) context.Context { return r.ctx },
+		func(r fullSearchRequest, ctx context.Context) fullSearchRequest {
+			r.ctx = ctx
+			return r
+		},
+	)
+	fullSearchParamsCtxLens = L.MakeLens(
+		func(p fullSearchQueryParams) context.Context { return p.ctx },
+		func(
+			p fullSearchQueryParams,
+			ctx context.Context,
+		) fullSearchQueryParams {
+			p.ctx = ctx
+			return p
+		},
+	)
 	fullSearchQueryLens = L.MakeLens(
 		func(r fullSearchRequest) string { return r.query },
 		func(r fullSearchRequest, q string) fullSearchRequest {
@@ -658,7 +676,7 @@ func (ar *arangorepository) fullSearchTargetBindParams() map[string]any {
 
 // readFullSearchTargetsRow lifts decodeFullSearchTargetsRow into IOEither.
 func readFullSearchTargetsRow(
-	row *manager.Result,
+	row *contextResult,
 ) IOE.IOEither[error, fullSearchTargets] {
 	return F.Pipe1(
 		IOE.TryCatchError(func() (fullSearchTargets, error) {
@@ -674,17 +692,19 @@ func readFullSearchTargetsRow(
 // ontology cv._id values in a single AQL round trip. Unloaded ontologies or
 // tags are absent from the returned maps and default to "" when bound.
 func (ar *arangorepository) resolveFullSearchTargets(
-	_ fullSearchRequest,
+	req fullSearchRequest,
 ) IOE.IOEither[error, fullSearchTargets] {
+	ctx := fullSearchCtxLens.Get(req)
 	return F.Pipe2(
-		IOE.TryCatchError(func() (*manager.Result, error) {
+		IOE.TryCatchError(func() (*contextResult, error) {
 			bindParams := ar.fullSearchTargetBindParams()
-			return ar.database.GetRow(
+			return ar.getRow(
+				ctx,
 				fullSearchTargetsQ,
 				bindParams,
 			)
 		}),
-		IOE.MapLeft[*manager.Result](runFullSearchTargetsFault),
+		IOE.MapLeft[*contextResult](runFullSearchTargetsFault),
 		IOE.Chain(readFullSearchTargetsRow),
 	)
 }
@@ -719,11 +739,13 @@ func (ar *arangorepository) fullSearchBindParams(
 func (ar *arangorepository) buildFullSearchQueryParams(
 	req fullSearchRequest,
 ) fullSearchQueryParams {
+	ctx := fullSearchCtxLens.Get(req)
 	statement := buildFullSearchQuery()
 	bindParams := ar.fullSearchBindParams(req)
 
-	return F.Pipe2(
+	return F.Pipe3(
 		fullSearchQueryParams{},
+		fullSearchParamsCtxLens.Set(ctx),
 		fullSearchStmtLens.Set(statement),
 		fullSearchBindLens.Set(bindParams),
 	)
@@ -733,10 +755,11 @@ func (ar *arangorepository) buildFullSearchQueryParams(
 func (ar *arangorepository) runFullSearchRows(
 	params fullSearchQueryParams,
 ) (dbRows, error) {
+	ctx := fullSearchParamsCtxLens.Get(params)
 	stmt := fullSearchStmtLens.Get(params)
 	binds := fullSearchBindLens.Get(params)
 
-	return ar.database.SearchRows(stmt, binds)
+	return ar.searchRows(ctx, stmt, binds)
 }
 
 // executeFullSearchQuery runs the 28-branch full search statement.
@@ -779,15 +802,19 @@ func toFullSearchResults(rows []fullSearchRow) []*repo.FullSearchResult {
 // SearchAnnotation returns at most Limit ranked results for the normalized
 // query of params as a lazy IOEither pipeline.
 func (ar *arangorepository) SearchAnnotation(
+	ctx context.Context,
 	params *repo.FullSearchQuery,
 ) IOE.IOEither[error, []*repo.FullSearchResult] {
+	baseCtx := normalizeQueryContext(ctx)
+	withCtx := fullSearchCtxLens.Set(baseCtx)
 	rowFault := scanSearchRows[fullSearchRow](
 		"error in reading full search row",
 	)
 
-	return F.Pipe6(
+	return F.Pipe7(
 		IOE.Of[error](params),
 		IOE.ChainEitherK(validateFullSearchRequest),
+		IOE.Map[error](withCtx),
 		IOE.Bind(fullSearchTargetsLens.Set, ar.resolveFullSearchTargets),
 		IOE.Map[error](ar.buildFullSearchQueryParams),
 		IOE.Chain(ar.executeFullSearchQuery),

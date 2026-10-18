@@ -27,6 +27,7 @@ type annoc struct {
 }
 
 type arangorepository struct {
+	connP    *manager.ConnectParams
 	sess     *manager.Session
 	database *manager.Database
 	anno     *annoc
@@ -522,6 +523,7 @@ func toTaggedAnnotationRepo(
 	st annotationRepoState,
 ) repo.TaggedAnnotationRepository {
 	return &arangorepository{
+		connP:    st.connP,
 		sess:     st.handles.sess,
 		database: st.handles.dbh,
 		onto:     st.onto,

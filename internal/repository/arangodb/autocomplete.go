@@ -24,6 +24,7 @@ type (
 	// autocompleteRequest is the state of one autocomplete search once the
 	// query is normalized and the ontology term identifiers are resolved.
 	autocompleteRequest struct {
+		ctx            context.Context
 		query          string
 		limit          int
 		synonymTermID  string
@@ -33,6 +34,7 @@ type (
 	// autocompleteQueryParams is the finished AQL statement together with
 	// the bind parameters it needs.
 	autocompleteQueryParams struct {
+		ctx        context.Context
 		statement  string
 		bindParams map[string]any
 	}
@@ -180,6 +182,23 @@ var (
 	// queryLens, limitLens, synonymTermIDLens, and genotypeTermIDLens focus
 	// the fields of an autocomplete request, so pipelines and IOE.Bind can
 	// read and fill them through optics.
+	autocompleteCtxLens = L.MakeLens(
+		func(r autocompleteRequest) context.Context { return r.ctx },
+		func(r autocompleteRequest, ctx context.Context) autocompleteRequest {
+			r.ctx = ctx
+			return r
+		},
+	)
+	autocompleteParamsCtxLens = L.MakeLens(
+		func(p autocompleteQueryParams) context.Context { return p.ctx },
+		func(
+			p autocompleteQueryParams,
+			ctx context.Context,
+		) autocompleteQueryParams {
+			p.ctx = ctx
+			return p
+		},
+	)
 	queryLens = L.MakeLens(
 		func(r autocompleteRequest) string { return r.query },
 		func(r autocompleteRequest, q string) autocompleteRequest {
@@ -665,17 +684,29 @@ func autocompleteAnalyzerFeatures() []driver.ArangoSearchAnalyzerFeature {
 // the two ontology term identifiers onto the request state with lenses, and
 // runs the 4-branch statement. It is forced only once, by the caller.
 func (ar *arangorepository) AutocompleteAnnotation(
+	ctx context.Context,
 	params *repo.AutocompleteQuery,
 ) IOE.IOEither[error, []*repo.Suggestion] {
+	baseCtx := normalizeQueryContext(ctx)
+	withCtx := autocompleteCtxLens.Set(baseCtx)
 	rowFault := scanSearchRows[suggestionRow](
 		"error in reading autocomplete row",
 	)
-	synonymTermID := ar.lookupTermID(dictyAnnotationOntology, fieldSynonym)
-	genotypeTermID := ar.lookupTermID(dictyAnnotationOntology, fieldGenotype)
+	synonymTermID := ar.lookupTermID(
+		baseCtx,
+		dictyAnnotationOntology,
+		fieldSynonym,
+	)
+	genotypeTermID := ar.lookupTermID(
+		baseCtx,
+		dictyAnnotationOntology,
+		fieldGenotype,
+	)
 
-	return F.Pipe7(
+	return F.Pipe8(
 		IOE.Of[error](params),
 		IOE.ChainEitherK(validateAutocompleteRequest),
+		IOE.Map[error](withCtx),
 		IOE.Bind(
 			synonymTermIDLens.Set,
 			F.Constant1[autocompleteRequest](synonymTermID),
@@ -762,11 +793,13 @@ func (ar *arangorepository) autocompleteBindParams(
 func (ar *arangorepository) buildAutocompleteQueryParams(
 	req autocompleteRequest,
 ) autocompleteQueryParams {
+	ctx := autocompleteCtxLens.Get(req)
 	statement := buildAutocompleteQuery()
 	bindParams := ar.autocompleteBindParams(req)
 
-	return F.Pipe2(
+	return F.Pipe3(
 		autocompleteQueryParams{},
+		autocompleteParamsCtxLens.Set(ctx),
 		statementLens.Set(statement),
 		bindParamsLens.Set(bindParams),
 	)
@@ -780,7 +813,8 @@ func (ar *arangorepository) executeAutocompleteQuery(
 
 	return F.Pipe1(
 		IOE.TryCatchError(func() (dbRows, error) {
-			return ar.database.SearchRows(
+			return ar.searchRows(
+				autocompleteParamsCtxLens.Get(params),
 				statementLens.Get(params),
 				bindParamsLens.Get(params),
 			)

@@ -37,9 +37,11 @@ const (
 )
 
 type (
-	// fullSearchInput is the boundary record of the handler: the request and
-	// the repository travel as data rather than being captured in a closure.
+	// fullSearchInput is the boundary record of the handler: the caller
+	// context, the request and the repository travel as data rather than being
+	// captured in a closure.
 	fullSearchInput struct {
+		ctx     context.Context
 		request *annotation.AnnotationSearchParameters
 		repo    repository.TaggedAnnotationRepository
 	}
@@ -53,6 +55,7 @@ type (
 	// fullSearchState is the state of one handler run, once the query is
 	// normalized and the repository call has been made.
 	fullSearchState struct {
+		ctx   context.Context
 		repo  repository.TaggedAnnotationRepository
 		query *repository.FullSearchQuery
 		rows  []*repository.FullSearchResult
@@ -106,11 +109,11 @@ var (
 // SearchAnnotation returns at most 50 ranked strain annotation matches for a
 // search query of at least 2 normalized characters.
 func (srv *AnnotationService) SearchAnnotation(
-	_ context.Context,
+	ctx context.Context,
 	r *annotation.AnnotationSearchParameters,
 ) (*annotation.AnnotationSearchResultCollection, error) {
 	result := F.Pipe5(
-		IOE.Of[error](fullSearchInput{request: r, repo: srv.repo}),
+		IOE.Of[error](fullSearchInput{ctx: ctx, request: r, repo: srv.repo}),
 		IOE.ChainEitherK(validatedFullSearch),
 		IOE.Bind(fullSearchRowsLens.Set, searchAnnotationHits),
 		IOE.Map[error](toSearchResultCollection),
@@ -148,7 +151,7 @@ func validatedFullSearch(
 				msgStopwordFullSearchQuery,
 			),
 		)),
-		E.Map[error](F.Bind1st(newFullSearchState, in.repo)),
+		E.Map[error](F.Bind1st(newFullSearchState, in)),
 		E.MapLeft[fullSearchState](invalidParamStatus),
 	)
 }
@@ -181,11 +184,12 @@ func fullSearchQueryText(params fullSearchParams) string {
 
 // newFullSearchState starts one full search handler run against a repository.
 func newFullSearchState(
-	repo repository.TaggedAnnotationRepository,
+	in fullSearchInput,
 	params fullSearchParams,
 ) fullSearchState {
 	return fullSearchState{
-		repo: repo,
+		ctx:  in.ctx,
+		repo: in.repo,
 		query: &repository.FullSearchQuery{
 			Query: params.query,
 			Limit: params.limit,
@@ -198,7 +202,7 @@ func newFullSearchState(
 func searchAnnotationHits(
 	s fullSearchState,
 ) IOE.IOEither[error, []*repository.FullSearchResult] {
-	found := s.repo.SearchAnnotation(s.query)
+	found := s.repo.SearchAnnotation(s.ctx, s.query)
 
 	return F.Pipe1(
 		found,

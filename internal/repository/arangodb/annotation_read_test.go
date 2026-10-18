@@ -1,6 +1,7 @@
 package arangodb
 
 import (
+	"context"
 	"testing"
 
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
@@ -218,24 +219,25 @@ func TestListAnnGrFilter(t *testing.T) {
 				  AND cvt.label == 'private note'
 				  AND cv.metadata.namespace == 'dicty_annotation'
 	`
-	egl, err := anrepo.ListAnnotationGroup(0, 10, filterOne)
+	egl, err := anrepo.ListAnnotationGroup(context.Background(), 0, 10, filterOne)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	testGroupMember(t, egl, 2, 0, "sidd@gmail.com")
 	filterTwo := `FILTER ann.entry_id == 'DDB_G0294491'
 				  AND cvt.label == 'name description'
 				  AND cv.metadata.namespace == 'dicty_annotation'
 	`
-	egl2, err := anrepo.ListAnnotationGroup(0, 10, filterTwo)
+	egl2, err := anrepo.ListAnnotationGroup(context.Background(), 0, 10, filterTwo)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	testGroupMember(t, egl2, 2, 1, "basu@gmail.com")
 	filterThree := `FILTER cv.metadata.namespace == 'dicty_annotation'`
-	egl3, err := anrepo.ListAnnotationGroup(0, 2, filterThree)
+	egl3, err := anrepo.ListAnnotationGroup(context.Background(), 0, 2, filterThree)
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(egl3, 2, "should have two groups")
 	for _, g := range egl3 {
 		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
 	}
 	egl4, err := anrepo.ListAnnotationGroup(
+		context.Background(),
 		toTimestamp(egl3[len(egl3)-1].CreatedAt),
 		4,
 		filterThree,
@@ -245,7 +247,7 @@ func TestListAnnGrFilter(t *testing.T) {
 	for _, g := range egl4 {
 		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
 	}
-	_, err = anrepo.ListAnnotationGroup(0, 4, "FILTER ann.entry_id == 'jumbo'")
+	_, err = anrepo.ListAnnotationGroup(context.Background(), 0, 4, "FILTER ann.entry_id == 'jumbo'")
 	assert.Error(err, "expect error")
 	assert.True(
 		repository.IsAnnotationGroupListNotFound(err),
@@ -271,13 +273,14 @@ func TestListAnnotationGroup(t *testing.T) {
 		assert.NoErrorf(err, "expect no error, received %s", err)
 		j += 5
 	}
-	egl, err := anrepo.ListAnnotationGroup(0, 4, "")
+	egl, err := anrepo.ListAnnotationGroup(context.Background(), 0, 4, "")
 	assert.NoErrorf(err, "expect no error, received %s", err)
 	assert.Len(egl, 4, "should have 4 groups")
 	for _, g := range egl {
 		assert.Len(g.AnnoDocs, 5, "should have 5 annotations in each group")
 	}
 	egl2, err := anrepo.ListAnnotationGroup(
+		context.Background(),
 		toTimestamp(egl[len(egl)-1].CreatedAt),
 		6,
 		"",
@@ -293,6 +296,7 @@ func TestListAnnotationGroup(t *testing.T) {
 		"should have identical model objects",
 	)
 	egl3, err := anrepo.ListAnnotationGroup(
+		context.Background(),
 		toTimestamp(egl2[len(egl2)-1].CreatedAt),
 		6,
 		"",
@@ -335,6 +339,7 @@ func testListAnnoFilterOneFirstPage(
 ) []*model.AnnoDoc {
 	t.Helper()
 	mla, err := anrepo.ListAnnotations(
+		context.Background(),
 		&repository.ListAnnotationsParams{Limit: 4, Filter: filterOne},
 	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -357,7 +362,7 @@ func testListAnnoFilterOneSecondPage(
 ) []*model.AnnoDoc {
 	t.Helper()
 	assert.NotEmpty(prevResult, "previous result should not be empty")
-	ml2, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+	ml2, err := anrepo.ListAnnotations(context.Background(), &repository.ListAnnotationsParams{
 		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
 		Limit:  4, Filter: filterOne,
 	})
@@ -381,7 +386,7 @@ func testListAnnoFilterOneThirdPage(
 ) {
 	t.Helper()
 	assert.NotEmpty(prevResult, "previous result should not be empty")
-	ml3, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+	ml3, err := anrepo.ListAnnotations(context.Background(), &repository.ListAnnotationsParams{
 		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
 		Limit:  4, Filter: filterOne,
 	})
@@ -402,6 +407,7 @@ func testListAnnoFilterTwoFirstPage(
 ) []*model.AnnoDoc {
 	t.Helper()
 	ml4, err := anrepo.ListAnnotations(
+		context.Background(),
 		&repository.ListAnnotationsParams{Limit: 6, Filter: filterTwo},
 	)
 	assert.NoErrorf(err, "expect no error, received %s", err)
@@ -424,7 +430,7 @@ func testListAnnoFilterTwoSecondPage(
 ) {
 	t.Helper()
 	assert.NotEmpty(prevResult, "previous result should not be empty")
-	ml5, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+	ml5, err := anrepo.ListAnnotations(context.Background(), &repository.ListAnnotationsParams{
 		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
 		Limit:  4, Filter: filterTwo,
 	})
@@ -445,6 +451,7 @@ func testListAnnoFilterNotFound(
 ) {
 	t.Helper()
 	_, err := anrepo.ListAnnotations(
+		context.Background(),
 		&repository.ListAnnotationsParams{Limit: 4, Filter: filterThree},
 	)
 	assert.Error(err, "expect error")
@@ -650,6 +657,7 @@ func testListAnnoTagOnlyFirstPage(
 ) []*model.AnnoDoc {
 	t.Helper()
 	mla, err := anrepo.ListAnnotations(
+		context.Background(),
 		&repository.ListAnnotationsParams{Limit: 3, Filter: filterTagOnly},
 	)
 	assert.NoErrorf(err, "SecondFilter query must not return AQL bind error, got %s", err)
@@ -671,7 +679,7 @@ func testListAnnoTagOnlySecondPage(
 ) {
 	t.Helper()
 	assert.NotEmpty(prevResult, "previous result should not be empty")
-	ml2, err := anrepo.ListAnnotations(&repository.ListAnnotationsParams{
+	ml2, err := anrepo.ListAnnotations(context.Background(), &repository.ListAnnotationsParams{
 		Cursor: toTimestamp(prevResult[len(prevResult)-1].CreatedAt),
 		Limit:  3,
 		Filter: filterTagOnly,
@@ -692,6 +700,7 @@ func testListAnnoTagOnlyNotFound(
 ) {
 	t.Helper()
 	_, err := anrepo.ListAnnotations(
+		context.Background(),
 		&repository.ListAnnotationsParams{
 			Limit:  4,
 			Filter: `tag==nonexistent tag;ontology==dicty_annotation`,

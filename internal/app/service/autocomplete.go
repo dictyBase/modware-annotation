@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
@@ -13,6 +14,7 @@ import (
 	S "github.com/IBM/fp-go/v2/string"
 	"github.com/bufbuild/protovalidate-go"
 	ioeutils "github.com/dictyBase/fp-go-loom/ioeitherutils"
+	MO "github.com/dictyBase/fp-go-loom/matchopt"
 	predarrays "github.com/dictyBase/fp-go-loom/predicate/array"
 	predord "github.com/dictyBase/fp-go-loom/predicate/ord"
 	"github.com/dictyBase/go-genproto/dictybaseapis/annotation"
@@ -50,9 +52,11 @@ const (
 )
 
 type (
-	// autocompleteInput is the boundary record of the handler: the request and
-	// the repository travel as data rather than being captured in a closure.
+	// autocompleteInput is the boundary record of the handler: the caller
+	// context, the request and the repository travel as data rather than being
+	// captured in a closure.
 	autocompleteInput struct {
+		ctx     context.Context
 		request *annotation.AnnotationAutocompleteParameters
 		repo    repository.TaggedAnnotationRepository
 	}
@@ -66,6 +70,7 @@ type (
 	// autocompleteSearch is the state of one handler run, once the query is
 	// normalized and the repository call has been made.
 	autocompleteSearch struct {
+		ctx   context.Context
 		repo  repository.TaggedAnnotationRepository
 		query *repository.AutocompleteQuery
 		rows  []*repository.Suggestion
@@ -111,17 +116,31 @@ var (
 		P.ContraMap(S.ToRunes),
 		P.ContraMap(autocompleteQueryText),
 	)
+
+	isCanceledError = func(err error) bool {
+		return errors.Is(err, context.Canceled)
+	}
+	isDeadlineExceededError = func(err error) bool {
+		return errors.Is(err, context.DeadlineExceeded)
+	}
+	serverErrorCode = MO.Match(
+		codes.Internal,
+		[]O.Kleisli[error, codes.Code]{
+			MO.Const(isCanceledError, codes.Canceled),
+			MO.Const(isDeadlineExceededError, codes.DeadlineExceeded),
+		},
+	)
 )
 
 // AutocompleteAnnotation returns annotation suggestions for a partial strain
 // synonym or genotype value. Guards are pure Either, the repository call is the
 // only effect, and the whole program is forced once at the boundary.
 func (srv *AnnotationService) AutocompleteAnnotation(
-	_ context.Context,
+	ctx context.Context,
 	r *annotation.AnnotationAutocompleteParameters,
 ) (*annotation.AnnotationSuggestionCollection, error) {
 	result := F.Pipe5(
-		IOE.Of[error](autocompleteInput{request: r, repo: srv.repo}),
+		IOE.Of[error](autocompleteInput{ctx: ctx, request: r, repo: srv.repo}),
 		IOE.ChainEitherK(validatedAutocompleteSearch),
 		IOE.Bind(rowsLens.Set, searchSuggestions),
 		IOE.Map[error](toSuggestionCollection),
@@ -153,7 +172,7 @@ func validatedAutocompleteSearch(
 				msgShortAutocompleteQuery,
 			),
 		)),
-		E.Map[error](F.Bind1st(newAutocompleteSearch, in.repo)),
+		E.Map[error](F.Bind1st(newAutocompleteSearch, in)),
 		E.MapLeft[autocompleteSearch](invalidParamStatus),
 	)
 }
@@ -187,11 +206,12 @@ func autocompleteQueryText(params autocompleteParams) string {
 
 // newAutocompleteSearch starts one handler run against a repository.
 func newAutocompleteSearch(
-	repo repository.TaggedAnnotationRepository,
+	in autocompleteInput,
 	params autocompleteParams,
 ) autocompleteSearch {
 	return autocompleteSearch{
-		repo: repo,
+		ctx:  in.ctx,
+		repo: in.repo,
 		query: &repository.AutocompleteQuery{
 			Query: params.query,
 			Limit: params.limit,
@@ -204,7 +224,7 @@ func newAutocompleteSearch(
 func searchSuggestions(
 	s autocompleteSearch,
 ) IOE.IOEither[error, []*repository.Suggestion] {
-	found := s.repo.AutocompleteAnnotation(s.query)
+	found := s.repo.AutocompleteAnnotation(s.ctx, s.query)
 
 	return F.Pipe1(
 		found,
@@ -290,12 +310,12 @@ func invalidParamStatus(err error) error {
 	return status.Error(codes.InvalidArgument, message)
 }
 
-// serverErrorStatus maps a repository fault onto the Internal status the caller
-// sees.
+// serverErrorStatus maps a repository fault onto the appropriate gRPC status.
 func serverErrorStatus(err error) error {
+	code := serverErrorCode(err)
 	message := err.Error()
 
-	return status.Error(codes.Internal, message)
+	return status.Error(code, message)
 }
 
 // invalidParamStatusOf is a guard's error factory: it drops the rejected value

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"io"
 
 	IOE "github.com/IBM/fp-go/v2/ioeither"
@@ -83,7 +84,7 @@ type TaggedAnnotationRepository interface {
 	RemoveAnnotation(id string, purge bool) error
 	// ListAnnotationGroup provides a paginated list of annotation along
 	// with optional filtering
-	ListAnnotations(*ListAnnotationsParams) ([]*model.AnnoDoc, error)
+	ListAnnotations(ctx context.Context, params *ListAnnotationsParams) ([]*model.AnnoDoc, error)
 	ClearAnnotations() error
 	Clear() error
 	// AddAnnotationGroup creates a new annotation group
@@ -105,6 +106,7 @@ type TaggedAnnotationRepository interface {
 	// ListAnnotationGroup provides a paginated list of annotation groups along
 	// with optional filtering
 	ListAnnotationGroup(
+		ctx context.Context,
 		cursor, limit int64,
 		filter string,
 	) ([]*model.AnnoGroup, error)
@@ -113,11 +115,13 @@ type TaggedAnnotationRepository interface {
 	// AutocompleteAnnotation returns at most Limit short suggestions for
 	// the normalized query of params as a lazy IOEither pipeline.
 	AutocompleteAnnotation(
+		ctx context.Context,
 		params *AutocompleteQuery,
 	) IOE.IOEither[error, []*Suggestion]
 	// SearchAnnotation returns at most Limit ranked results for the
 	// normalized query of params as a lazy IOEither pipeline.
 	SearchAnnotation(
+		ctx context.Context,
 		params *FullSearchQuery,
 	) IOE.IOEither[error, []*FullSearchResult]
 	Dbh() *manager.Database
