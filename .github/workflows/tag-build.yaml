@@ -33,3 +33,22 @@ jobs:
       pulumi_version: ${{ vars.PROD_PULUMI_VERSION }}
       environment: production
       runner: backend
+  call-buildless-deploy:
+    needs: call-build-deploy
+    uses: dictyBase/workflows/.github/workflows/deploy-buildless-backend.yaml@develop
+    secrets: inherit
+    with:
+      app: anno-feat
+      project: modware-annotation-feature
+      stack: dcr-kube1
+      repository: ${{ github.repository }}
+      ref: ${{ github.ref_name }}
+      dockerfile: build/package/Dockerfile
+      docker_image: modware-annotation
+      cluster: ${{ vars.PROD_CLUSTER }}
+      cluster_state_storage: ${{ vars.PROD_KOPS_STATE_STORAGE }}
+      kops_version: ${{ vars.PROD_KOPS_VERSION }}
+      kubectl_version: ${{ vars.PROD_KUBECTL_VERSION }}
+      pulumi_version: ${{ vars.PROD_PULUMI_VERSION }}
+      environment: production
+      runner: backend
