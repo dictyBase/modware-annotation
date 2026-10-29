@@ -69,6 +69,35 @@ type FullSearchResult struct {
 	Score float64
 }
 
+// PhenotypeSearchQuery holds the input of a phenotype ontology full search.
+// The repository normalizes Query, rejects all-stopword queries, and clamps Limit.
+type PhenotypeSearchQuery struct {
+	// Query is the search text. The caller sends it untrimmed;
+	// the repository trims it, lowercases it, and strips combining marks.
+	Query string
+	// Limit is the maximum number of results. A value at or below 0
+	// becomes 50. A value above 50 becomes 50.
+	Limit int
+}
+
+// PhenotypeSearchResult is one phenotype full search match, deduplicated by
+// EntryID.
+type PhenotypeSearchResult struct {
+	// EntryID is the strain identifier of the matched annotation, for
+	// example DBS0236126.
+	EntryID string
+	// Field is the canonical cvterm field label that matched ("label",
+	// "synonym", "definition", or "comment").
+	Field string
+	// Name is the matched cvterm label.
+	Name string
+	// Definition is the stored cvterm definition prose.
+	Definition string
+	// Score ranks the match across the four bands (prefix >= 1000,
+	// phrase >= 500, token >= 250, fuzzy >= 0).
+	Score float64
+}
+
 // TaggedAnnotationRepository is an interface for accessing annotation
 // data from its data sources.
 type TaggedAnnotationRepository interface {
@@ -124,6 +153,12 @@ type TaggedAnnotationRepository interface {
 		ctx context.Context,
 		params *FullSearchQuery,
 	) IOE.IOEither[error, []*FullSearchResult]
+	// SearchPhenotypes returns at most Limit ranked strain phenotype matches
+	// for the normalized query of params as a lazy IOEither pipeline.
+	SearchPhenotypes(
+		ctx context.Context,
+		params *PhenotypeSearchQuery,
+	) IOE.IOEither[error, []*PhenotypeSearchResult]
 	Dbh() *manager.Database
 	LoadOboJSON(r io.Reader) (*storage.UploadInformation, error)
 }
