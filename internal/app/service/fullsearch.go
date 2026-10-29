@@ -104,6 +104,19 @@ var (
 		P.Not,
 		P.ContraMap(fullSearchQueryText),
 	)
+
+	emptyFullSearchQueryErr    = invalidParamStatusOf[fullSearchParams](msgEmptyFullSearchQuery)
+	shortFullSearchQueryErr    = invalidParamStatusOf[fullSearchParams](msgShortFullSearchQuery)
+	stopwordFullSearchQueryErr = invalidParamStatusOf[fullSearchParams](msgStopwordFullSearchQuery)
+
+	checkFullSearchQueryText     = E.FromPredicate(hasFullSearchQueryText, emptyFullSearchQueryErr)
+	checkFullSearchQueryLength   = E.FromPredicate(hasLongEnoughFullSearchQuery, shortFullSearchQueryErr)
+	checkFullSearchQueryStopword = E.FromPredicate(hasNonStopwordFullSearchQuery, stopwordFullSearchQueryErr)
+
+	searchAnnotationHits = F.Flow2(
+		rawSearchAnnotationHits,
+		IOE.MapLeft[[]*repository.FullSearchResult](serverErrorStatus),
+	)
 )
 
 // SearchAnnotation returns at most 50 ranked strain annotation matches for a
@@ -112,8 +125,9 @@ func (srv *AnnotationService) SearchAnnotation(
 	ctx context.Context,
 	r *annotation.AnnotationSearchParameters,
 ) (*annotation.AnnotationSearchResultCollection, error) {
+	seed := fullSearchInput{ctx: ctx, request: r, repo: srv.repo}
 	result := F.Pipe5(
-		IOE.Of[error](fullSearchInput{ctx: ctx, request: r, repo: srv.repo}),
+		IOE.Of[error](seed),
 		IOE.ChainEitherK(validatedFullSearch),
 		IOE.Bind(fullSearchRowsLens.Set, searchAnnotationHits),
 		IOE.Map[error](toSearchResultCollection),
@@ -129,29 +143,15 @@ func validatedFullSearch(
 	in fullSearchInput,
 ) E.Either[error, fullSearchState] {
 	valErr := protovalidate.Validate(in.request)
+	toState := F.Bind1st(newFullSearchState, in)
 
 	return F.Pipe6(
 		E.TryCatchError(in.request, valErr),
 		E.Map[error](newFullSearchParams),
-		E.Chain(E.FromPredicate(
-			hasFullSearchQueryText,
-			invalidParamStatusOf[fullSearchParams](
-				msgEmptyFullSearchQuery,
-			),
-		)),
-		E.Chain(E.FromPredicate(
-			hasLongEnoughFullSearchQuery,
-			invalidParamStatusOf[fullSearchParams](
-				msgShortFullSearchQuery,
-			),
-		)),
-		E.Chain(E.FromPredicate(
-			hasNonStopwordFullSearchQuery,
-			invalidParamStatusOf[fullSearchParams](
-				msgStopwordFullSearchQuery,
-			),
-		)),
-		E.Map[error](F.Bind1st(newFullSearchState, in)),
+		E.Chain(checkFullSearchQueryText),
+		E.Chain(checkFullSearchQueryLength),
+		E.Chain(checkFullSearchQueryStopword),
+		E.Map[error](toState),
 		E.MapLeft[fullSearchState](invalidParamStatus),
 	)
 }
@@ -197,17 +197,11 @@ func newFullSearchState(
 	}
 }
 
-// searchAnnotationHits runs the repository full search and maps any repository
-// fault onto codes.Internal.
-func searchAnnotationHits(
+// rawSearchAnnotationHits invokes the repository full search.
+func rawSearchAnnotationHits(
 	s fullSearchState,
 ) IOE.IOEither[error, []*repository.FullSearchResult] {
-	found := s.repo.SearchAnnotation(s.ctx, s.query)
-
-	return F.Pipe1(
-		found,
-		IOE.MapLeft[[]*repository.FullSearchResult](serverErrorStatus),
-	)
+	return s.repo.SearchAnnotation(s.ctx, s.query)
 }
 
 // toAnnotationSearchResult maps one repository full search result onto its
