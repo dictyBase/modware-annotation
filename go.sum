@@ -38,6 +38,8 @@ github.com/dictyBase/fp-go-loom v0.0.0-20261010160534-3c971335f51e h1:DaHivGHumT
 github.com/dictyBase/fp-go-loom v0.0.0-20261010160534-3c971335f51e/go.mod h1:diENwGsNvP8oFe3HC4Wk3Qmoj+32vAtwsXPYB58+fUs=
 github.com/dictyBase/go-genproto v0.0.0-20261015184742-b50113c639f4 h1:0Cqlye0B3ZYW8WnW4HAoESBYMgwyJaqpCjRnLBorw/w=
 github.com/dictyBase/go-genproto v0.0.0-20261015184742-b50113c639f4/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
+github.com/dictyBase/go-genproto v0.0.0-20261029035135-a46038587034 h1:a3z7bUH34pv6H5yrN6TJszMmdpdUeiDrji40UhRRo/k=
+github.com/dictyBase/go-genproto v0.0.0-20261029035135-a46038587034/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-obograph v1.6.1 h1:2qWF1OPVUAV20OeCZxi6bEQyMFzKdV7DNzmG7qT9otE=
 github.com/dictyBase/go-obograph v1.6.1/go.mod h1:GJjVU6iquV7OUsMLAZFFqI64gN+GyXOfdnOWdR/Bj4A=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
