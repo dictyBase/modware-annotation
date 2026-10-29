@@ -243,15 +243,21 @@ func (ar *arangorepository) buildPhenotypeSearchQueryParams(
 	)
 }
 
-// runPhenotypeSearchRows is the raw SearchRows adapter for SearchPhenotypes.
+// runPhenotypeSearchRows runs the phenotype search statement over SearchRows
+// and wraps each fault with runPhenotypeSearchQueryFault.
 func (ar *arangorepository) runPhenotypeSearchRows(
 	params phenotypeSearchQueryParams,
-) (dbRows, error) {
+) IOE.IOEither[error, dbRows] {
 	ctx := phenotypeSearchParamsCtxLens.Get(params)
 	stmt := phenotypeSearchStmtLens.Get(params)
 	binds := phenotypeSearchBindLens.Get(params)
 
-	return ar.searchRows(ctx, stmt, binds)
+	return F.Pipe1(
+		IOE.TryCatchError(func() (dbRows, error) {
+			return ar.searchRows(ctx, stmt, binds)
+		}),
+		IOE.MapLeft[dbRows](runPhenotypeSearchQueryFault),
+	)
 }
 
 // emptyPhenotypeSearchResults returns a non-nil empty slice when no rows match.
@@ -302,10 +308,6 @@ func (ar *arangorepository) SearchPhenotypes(
 ) IOE.IOEither[error, []*repo.PhenotypeSearchResult] {
 	baseCtx := normalizeQueryContext(ctx)
 	withCtx := phenotypeSearchCtxLens.Set(baseCtx)
-	runQuery := F.Flow2(
-		IOE.Eitherize1(ar.runPhenotypeSearchRows),
-		IOE.MapLeft[dbRows](runPhenotypeSearchQueryFault),
-	)
 	rowFault := scanSearchRows[phenotypeSearchRow](
 		"error in reading phenotype search row",
 	)
@@ -321,7 +323,7 @@ func (ar *arangorepository) SearchPhenotypes(
 			),
 		),
 		IOE.Map[error](ar.buildPhenotypeSearchQueryParams),
-		IOE.Chain(runQuery),
+		IOE.Chain(ar.runPhenotypeSearchRows),
 		IOE.Chain(rowFault),
 		IOE.Map[error](toPhenotypeSearchResults),
 	)
