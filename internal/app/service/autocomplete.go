@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	A "github.com/IBM/fp-go/v2/array"
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
@@ -11,6 +12,7 @@ import (
 	O "github.com/IBM/fp-go/v2/option"
 	ORD "github.com/IBM/fp-go/v2/ord"
 	P "github.com/IBM/fp-go/v2/predicate"
+	R "github.com/IBM/fp-go/v2/record"
 	S "github.com/IBM/fp-go/v2/string"
 	"github.com/bufbuild/protovalidate-go"
 	ioeutils "github.com/dictyBase/fp-go-loom/ioeitherutils"
@@ -117,13 +119,45 @@ var (
 		P.ContraMap(autocompleteQueryText),
 	)
 
-	isCanceledError = func(err error) bool {
-		return errors.Is(err, context.Canceled)
+	emptyAutocompleteQueryErr = invalidParamStatusOf[autocompleteParams](msgEmptyAutocompleteQuery)
+	shortAutocompleteQueryErr = invalidParamStatusOf[autocompleteParams](msgShortAutocompleteQuery)
+
+	checkAutocompleteQueryText   = E.FromPredicate(hasAutocompleteQueryText, emptyAutocompleteQueryErr)
+	checkAutocompleteQueryLength = E.FromPredicate(hasLongEnoughAutocompleteQuery, shortAutocompleteQueryErr)
+
+	searchSuggestions = F.Flow2(
+		rawSearchSuggestions,
+		IOE.MapLeft[[]*repository.Suggestion](serverErrorStatus),
+	)
+
+	annotationSearchFieldMap = map[string]annotation.AnnotationSearchField{
+		fieldSynonym:             annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_SYNONYM,
+		fieldGenotype:            annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_GENOTYPE,
+		fieldSystematicName:      annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_SYSTEMATIC_NAME,
+		fieldGeneticModification: annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_GENETIC_MODIFICATION,
+		fieldMutagenesisMethod:   annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_MUTAGENESIS_METHOD,
+		fieldPhenotype:           annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_PHENOTYPE,
+		fieldEnvironment:         annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_ENVIRONMENT,
+		fieldAssay:               annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_ASSAY,
+		fieldCharacteristic:      annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_CHARACTERISTIC,
+		fieldPublicNote:          annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_PUBLIC_NOTE,
 	}
-	isDeadlineExceededError = func(err error) bool {
-		return errors.Is(err, context.DeadlineExceeded)
-	}
-	serverErrorCode = MO.Match(
+
+	lookupAnnotationSearchField = F.Pipe1(
+		annotationSearchFieldMap,
+		F.Flip(R.Lookup[annotation.AnnotationSearchField, string]),
+	)
+
+	toAnnotationSearchField = F.Flow2(
+		lookupAnnotationSearchField,
+		O.GetOrElse(F.Constant(
+			annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_UNSPECIFIED,
+		)),
+	)
+
+	isCanceledError         = F.Bind2nd(errors.Is, context.Canceled)
+	isDeadlineExceededError = F.Bind2nd(errors.Is, context.DeadlineExceeded)
+	serverErrorCode         = MO.Match(
 		codes.Internal,
 		[]O.Kleisli[error, codes.Code]{
 			MO.Const(isCanceledError, codes.Canceled),
@@ -139,8 +173,9 @@ func (srv *AnnotationService) AutocompleteAnnotation(
 	ctx context.Context,
 	r *annotation.AnnotationAutocompleteParameters,
 ) (*annotation.AnnotationSuggestionCollection, error) {
+	seed := autocompleteInput{ctx: ctx, request: r, repo: srv.repo}
 	result := F.Pipe5(
-		IOE.Of[error](autocompleteInput{ctx: ctx, request: r, repo: srv.repo}),
+		IOE.Of[error](seed),
 		IOE.ChainEitherK(validatedAutocompleteSearch),
 		IOE.Bind(rowsLens.Set, searchSuggestions),
 		IOE.Map[error](toSuggestionCollection),
@@ -157,22 +192,15 @@ func (srv *AnnotationService) AutocompleteAnnotation(
 func validatedAutocompleteSearch(
 	in autocompleteInput,
 ) E.Either[error, autocompleteSearch] {
+	valErr := protovalidate.Validate(in.request)
+	toState := F.Bind1st(newAutocompleteSearch, in)
+
 	return F.Pipe5(
-		E.TryCatchError(in.request, protovalidate.Validate(in.request)),
+		E.TryCatchError(in.request, valErr),
 		E.Map[error](newAutocompleteParams),
-		E.Chain(E.FromPredicate(
-			hasAutocompleteQueryText,
-			invalidParamStatusOf[autocompleteParams](
-				msgEmptyAutocompleteQuery,
-			),
-		)),
-		E.Chain(E.FromPredicate(
-			hasLongEnoughAutocompleteQuery,
-			invalidParamStatusOf[autocompleteParams](
-				msgShortAutocompleteQuery,
-			),
-		)),
-		E.Map[error](F.Bind1st(newAutocompleteSearch, in)),
+		E.Chain(checkAutocompleteQueryText),
+		E.Chain(checkAutocompleteQueryLength),
+		E.Map[error](toState),
 		E.MapLeft[autocompleteSearch](invalidParamStatus),
 	)
 }
@@ -219,35 +247,35 @@ func newAutocompleteSearch(
 	}
 }
 
-// searchSuggestions runs the repository search. The fault class is decided
-// here, at the step that raises it.
-func searchSuggestions(
+// rawSearchSuggestions invokes the repository autocomplete search.
+func rawSearchSuggestions(
 	s autocompleteSearch,
 ) IOE.IOEither[error, []*repository.Suggestion] {
-	found := s.repo.AutocompleteAnnotation(s.ctx, s.query)
+	return s.repo.AutocompleteAnnotation(s.ctx, s.query)
+}
 
-	return F.Pipe1(
-		found,
-		IOE.MapLeft[[]*repository.Suggestion](serverErrorStatus),
-	)
+// toAnnotationSuggestion maps one repository suggestion onto its protobuf wire
+// representation.
+func toAnnotationSuggestion(
+	row *repository.Suggestion,
+) *annotation.AnnotationSuggestion {
+	field := toAnnotationSearchField(row.Field)
+
+	return &annotation.AnnotationSuggestion{
+		EntryId:     row.EntryID,
+		Field:       field,
+		DisplayText: row.DisplayText,
+		Score:       row.Score,
+	}
 }
 
 // toSuggestionCollection projects a completed handler run onto the response.
 func toSuggestionCollection(
 	s autocompleteSearch,
 ) *annotation.AnnotationSuggestionCollection {
-	collection := make([]*annotation.AnnotationSuggestion, 0, len(s.rows))
-	for _, row := range s.rows {
-		collection = append(collection, &annotation.AnnotationSuggestion{
-			EntryId:     row.EntryID,
-			Field:       toAnnotationSearchField(row.Field),
-			DisplayText: row.DisplayText,
-			Score:       row.Score,
-		})
-	}
-
+	collection := F.Pipe1(s.rows, A.Map(toAnnotationSuggestion))
 	limit := int64(s.query.Limit)
-	total := int64(len(s.rows))
+	total := int64(len(collection))
 
 	return &annotation.AnnotationSuggestionCollection{
 		Data: collection,
@@ -255,36 +283,6 @@ func toSuggestionCollection(
 			Limit: limit,
 			Total: total,
 		},
-	}
-}
-
-// toAnnotationSearchField maps a repository field label onto the proto enum.
-//
-//nolint:cyclop // exhaustively maps all 10 AnnotationSearchField enum cases
-func toAnnotationSearchField(field string) annotation.AnnotationSearchField {
-	switch field {
-	case fieldSynonym:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_SYNONYM
-	case fieldGenotype:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_GENOTYPE
-	case fieldSystematicName:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_SYSTEMATIC_NAME
-	case fieldGeneticModification:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_GENETIC_MODIFICATION
-	case fieldMutagenesisMethod:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_MUTAGENESIS_METHOD
-	case fieldPhenotype:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_PHENOTYPE
-	case fieldEnvironment:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_ENVIRONMENT
-	case fieldAssay:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_ASSAY
-	case fieldCharacteristic:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_CHARACTERISTIC
-	case fieldPublicNote:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_PUBLIC_NOTE
-	default:
-		return annotation.AnnotationSearchField_ANNOTATION_SEARCH_FIELD_UNSPECIFIED
 	}
 }
 
