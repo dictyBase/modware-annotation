@@ -122,11 +122,12 @@ var (
 		P.ContraMap(phenotypeSearchQueryLens.Get),
 	)
 
-	nilPhenotypeQueryErr      = eithererr.ConstErr[*repo.PhenotypeSearchQuery](msgNilPhenotypeSearchQuery)
-	emptyPhenotypeRequestErr  = eithererr.ConstErr[phenotypeSearchRequest](msgEmptyPhenotypeSearchQuery)
-	checkPhenotypeQueryNotNil = E.FromPredicate(isPresentPhenotypeSearchQuery, nilPhenotypeQueryErr)
-	checkPhenotypeNotEmpty    = E.FromPredicate(hasPhenotypeRequestText, emptyPhenotypeRequestErr)
-	checkPhenotypeNotStopword = E.FromPredicate(keepsPhenotypeNonStopword, stopwordPhenotypeSearchError)
+	isPresentPhenotypeSearchQuery = P.IsNonZero[*repo.PhenotypeSearchQuery]()
+	nilPhenotypeQueryErr          = eithererr.ConstErr[*repo.PhenotypeSearchQuery](msgNilPhenotypeSearchQuery)
+	emptyPhenotypeRequestErr      = eithererr.ConstErr[phenotypeSearchRequest](msgEmptyPhenotypeSearchQuery)
+	checkPhenotypeQueryNotNil     = E.FromPredicate(isPresentPhenotypeSearchQuery, nilPhenotypeQueryErr)
+	checkPhenotypeNotEmpty        = E.FromPredicate(hasPhenotypeRequestText, emptyPhenotypeRequestErr)
+	checkPhenotypeNotStopword     = E.FromPredicate(keepsPhenotypeNonStopword, stopwordPhenotypeSearchError)
 
 	isNonEmptyPhenotypeSearchRows = predarrays.IsNonEmpty[phenotypeSearchRow]()
 	mapPhenotypeSearchRows        = A.Map(toPhenotypeSearchResult)
@@ -145,11 +146,6 @@ var (
 		"error in running phenotype search query",
 	)
 )
-
-// isPresentPhenotypeSearchQuery reports whether the caller sent a query struct.
-func isPresentPhenotypeSearchQuery(params *repo.PhenotypeSearchQuery) bool {
-	return params != nil
-}
 
 // stopwordPhenotypeSearchError reports a query whose tokens are all English stopwords.
 func stopwordPhenotypeSearchError(req phenotypeSearchRequest) error {
