@@ -20,9 +20,7 @@ var (
 	readTermIDFault = fperrors.OnError(
 		"error in retrieving obograph id",
 	)
-	isNonEmptyTermRow = P.Not(func(row *contextResult) bool {
-		return row.IsEmpty()
-	})
+	isNonEmptyTermRow = P.Not((*contextResult).IsEmpty)
 )
 
 func (ar *arangorepository) LoadOboJSON(rde io.Reader) (*storage.UploadInformation, error) {
@@ -50,6 +48,18 @@ func (ar *arangorepository) LoadOboJSON(rde io.Reader) (*storage.UploadInformati
 	return info, nil
 }
 
+func readTermIDRow(row *contextResult) IOE.IOEither[error, string] {
+	return F.Pipe1(
+		IOE.TryCatchError(func() (string, error) {
+			var tid string
+			err := row.Read(&tid)
+
+			return tid, err
+		}),
+		IOE.MapLeft[string](readTermIDFault),
+	)
+}
+
 func (ar *arangorepository) lookupTermID(
 	ctx context.Context,
 	onto, term string,
@@ -62,7 +72,7 @@ func (ar *arangorepository) lookupTermID(
 		),
 	)
 
-	return F.Pipe4(
+	return F.Pipe3(
 		IOE.TryCatchError(func() (*contextResult, error) {
 			return ar.getRow(ctx, annExistTagQ, map[string]any{
 				cvCollectionBind:     ar.onto.Cv.Name(),
@@ -73,17 +83,7 @@ func (ar *arangorepository) lookupTermID(
 		}),
 		IOE.MapLeft[*contextResult](runTermIDQueryFault),
 		IOE.FilterOrElse(isNonEmptyTermRow, missingTermFault),
-		IOE.Chain(func(
-			row *contextResult,
-		) IOE.IOEither[error, string] {
-			return IOE.TryCatchError(func() (string, error) {
-				var tid string
-				err := row.Read(&tid)
-
-				return tid, err
-			})
-		}),
-		IOE.MapLeft[string](readTermIDFault),
+		IOE.Chain(readTermIDRow),
 	)
 }
 
