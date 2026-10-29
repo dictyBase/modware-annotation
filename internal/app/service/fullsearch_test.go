@@ -19,13 +19,15 @@ import (
 // canned result, so the handler contract is observable without a database.
 type stubFullSearchRepo struct {
 	repository.TaggedAnnotationRepository
-	params *repository.FullSearchQuery
-	rows   []*repository.FullSearchResult
-	docs   []*model.AnnoDoc
-	groups []*model.AnnoGroup
-	err    error
-	calls  int
-	gotCtx context.Context
+	params          *repository.FullSearchQuery
+	rows            []*repository.FullSearchResult
+	phenotypeParams *repository.PhenotypeSearchQuery
+	phenotypeRows   []*repository.PhenotypeSearchResult
+	docs            []*model.AnnoDoc
+	groups          []*model.AnnoGroup
+	err             error
+	calls           int
+	gotCtx          context.Context
 }
 
 // SearchAnnotation implements the repository method under test.
@@ -41,6 +43,21 @@ func (s *stubFullSearchRepo) SearchAnnotation(
 	}
 
 	return IOE.Of[error](s.rows)
+}
+
+// SearchPhenotypes implements the repository method under test.
+func (s *stubFullSearchRepo) SearchPhenotypes(
+	ctx context.Context,
+	params *repository.PhenotypeSearchQuery,
+) IOE.IOEither[error, []*repository.PhenotypeSearchResult] {
+	s.calls++
+	s.gotCtx = ctx
+	s.phenotypeParams = params
+	if s.err != nil {
+		return IOE.Left[[]*repository.PhenotypeSearchResult](s.err)
+	}
+
+	return IOE.Of[error](s.phenotypeRows)
 }
 
 func (s *stubFullSearchRepo) ListAnnotations(
