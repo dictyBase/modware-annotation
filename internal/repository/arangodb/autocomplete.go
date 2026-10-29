@@ -14,6 +14,7 @@ import (
 	L "github.com/IBM/fp-go/v2/optics/lens"
 	O "github.com/IBM/fp-go/v2/option"
 	ORD "github.com/IBM/fp-go/v2/ord"
+	P "github.com/IBM/fp-go/v2/predicate"
 	R "github.com/IBM/fp-go/v2/record"
 	driver "github.com/arangodb/go-driver"
 	eithererr "github.com/dictyBase/fp-go-loom/eithererr"
@@ -268,6 +269,28 @@ var (
 			MO.Const(isAboveMaxLimit, maxAutocompleteLimit),
 			MO.Default(F.Identity[int]),
 		},
+	)
+
+	hasAutocompleteRequestText = F.Pipe1(
+		predord.MinStrLen(1),
+		P.ContraMap(queryLens.Get),
+	)
+
+	isPresentAutocompleteQuery   = P.IsNonZero[*repo.AutocompleteQuery]()
+	nilAutocompleteQueryErr      = eithererr.ConstErr[*repo.AutocompleteQuery](msgNilAutocompleteQuery)
+	emptyAutocompleteRequestErr  = eithererr.ConstErr[autocompleteRequest](msgEmptyAutocompleteQuery)
+	checkAutocompleteQueryNotNil = E.FromPredicate(isPresentAutocompleteQuery, nilAutocompleteQueryErr)
+	checkAutocompleteNotEmpty    = E.FromPredicate(hasAutocompleteRequestText, emptyAutocompleteRequestErr)
+
+	isNonEmptySuggestionRows = predarrays.IsNonEmpty[suggestionRow]()
+	mapSuggestionRows        = A.Map(toSuggestion)
+	toSuggestions            = F.Flow2(
+		O.FromPredicate(isNonEmptySuggestionRows),
+		O.Fold(emptySuggestions, mapSuggestionRows),
+	)
+
+	runAutocompleteQueryFault = fperrors.OnError(
+		"error in running autocomplete query",
 	)
 )
 
@@ -708,6 +731,28 @@ func autocompleteAnalyzerFeatures() []driver.ArangoSearchAnalyzerFeature {
 	}
 }
 
+// resolveSynonymTermID resolves the dicty_annotation synonym cvterm._id for req.
+func (ar *arangorepository) resolveSynonymTermID(
+	req autocompleteRequest,
+) IOE.IOEither[error, string] {
+	return ar.lookupTermID(
+		autocompleteCtxLens.Get(req),
+		dictyAnnotationOntology,
+		fieldSynonym,
+	)
+}
+
+// resolveGenotypeTermID resolves the dicty_annotation genotype cvterm._id for req.
+func (ar *arangorepository) resolveGenotypeTermID(
+	req autocompleteRequest,
+) IOE.IOEither[error, string] {
+	return ar.lookupTermID(
+		autocompleteCtxLens.Get(req),
+		dictyAnnotationOntology,
+		fieldGenotype,
+	)
+}
+
 // AutocompleteAnnotation returns suggestions for a partial strain synonym or
 // genotype value. The pipeline normalizes and validates the query, resolves
 // the two ontology term identifiers onto the request state with lenses, and
@@ -721,29 +766,13 @@ func (ar *arangorepository) AutocompleteAnnotation(
 	rowFault := scanSearchRows[suggestionRow](
 		"error in reading autocomplete row",
 	)
-	synonymTermID := ar.lookupTermID(
-		baseCtx,
-		dictyAnnotationOntology,
-		fieldSynonym,
-	)
-	genotypeTermID := ar.lookupTermID(
-		baseCtx,
-		dictyAnnotationOntology,
-		fieldGenotype,
-	)
 
 	return F.Pipe8(
 		IOE.Of[error](params),
 		IOE.ChainEitherK(validateAutocompleteRequest),
 		IOE.Map[error](withCtx),
-		IOE.Bind(
-			synonymTermIDLens.Set,
-			F.Constant1[autocompleteRequest](synonymTermID),
-		),
-		IOE.Bind(
-			genotypeTermIDLens.Set,
-			F.Constant1[autocompleteRequest](genotypeTermID),
-		),
+		IOE.Bind(synonymTermIDLens.Set, ar.resolveSynonymTermID),
+		IOE.Bind(genotypeTermIDLens.Set, ar.resolveGenotypeTermID),
 		IOE.Map[error](ar.buildAutocompleteQueryParams),
 		IOE.Chain(ar.executeAutocompleteQuery),
 		IOE.Chain(rowFault),
@@ -759,34 +788,9 @@ func validateAutocompleteRequest(
 ) E.Either[error, autocompleteRequest] {
 	return F.Pipe3(
 		params,
-		E.FromPredicate(
-			isPresentAutocompleteQuery,
-			eithererr.ConstErr[*repo.AutocompleteQuery](
-				msgNilAutocompleteQuery,
-			),
-		),
-		E.Chain(E.FromPredicate(
-			hasAutocompleteQueryText,
-			eithererr.ConstErr[*repo.AutocompleteQuery](
-				msgEmptyAutocompleteQuery,
-			),
-		)),
+		checkAutocompleteQueryNotNil,
 		E.Map[error](newAutocompleteRequest),
-	)
-}
-
-// isPresentAutocompleteQuery reports whether the caller sent a query struct.
-func isPresentAutocompleteQuery(params *repo.AutocompleteQuery) bool {
-	return params != nil
-}
-
-// hasAutocompleteQueryText reports whether the query still holds searchable
-// text once whitespace, case, and combining marks are gone.
-func hasAutocompleteQueryText(params *repo.AutocompleteQuery) bool {
-	return F.Pipe2(
-		params.Query,
-		repo.NormalizeAutocompleteQuery,
-		predord.MinStrLen(1),
+		E.Chain(checkAutocompleteNotEmpty),
 	)
 }
 
@@ -838,31 +842,29 @@ func (ar *arangorepository) buildAutocompleteQueryParams(
 func (ar *arangorepository) executeAutocompleteQuery(
 	params autocompleteQueryParams,
 ) IOE.IOEither[error, dbRows] {
-	queryFault := fperrors.OnError("error in running autocomplete query")
+	ctx := autocompleteParamsCtxLens.Get(params)
+	stmt := statementLens.Get(params)
+	binds := bindParamsLens.Get(params)
 
 	return F.Pipe1(
 		IOE.TryCatchError(func() (dbRows, error) {
-			return ar.searchRows(
-				autocompleteParamsCtxLens.Get(params),
-				statementLens.Get(params),
-				bindParamsLens.Get(params),
-			)
+			return ar.searchRows(ctx, stmt, binds)
 		}),
-		IOE.MapLeft[dbRows](queryFault),
+		IOE.MapLeft[dbRows](runAutocompleteQueryFault),
 	)
 }
 
-// toSuggestions projects the scanned statement rows onto the repository result.
-func toSuggestions(rows []suggestionRow) []*repo.Suggestion {
-	out := make([]*repo.Suggestion, 0, len(rows))
-	for _, row := range rows {
-		out = append(out, &repo.Suggestion{
-			EntryID:     row.ID,
-			Field:       row.Field,
-			DisplayText: row.Value,
-			Score:       row.Score,
-		})
-	}
+// emptySuggestions returns a non-nil empty slice when no rows match.
+func emptySuggestions() []*repo.Suggestion {
+	return []*repo.Suggestion{}
+}
 
-	return out
+// toSuggestion maps one projection row to a repository Suggestion.
+func toSuggestion(row suggestionRow) *repo.Suggestion {
+	return &repo.Suggestion{
+		EntryID:     row.ID,
+		Field:       row.Field,
+		DisplayText: row.Value,
+		Score:       row.Score,
+	}
 }
