@@ -606,14 +606,29 @@ var (
 		},
 	)
 
+	hasFullSearchRequestText = F.Pipe1(
+		predord.MinStrLen(1),
+		P.ContraMap(fullSearchQueryLens.Get),
+	)
 	keepsNonStopword = F.Pipe2(
 		repo.IsAllStopwords,
 		P.Not,
 		P.ContraMap(fullSearchQueryLens.Get),
 	)
 
-	isNonEmptyFullSearchRows  = predarrays.IsNonEmpty[fullSearchRow]()
-	mapFullSearchRows         = A.Map(toFullSearchResult)
+	isPresentFullSearchQuery   = P.IsNonZero[*repo.FullSearchQuery]()
+	nilFullSearchQueryErr      = eithererr.ConstErr[*repo.FullSearchQuery](msgNilFullSearchQuery)
+	emptyFullSearchRequestErr  = eithererr.ConstErr[fullSearchRequest](msgEmptyFullSearchQuery)
+	checkFullSearchQueryNotNil = E.FromPredicate(isPresentFullSearchQuery, nilFullSearchQueryErr)
+	checkFullSearchNotEmpty    = E.FromPredicate(hasFullSearchRequestText, emptyFullSearchRequestErr)
+	checkFullSearchNotStopword = E.FromPredicate(keepsNonStopword, stopwordFullSearchError)
+
+	isNonEmptyFullSearchRows = predarrays.IsNonEmpty[fullSearchRow]()
+	mapFullSearchRows        = A.Map(toFullSearchResult)
+	toFullSearchResults      = F.Flow2(
+		O.FromPredicate(isNonEmptyFullSearchRows),
+		O.Fold(emptyFullSearchResults, mapFullSearchRows),
+	)
 	runFullSearchTargetsFault = fperrors.OnError(
 		"error in resolving full search targets",
 	)
@@ -624,19 +639,6 @@ var (
 		"error in running full search query",
 	)
 )
-
-// isPresentFullSearchQuery reports whether the caller sent a query struct.
-func isPresentFullSearchQuery(params *repo.FullSearchQuery) bool {
-	return params != nil
-}
-
-// hasFullSearchQueryText reports whether the normalized query retains at least
-// one character.
-func hasFullSearchQueryText(req fullSearchRequest) bool {
-	pred := predord.MinStrLen(1)
-
-	return F.Pipe1(req.query, pred)
-}
 
 // stopwordFullSearchError reports a query whose tokens are all English stopwords.
 func stopwordFullSearchError(req fullSearchRequest) error {
@@ -663,17 +665,12 @@ func newFullSearchRequest(params *repo.FullSearchQuery) fullSearchRequest {
 func validateFullSearchRequest(
 	params *repo.FullSearchQuery,
 ) E.Either[error, fullSearchRequest] {
-	nilErr := eithererr.ConstErr[*repo.FullSearchQuery](msgNilFullSearchQuery)
-	emptyErr := eithererr.ConstErr[fullSearchRequest](msgEmptyFullSearchQuery)
-	checkNotEmpty := E.FromPredicate(hasFullSearchQueryText, emptyErr)
-	checkNotStopword := E.FromPredicate(keepsNonStopword, stopwordFullSearchError)
-
 	return F.Pipe4(
 		params,
-		E.FromPredicate(isPresentFullSearchQuery, nilErr),
+		checkFullSearchQueryNotNil,
 		E.Map[error](newFullSearchRequest),
-		E.Chain(checkNotEmpty),
-		E.Chain(checkNotStopword),
+		E.Chain(checkFullSearchNotEmpty),
+		E.Chain(checkFullSearchNotStopword),
 	)
 }
 
@@ -780,24 +777,17 @@ func (ar *arangorepository) buildFullSearchQueryParams(
 	)
 }
 
-// runFullSearchRows is the raw SearchRows adapter for executeFullSearchQuery.
-func (ar *arangorepository) runFullSearchRows(
-	params fullSearchQueryParams,
-) (dbRows, error) {
-	ctx := fullSearchParamsCtxLens.Get(params)
-	stmt := fullSearchStmtLens.Get(params)
-	binds := fullSearchBindLens.Get(params)
-
-	return ar.searchRows(ctx, stmt, binds)
-}
-
 // executeFullSearchQuery runs the 28-branch full search statement.
 func (ar *arangorepository) executeFullSearchQuery(
 	params fullSearchQueryParams,
 ) IOE.IOEither[error, dbRows] {
+	ctx := fullSearchParamsCtxLens.Get(params)
+	stmt := fullSearchStmtLens.Get(params)
+	binds := fullSearchBindLens.Get(params)
+
 	return F.Pipe1(
 		IOE.TryCatchError(func() (dbRows, error) {
-			return ar.runFullSearchRows(params)
+			return ar.searchRows(ctx, stmt, binds)
 		}),
 		IOE.MapLeft[dbRows](runFullSearchQueryFault),
 	)
@@ -816,16 +806,6 @@ func toFullSearchResult(row fullSearchRow) *repo.FullSearchResult {
 		DisplayText: row.Value,
 		Score:       row.Score,
 	}
-}
-
-// toFullSearchResults projects scanned rows into FullSearchResult pointers
-// without imperative loops, preserving a non-nil empty slice for zero hits.
-func toFullSearchResults(rows []fullSearchRow) []*repo.FullSearchResult {
-	return F.Pipe2(
-		rows,
-		O.FromPredicate(isNonEmptyFullSearchRows),
-		O.Fold(emptyFullSearchResults, mapFullSearchRows),
-	)
 }
 
 // SearchAnnotation returns at most Limit ranked results for the normalized
