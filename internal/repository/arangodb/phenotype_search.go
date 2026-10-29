@@ -199,14 +199,40 @@ func (ar *arangorepository) phenotypeSearchTargetBindParams() map[string]any {
 	}
 }
 
-// decodePhenotypeSearchTargets reads a contextResult into phenotypeSearchTargets.
-func decodePhenotypeSearchTargets(
+// readPhenotypeSearchTargetsRow reads a contextResult into phenotypeSearchTargets.
+func readPhenotypeSearchTargetsRow(
 	row *contextResult,
-) (phenotypeSearchTargets, error) {
-	var targets phenotypeSearchTargets
-	err := row.Read(&targets)
+) IOE.IOEither[error, phenotypeSearchTargets] {
+	return F.Pipe1(
+		IOE.TryCatchError(func() (phenotypeSearchTargets, error) {
+			var targets phenotypeSearchTargets
+			err := row.Read(&targets)
 
-	return targets, err
+			return targets, err
+		}),
+		IOE.MapLeft[phenotypeSearchTargets](readPhenotypeSearchTargetsFault),
+	)
+}
+
+// resolvePhenotypeSearchTargets resolves the 3 ontology cv._id values in a
+// single AQL round trip. Unloaded ontologies are absent from the returned map
+// and default to "" when bound.
+func (ar *arangorepository) resolvePhenotypeSearchTargets(
+	req phenotypeSearchRequest,
+) IOE.IOEither[error, phenotypeSearchTargets] {
+	ctx := phenotypeSearchCtxLens.Get(req)
+
+	return F.Pipe2(
+		IOE.TryCatchError(func() (*contextResult, error) {
+			return ar.getRow(
+				ctx,
+				phenotypeSearchTargetsQ,
+				ar.phenotypeSearchTargetBindParams(),
+			)
+		}),
+		IOE.MapLeft[*contextResult](runPhenotypeSearchTargetsFault),
+		IOE.Chain(readPhenotypeSearchTargetsRow),
+	)
 }
 
 // phenotypeSearchBindParams builds the 7-entry bind map for the 12-branch query.
@@ -276,30 +302,6 @@ func toPhenotypeSearchResult(row phenotypeSearchRow) *repo.PhenotypeSearchResult
 	}
 }
 
-// phenotypeSearchTargetsIO resolves the ontology cv._id targets for the
-// phenotype search as a lazy IOEither pipeline.
-func (ar *arangorepository) phenotypeSearchTargetsIO(
-	ctx context.Context,
-) IOE.IOEither[error, phenotypeSearchTargets] {
-	readTargets := IOE.Eitherize1(decodePhenotypeSearchTargets)
-	fetchTargetsRow := func() (*contextResult, error) {
-		return ar.getRow(
-			ctx,
-			phenotypeSearchTargetsQ,
-			ar.phenotypeSearchTargetBindParams(),
-		)
-	}
-
-	return F.Pipe2(
-		IOE.TryCatchError(fetchTargetsRow),
-		IOE.MapLeft[*contextResult](runPhenotypeSearchTargetsFault),
-		IOE.Chain(F.Flow2(
-			readTargets,
-			IOE.MapLeft[phenotypeSearchTargets](readPhenotypeSearchTargetsFault),
-		)),
-	)
-}
-
 // SearchPhenotypes returns at most Limit ranked strain phenotype matches for the
 // normalized query of params as a lazy IOEither pipeline.
 func (ar *arangorepository) SearchPhenotypes(
@@ -316,12 +318,7 @@ func (ar *arangorepository) SearchPhenotypes(
 		IOE.Of[error](params),
 		IOE.ChainEitherK(validatePhenotypeSearchRequest),
 		IOE.Map[error](withCtx),
-		IOE.Bind(
-			phenotypeSearchTargetsLens.Set,
-			F.Constant1[phenotypeSearchRequest](
-				ar.phenotypeSearchTargetsIO(baseCtx),
-			),
-		),
+		IOE.Bind(phenotypeSearchTargetsLens.Set, ar.resolvePhenotypeSearchTargets),
 		IOE.Map[error](ar.buildPhenotypeSearchQueryParams),
 		IOE.Chain(ar.runPhenotypeSearchRows),
 		IOE.Chain(rowFault),
