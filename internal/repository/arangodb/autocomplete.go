@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"slices"
 
+	A "github.com/IBM/fp-go/v2/array"
 	E "github.com/IBM/fp-go/v2/either"
+	EQ "github.com/IBM/fp-go/v2/eq"
 	fperrors "github.com/IBM/fp-go/v2/errors"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	L "github.com/IBM/fp-go/v2/optics/lens"
 	O "github.com/IBM/fp-go/v2/option"
 	ORD "github.com/IBM/fp-go/v2/ord"
+	R "github.com/IBM/fp-go/v2/record"
 	driver "github.com/arangodb/go-driver"
 	eithererr "github.com/dictyBase/fp-go-loom/eithererr"
 	MO "github.com/dictyBase/fp-go-loom/matchopt"
@@ -637,21 +640,47 @@ func sameLinkShape(
 	return true
 }
 
-// sameFieldShape reports whether two field maps carry the same analyzers.
+var (
+	strOrd        = ORD.FromStrictCompare[string]()
+	sortAnalyzers = A.Sort(strOrd)
+	stringSliceEq = A.Eq(EQ.FromStrictEquals[string]())
+
+	// analyzersEq compares two elements by their analyzer lists. It sorts
+	// both lists first, so the analyzer order does not matter.
+	analyzersEq = F.Pipe2(
+		stringSliceEq,
+		EQ.ContraMap(sortAnalyzers),
+		EQ.ContraMap(elementAnalyzers),
+	)
+)
+
+func elementAnalyzers(
+	el driver.ArangoSearchElementProperties,
+) []string {
+	return el.Analyzers
+}
+
+func elementFields(
+	el driver.ArangoSearchElementProperties,
+) driver.ArangoSearchFields {
+	return el.Fields
+}
+
+// sameFieldShape reports whether two field maps carry the same analyzers and
+// nested field definitions. Two elements match when the analyzers match AND
+// the nested fields match. The nested check recurses through sameFieldShape.
 func sameFieldShape(
 	a, b driver.ArangoSearchFields,
 ) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for field, left := range a {
-		right, ok := b[field]
-		if !ok || !sameAnalyzers(left.Analyzers, right.Analyzers) {
-			return false
-		}
-	}
+	nestedFieldsEq := F.Pipe1(
+		EQ.FromEquals(sameFieldShape),
+		EQ.ContraMap(elementFields),
+	)
+	// bothMatch combines two element Eqs with logical AND.
+	bothMatch := EQ.Monoid[driver.ArangoSearchElementProperties]().Concat
+	elementEq := bothMatch(analyzersEq, nestedFieldsEq)
 
-	return true
+	return R.Eq[string](elementEq).Equals(a, b)
 }
 
 // sameAnalyzers reports whether two analyzer name lists hold the same names.

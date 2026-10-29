@@ -78,7 +78,7 @@ func TestEnsureFullSearchCreatesAssets(t *testing.T) {
 
 	termLink, ok := props.Links[ontoP.Term]
 	assert.True(ok, "expect cvterm collection link in view")
-	assert.Len(termLink.Fields, 3)
+	assert.Len(termLink.Fields, 4)
 
 	labelAnalyzers := slices.Clone(termLink.Fields[docFieldLabel].Analyzers)
 	slices.Sort(labelAnalyzers)
@@ -89,6 +89,30 @@ func TestEnsureFullSearchCreatesAssets(t *testing.T) {
 			fullSearchTextAnalyzer,
 		},
 		labelAnalyzers,
+	)
+	metadataFields := termLink.Fields[docFieldMetadata].Fields
+	assert.Equal(
+		[]string{fullSearchTextAnalyzer},
+		metadataFields[docFieldDefinition].Fields[docFieldValue].Analyzers,
+		"expect definition.value to be indexed under text_en",
+	)
+	synonymValueAnalyzers := slices.Clone(
+		metadataFields[docFieldSynonyms].Fields[docFieldValue].Analyzers,
+	)
+	slices.Sort(synonymValueAnalyzers)
+	assert.Equal(
+		[]string{
+			fullSearchNgramAnalyzer,
+			fullSearchNormAnalyzer,
+			fullSearchTextAnalyzer,
+		},
+		synonymValueAnalyzers,
+		"expect synonyms.value to be indexed under norm, ngram, and text_en",
+	)
+	assert.Equal(
+		[]string{fullSearchTextAnalyzer},
+		metadataFields[docFieldComments].Analyzers,
+		"expect comments to be indexed under text_en",
 	)
 	assert.Empty(
 		termLink.Fields[docFieldGraphID].Analyzers,

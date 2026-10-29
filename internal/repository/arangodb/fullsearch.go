@@ -76,6 +76,10 @@ const (
 	docFieldLabel      = "label"
 	docFieldGraphID    = "graph_id"
 	docFieldDeprecated = "deprecated"
+	docFieldMetadata   = "metadata"
+	docFieldDefinition = "definition"
+	docFieldSynonyms   = "synonyms"
+	docFieldComments   = "comments"
 
 	// Limits and thresholds.
 	fullSearchNgramThreshold = 0.3
@@ -461,7 +465,8 @@ func setFullSearchViewLinksRecord(
 
 // fullSearchViewProperties is the desired view shape: the annotation collection
 // indexed on its value, entry_id, and is_obsolete attributes, and the cvterm
-// collection indexed on its label, graph_id, and deprecated attributes.
+// collection indexed on its label, metadata (definition, synonyms, comments),
+// graph_id, and deprecated attributes.
 func fullSearchViewProperties(
 	annotColl, cvtermColl string,
 ) driver.ArangoSearchViewProperties {
@@ -477,6 +482,29 @@ func fullSearchViewProperties(
 		docFieldEntryID:    {Analyzers: []string{fullSearchNormAnalyzer}},
 		docFieldIsObsolete: {},
 	}
+	cvtermMetadataFields := driver.ArangoSearchFields{
+		docFieldDefinition: {
+			Fields: driver.ArangoSearchFields{
+				docFieldValue: {
+					Analyzers: []string{fullSearchTextAnalyzer},
+				},
+			},
+		},
+		docFieldSynonyms: {
+			Fields: driver.ArangoSearchFields{
+				docFieldValue: {
+					Analyzers: []string{
+						fullSearchNormAnalyzer,
+						fullSearchNgramAnalyzer,
+						fullSearchTextAnalyzer,
+					},
+				},
+			},
+		},
+		docFieldComments: {
+			Analyzers: []string{fullSearchTextAnalyzer},
+		},
+	}
 	cvtermFields := driver.ArangoSearchFields{
 		docFieldLabel: {
 			Analyzers: []string{
@@ -485,6 +513,7 @@ func fullSearchViewProperties(
 				fullSearchTextAnalyzer,
 			},
 		},
+		docFieldMetadata:   {Fields: cvtermMetadataFields},
 		docFieldGraphID:    {},
 		docFieldDeprecated: {},
 	}
