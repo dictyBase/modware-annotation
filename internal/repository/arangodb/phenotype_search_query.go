@@ -6,6 +6,7 @@ import (
 	A "github.com/IBM/fp-go/v2/array"
 	F "github.com/IBM/fp-go/v2/function"
 	IO "github.com/IBM/fp-go/v2/io"
+	L "github.com/IBM/fp-go/v2/optics/lens"
 	S "github.com/IBM/fp-go/v2/string"
 )
 
@@ -25,6 +26,14 @@ type (
 		namePrefix string
 		searchExpr func(string) string
 		band       string
+	}
+
+	// phenotypeSearchBranchState carries the stage, the field specification,
+	// and the queryBranch under construction through the branch builder pipeline.
+	phenotypeSearchBranchState struct {
+		stage  phenotypeSearchStage
+		field  phenotypeSearchField
+		branch queryBranch
 	}
 )
 
@@ -54,6 +63,72 @@ var (
 		{index: 2, label: fieldPhenotypeDefinition, attr: docAttrDefinition},
 		{index: 3, label: fieldPhenotypeComment, attr: docAttrComments},
 	}
+
+	// Lenses on phenotypeSearchField.
+	phenotypeFieldIndexLens = L.MakeLens(
+		func(f phenotypeSearchField) int { return f.index },
+		func(f phenotypeSearchField, v int) phenotypeSearchField {
+			f.index = v
+			return f
+		},
+	)
+	phenotypeFieldLabelLens = L.MakeLens(
+		func(f phenotypeSearchField) string { return f.label },
+		func(f phenotypeSearchField, v string) phenotypeSearchField {
+			f.label = v
+			return f
+		},
+	)
+	phenotypeFieldAttrLens = L.MakeLens(
+		func(f phenotypeSearchField) string { return f.attr },
+		func(f phenotypeSearchField, v string) phenotypeSearchField {
+			f.attr = v
+			return f
+		},
+	)
+
+	// Lenses on phenotypeSearchBranchState and composed lenses into field and branch.
+	phenotypeSearchStageLens = L.MakeLens(
+		func(s phenotypeSearchBranchState) phenotypeSearchStage { return s.stage },
+		func(s phenotypeSearchBranchState, v phenotypeSearchStage) phenotypeSearchBranchState {
+			s.stage = v
+			return s
+		},
+	)
+	phenotypeSearchFieldLens = L.MakeLens(
+		func(s phenotypeSearchBranchState) phenotypeSearchField { return s.field },
+		func(s phenotypeSearchBranchState, v phenotypeSearchField) phenotypeSearchBranchState {
+			s.field = v
+			return s
+		},
+	)
+	phenotypeSearchBranchLens = L.MakeLens(
+		func(s phenotypeSearchBranchState) queryBranch { return s.branch },
+		func(s phenotypeSearchBranchState, v queryBranch) phenotypeSearchBranchState {
+			s.branch = v
+			return s
+		},
+	)
+	phenotypeStateIndexLens = F.Pipe1(
+		phenotypeSearchFieldLens,
+		L.Compose[phenotypeSearchBranchState](phenotypeFieldIndexLens),
+	)
+	phenotypeStateLabelLens = F.Pipe1(
+		phenotypeSearchFieldLens,
+		L.Compose[phenotypeSearchBranchState](phenotypeFieldLabelLens),
+	)
+	phenotypeStateAttrLens = F.Pipe1(
+		phenotypeSearchFieldLens,
+		L.Compose[phenotypeSearchBranchState](phenotypeFieldAttrLens),
+	)
+	phenotypeStateNameLens = F.Pipe1(
+		phenotypeSearchBranchLens,
+		L.Compose[phenotypeSearchBranchState](nameLens),
+	)
+	phenotypeStateBodyLens = F.Pipe1(
+		phenotypeSearchBranchLens,
+		L.Compose[phenotypeSearchBranchState](bodyLens),
+	)
 
 	phenotypePrefixStage = phenotypeSearchStage{
 		namePrefix: "p",
@@ -132,26 +207,81 @@ func phenotypePhraseExpr(attr string) string {
 	)
 }
 
+// setPhenotypeSearchName writes the stage LET variable name (<prefix><index>)
+// into s.branch.name.
+func setPhenotypeSearchName(
+	s phenotypeSearchBranchState,
+) phenotypeSearchBranchState {
+	stage := phenotypeSearchStageLens.Get(s)
+	name := fmt.Sprintf("%s%d", stage.namePrefix, phenotypeStateIndexLens.Get(s))
+
+	return F.Pipe1(s, phenotypeStateNameLens.Set(name))
+}
+
+// phenotypeSearchBranchParts builds the 4-item slice for PhenotypeSearchBranchQ
+// in verb order.
+func phenotypeSearchBranchParts(st phenotypeSearchBranchState) []any {
+	stage := phenotypeSearchStageLens.Get(st)
+	attr := phenotypeStateAttrLens.Get(st)
+
+	return F.Pipe4(
+		A.Empty[any](),
+		A.Push[any](phenotypeStateNameLens.Get(st)),
+		A.Push[any](stage.searchExpr(attr)),
+		A.Push[any](phenotypeStateLabelLens.Get(st)),
+		A.Push[any](stage.band),
+	)
+}
+
+// setPhenotypeSearchBranchBody flips phenotypeStateBodyLens.Set so it accepts
+// the rendered body string last.
+func setPhenotypeSearchBranchBody(
+	s phenotypeSearchBranchState,
+) func(string) phenotypeSearchBranchState {
+	return F.Pipe1(s, F.Flip(phenotypeStateBodyLens.Set))
+}
+
+// setPhenotypeSearchBody builds the AQL branch body from s and stores it in
+// s.branch.body.
+func setPhenotypeSearchBody(
+	s phenotypeSearchBranchState,
+) phenotypeSearchBranchState {
+	return F.Pipe3(
+		s,
+		phenotypeSearchBranchParts,
+		F.Bind1st(formatWithTemplate, PhenotypeSearchBranchQ),
+		setPhenotypeSearchBranchBody(s),
+	)
+}
+
 // buildPhenotypeSearchBranch builds one queryBranch for stage and field f.
 func buildPhenotypeSearchBranch(
 	stage phenotypeSearchStage,
 	f phenotypeSearchField,
 ) queryBranch {
-	name := fmt.Sprintf("%s%d", stage.namePrefix, f.index)
-	search := stage.searchExpr(f.attr)
-	parts := F.Pipe4(
-		A.Empty[any](),
-		A.Push[any](name),
-		A.Push[any](search),
-		A.Push[any](f.label),
-		A.Push[any](stage.band),
+	return F.Pipe5(
+		phenotypeSearchBranchState{},
+		phenotypeSearchStageLens.Set(stage),
+		phenotypeSearchFieldLens.Set(f),
+		setPhenotypeSearchName,
+		setPhenotypeSearchBody,
+		phenotypeSearchBranchLens.Get,
 	)
-	body := formatWithTemplate(PhenotypeSearchBranchQ, parts)
+}
 
-	return F.Pipe2(
-		queryBranch{},
-		nameLens.Set(name),
-		bodyLens.Set(body),
+// appendPhenotypeSearchMergeBranch builds the merge block from the 12 branch
+// names and appends it as a branch.
+func appendPhenotypeSearchMergeBranch(branches []queryBranch) []queryBranch {
+	setBody := F.Pipe1(queryBranch{}, F.Flip(bodyLens.Set))
+
+	return F.Pipe6(
+		branches,
+		A.Map(nameLens.Get),
+		A.Intersperse(", "),
+		A.Fold(S.Monoid),
+		S.Format[string](PhenotypeSearchMergeQ),
+		setBody,
+		F.Bind1st(A.Append, branches),
 	)
 }
 
@@ -165,25 +295,11 @@ func assemblePhenotypeSearchQuery() string {
 		phenotypeTokenPhraseBuilders,
 		A.Ap[queryBranch](phenotypeTextFields),
 	)
-	branches := F.Pipe1(
+
+	return F.Pipe5(
 		A.From(prefixFuzzy, tokenPhrase),
 		A.Flatten[queryBranch],
-	)
-	mergeBody := F.Pipe4(
-		branches,
-		A.Map(nameLens.Get),
-		A.Intersperse(", "),
-		A.Fold(S.Monoid),
-		S.Format[string](PhenotypeSearchMergeQ),
-	)
-	mergeBranch := F.Pipe1(
-		queryBranch{},
-		bodyLens.Set(mergeBody),
-	)
-
-	return F.Pipe4(
-		branches,
-		F.Bind2nd(A.Append[queryBranch], mergeBranch),
+		appendPhenotypeSearchMergeBranch,
 		A.Map(bodyLens.Get),
 		A.Intersperse("\n"),
 		A.Fold(S.Monoid),
