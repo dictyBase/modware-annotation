@@ -34,8 +34,8 @@ github.com/dictyBase/aphgrpc v1.4.2 h1:jkNyIpUBATNVNTM99TfAHln8UEpzyvNNNuM2+UY6t
 github.com/dictyBase/aphgrpc v1.4.2/go.mod h1:rzi2U95QntAuS6XpqespgZmQ8Ujo2Sq2R5FyhW5adA8=
 github.com/dictyBase/arangomanager v0.8.0 h1:wXWmq7QYBn37eGs0nELPxqccMbTvx9G99k/crHwfDAw=
 github.com/dictyBase/arangomanager v0.8.0/go.mod h1:Fm3AuYBeMccsYcu8M6iq2a96XlPIe4Y55x95TAWmGs4=
-github.com/dictyBase/fp-go-loom v0.0.0-20261010160534-3c971335f51e h1:DaHivGHumT6okB/wiRiiTWlp8RyKSgZC/tdIQwyZEAU=
-github.com/dictyBase/fp-go-loom v0.0.0-20261010160534-3c971335f51e/go.mod h1:diENwGsNvP8oFe3HC4Wk3Qmoj+32vAtwsXPYB58+fUs=
+github.com/dictyBase/fp-go-loom v0.2.0 h1:z4hYGiDtO1mZ6Wym5TubeeBYQ3Ne5idhw2LWoPvJSWk=
+github.com/dictyBase/fp-go-loom v0.2.0/go.mod h1:4qGJYnGGFjg2hiG7ZyjcHK8qu4CZOloICFSNnb5W5sg=
 github.com/dictyBase/go-genproto v0.0.0-20261029035135-a46038587034 h1:a3z7bUH34pv6H5yrN6TJszMmdpdUeiDrji40UhRRo/k=
 github.com/dictyBase/go-genproto v0.0.0-20261029035135-a46038587034/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-obograph v1.6.1 h1:2qWF1OPVUAV20OeCZxi6bEQyMFzKdV7DNzmG7qT9otE=
