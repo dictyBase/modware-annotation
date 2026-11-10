@@ -451,30 +451,30 @@ func TestBuildFullSearchQueryBranchCount(t *testing.T) {
 	t.Parallel()
 	statement := buildFullSearchQuery()
 
-	for i := range 9 {
+	for i := range 6 {
 		pName := fmt.Sprintf("p%d", i)
-		nName := fmt.Sprintf("n%d", i)
 		require.Containsf(t, statement, "LET "+pName+" = (", "expect branch %s", pName)
-		require.Containsf(t, statement, "LET "+nName+" = (", "expect branch %s", nName)
 	}
 	for i := range 5 {
+		nName := fmt.Sprintf("n%d", i)
 		tName := fmt.Sprintf("t%d", i)
 		hName := fmt.Sprintf("h%d", i)
+		require.Containsf(t, statement, "LET "+nName+" = (", "expect branch %s", nName)
 		require.Containsf(t, statement, "LET "+tName+" = (", "expect branch %s", tName)
 		require.Containsf(t, statement, "LET "+hName+" = (", "expect branch %s", hName)
 	}
 
 	require.Equal(
 		t,
-		28,
+		21,
 		strings.Count(statement, "FOR d IN "+fullSearchViewName),
-		"expect 28 view scans",
+		"expect 21 view scans",
 	)
 	require.Equal(
 		t,
-		12,
+		5,
 		strings.Count(statement, "OUTBOUND d GRAPH @anno_cvterm_graph"),
-		"expect 12 OUTBOUND traversals from annotation to cvterm",
+		"expect 5 OUTBOUND traversals from annotation to cvterm",
 	)
 	require.Equal(
 		t,
@@ -490,9 +490,9 @@ func TestBuildFullSearchQueryBranchCount(t *testing.T) {
 	)
 	require.Equal(
 		t,
-		9,
+		5,
 		strings.Count(statement, "NGRAM_MATCH("),
-		"expect 9 fuzzy NGRAM_MATCH branches",
+		"expect 5 fuzzy NGRAM_MATCH branches",
 	)
 	require.Equal(
 		t,
@@ -520,9 +520,9 @@ func TestBuildFullSearchQueryBandCounts(t *testing.T) {
 
 	require.Equal(
 		t,
-		9,
+		6,
 		strings.Count(statement, "s: "+fullSearchPrefixBand),
-		"expect 9 prefix band branches",
+		"expect 6 prefix band branches",
 	)
 	require.Equal(
 		t,
@@ -538,9 +538,9 @@ func TestBuildFullSearchQueryBandCounts(t *testing.T) {
 	)
 	require.Equal(
 		t,
-		9,
+		5,
 		strings.Count(statement, "s: "+fullSearchFuzzyBand),
-		"expect 9 fuzzy band branches",
+		"expect 5 fuzzy band branches",
 	)
 }
 
@@ -549,24 +549,20 @@ func TestBuildFullSearchQueryFilterOrder(t *testing.T) {
 	statement := buildFullSearchQuery()
 
 	markers := []string{
-		"LET p0 = (", "LET p1 = (", "LET p2 = (", "LET p3 = (", "LET p4 = (",
-		"LET p5 = (", "LET p6 = (", "LET p7 = (", "LET p8 = (",
+		"LET p0 = (", "LET p1 = (", "LET p2 = (", "LET p3 = (", "LET p4 = (", "LET p5 = (",
 		"LET n0 = (", "LET n1 = (", "LET n2 = (", "LET n3 = (", "LET n4 = (",
-		"LET n5 = (", "LET n6 = (", "LET n7 = (", "LET n8 = (",
 		"LET t0 = (", "LET t1 = (", "LET t2 = (", "LET t3 = (", "LET t4 = (",
 		"LET h0 = (", "LET h1 = (", "LET h2 = (", "LET h3 = (", "LET h4 = (",
 		"LET hits = FLATTEN(",
 	}
 
 	annoBranchSet := map[string]bool{
-		"LET p0 = (": true, "LET p1 = (": true, "LET p2 = (": true,
-		"LET p3 = (": true, "LET p4 = (": true,
-		"LET n0 = (": true, "LET n1 = (": true, "LET n2 = (": true,
-		"LET n3 = (": true, "LET n4 = (": true,
+		"LET p0 = (": true, "LET p1 = (": true,
+		"LET n0 = (": true,
 		"LET t0 = (": true, "LET h0 = (": true,
 	}
 
-	for i := range 28 {
+	for i := range 21 {
 		start := strings.Index(statement, markers[i])
 		end := strings.Index(statement, markers[i+1])
 		require.NotEqual(t, -1, start, "expect marker %s", markers[i])
@@ -580,8 +576,11 @@ func TestBuildFullSearchQueryFilterOrder(t *testing.T) {
 		require.Less(t, sortNode, limitNode, "expect SORT before LIMIT in %s", markers[i])
 
 		if annoBranchSet[markers[i]] {
-			tagFilter := strings.Index(branch, "FILTER has_tag == true")
+			valFilter := strings.Index(branch, "FILTER d.value NOT IN")
+			tagFilter := strings.Index(branch, "FILTER f != null")
+			require.NotEqual(t, -1, valFilter, "expect value filter in %s", markers[i])
 			require.NotEqual(t, -1, tagFilter, "expect tag filter in %s", markers[i])
+			require.Less(t, valFilter, tagFilter, "expect value filter before tag filter in %s", markers[i])
 			require.Less(t, tagFilter, sortNode, "expect tag filter before SORT in %s", markers[i])
 		} else {
 			activeFilter := strings.Index(branch, "FILTER ann.is_obsolete == false")
@@ -1081,7 +1080,7 @@ const (
 	// fullSearchBranchCount is the number of view scans in the statement. The
 	// explain plan asserts this count, so the control-derived ceiling stays in
 	// step with the statement.
-	fullSearchBranchCount = 28.0
+	fullSearchBranchCount = 21.0
 	// fullSearchControlValue is the prefix term of the control scan. It is the
 	// lowercase form of the probe document value, so the control scan matches
 	// the probe document and does the traversal and not only the view scan. The
@@ -1237,9 +1236,9 @@ func TestSearchAnnotationExplainAndLatency(t *testing.T) {
 		counts[nodeType]++
 	}
 	assert.Equal(
-		28,
+		21,
 		counts["EnumerateViewNode"],
-		"expect 28 view scans (one per branch) in the explain plan",
+		"expect 21 view scans (one per branch) in the explain plan",
 	)
 	assert.Equal(
 		0,
@@ -1247,9 +1246,9 @@ func TestSearchAnnotationExplainAndLatency(t *testing.T) {
 		"expect no collection scan in the explain plan",
 	)
 	assert.Equal(
-		28,
+		21,
 		counts["TraversalNode"],
-		"expect 28 traversals (12 outbound + 16 inbound) in the explain plan",
+		"expect 21 traversals (5 outbound + 16 inbound) in the explain plan",
 	)
 
 	// The control statement declares a smaller bind map than the statement, so

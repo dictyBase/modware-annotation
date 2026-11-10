@@ -36,14 +36,32 @@ type (
 	}
 )
 
-var (
-	// autocompleteFields are the two searched tags of the dicty_annotation
-	// ontology, in the order their branches appear in the statement.
-	autocompleteFields = []autocompleteFieldSpec{
-		{tag: fieldSynonym, termBind: bindSynonymTermID, isGenotype: false},
-		{tag: fieldGenotype, termBind: bindGenotypeTermID, isGenotype: true},
-	}
+const (
+	// annoPlaceholderValueFilter excludes the placeholder values stored on
+	// ontology-backed annotations ("novalue" and "value").
+	annoPlaceholderValueFilter = `d.value NOT IN ["novalue", "value"]`
+	// annoFuzzyExcludedValueFilter excludes placeholder values and high-frequency
+	// mutagenesis method and genetic modification boilerplate values from the
+	// 2-gram fuzzy scan over d.value.
+	annoFuzzyExcludedValueFilter = `d.value NOT IN [` +
+		`"novalue", "value", ` +
+		`"Restriction Enzyme-Mediated Integration", ` +
+		`"endogenous insertion", "exogenous insertion", ` +
+		`"Homologous Recombination", "exogenous mutation", ` +
+		`"Random Insertion", "endogenous mutation", ` +
+		`"Extrachromosomal"]`
+	// autocompleteFuzzyBranchName is the AQL variable name of the combined
+	// synonym and genotype fuzzy branch.
+	autocompleteFuzzyBranchName = "n_value"
+	// autocompleteFuzzyTargets is the target cvterm list of the combined
+	// synonym and genotype fuzzy branch.
+	autocompleteFuzzyTargets = "@synonym_term_id, @genotype_term_id"
+	// autocompleteFuzzyFieldExpr maps the matched cvterm target back to its
+	// canonical field label.
+	autocompleteFuzzyFieldExpr = `e._to == @synonym_term_id ? "synonym" : "genotype"`
+)
 
+var (
 	// tagLens, termBindLens, and isGenotypeLens focus the fields of a
 	// searched tag specification.
 	tagLens = L.MakeLens(
@@ -67,6 +85,23 @@ var (
 			return s
 		},
 	)
+
+	// autocompleteFields are the two searched tags of the dicty_annotation
+	// ontology, in the order their prefix branches appear in the statement.
+	autocompleteFields = []autocompleteFieldSpec{
+		F.Pipe3(
+			autocompleteFieldSpec{},
+			tagLens.Set(fieldSynonym),
+			termBindLens.Set(bindSynonymTermID),
+			isGenotypeLens.Set(false),
+		),
+		F.Pipe3(
+			autocompleteFieldSpec{},
+			tagLens.Set(fieldGenotype),
+			termBindLens.Set(bindGenotypeTermID),
+			isGenotypeLens.Set(true),
+		),
+	}
 
 	// prefixSearchExprForSpec is the whole-value prefix expression, or the
 	// whole-value and allele-token pair a genotype value needs.
@@ -112,14 +147,7 @@ var (
 	stateNameLens     = F.Pipe1(branchLens, L.Compose[branchBuildState](nameLens))
 	stateBodyLens     = F.Pipe1(branchLens, L.Compose[branchBuildState](bodyLens))
 
-	// autocompleteBranchBuilders are the two stage builders of the statement:
-	// the prefix stage and the fuzzy stage, each applied across autocompleteFields.
-	autocompleteBranchBuilders = []func(autocompleteFieldSpec) queryBranch{
-		prefixBranch,
-		fuzzyBranch,
-	}
-
-	// buildAutocompleteQuery memoizes the assembled 4-branch AQL statement so
+	// buildAutocompleteQuery memoizes the assembled 3-branch AQL statement so
 	// the query string is built once on first call and reused thereafter.
 	buildAutocompleteQuery = IO.Memoize(assembleAutocompleteQuery)
 )
@@ -161,25 +189,31 @@ func setPrefixName(s branchBuildState) branchBuildState {
 	return F.Pipe1(s, stateNameLens.Set(name))
 }
 
-// prefixBranchParts builds the 5-item slice for AutocompleteBranchQ in verb order.
+// prefixBranchParts builds the 6-item slice for AutocompleteBranchQ in verb order.
 func prefixBranchParts(st branchBuildState) []any {
-	return F.Pipe5(
+	searchExpr := F.Pipe2(st, specLens.Get, prefixSearchExprForSpec)
+	termBind := strutils.JoinStrings("@", stateTermBindLens.Get(st))
+	quotedTag := strutils.JoinStrings(`"`, stateTagLens.Get(st), `"`)
+
+	return F.Pipe6(
 		// Start with an empty []any slice for the fmt.Sprintf arguments.
 		A.Empty[any](),
 		// 1st %s: append the AQL LET variable name (for example, "p_synonym").
 		A.Push[any](stateNameLens.Get(st)),
-		// 2nd %s: read st.spec, select its AQL SEARCH expression, and append it.
-		A.Push[any](F.Pipe2(st, specLens.Get, prefixSearchExprForSpec)),
-		// 3rd %s: append the cvterm ID bind parameter name (for example, "synonym_term_id").
-		A.Push[any](stateTermBindLens.Get(st)),
-		// 4th %q: append the field label returned in each row (for example, "synonym").
-		A.Push[any](stateTagLens.Get(st)),
-		// 5th %s: append the AQL prefix score expression ("1000 + BM25(d)").
+		// 2nd %s: append the AQL SEARCH expression.
+		A.Push[any](searchExpr),
+		// 3rd %s: append the post-SEARCH value filter expression.
+		A.Push[any](annoPlaceholderValueFilter),
+		// 4th %s: append the cvterm ID bind parameter reference (for example, "@synonym_term_id").
+		A.Push[any](termBind),
+		// 5th %s: append the quoted field label returned in each row.
+		A.Push[any](quotedTag),
+		// 6th %s: append the AQL prefix score expression ("1000 + BM25(d)").
 		A.Push[any](autocompletePrefixScore),
 	)
 }
 
-// formatBranchBody substitutes the 5 slice items into the AutocompleteBranchQ template.
+// formatBranchBody substitutes the 6 slice items into the AutocompleteBranchQ template.
 func formatBranchBody(parts []any) string {
 	return fmt.Sprintf(AutocompleteBranchQ, parts...)
 }
@@ -210,49 +244,38 @@ func prefixBranch(spec autocompleteFieldSpec) queryBranch {
 	)
 }
 
-// setFuzzyName writes the fuzzy LET variable name into s.branch.name.
-func setFuzzyName(s branchBuildState) branchBuildState {
-	name := strutils.JoinStrings("n_", stateTagLens.Get(s))
-
-	return F.Pipe1(s, stateNameLens.Set(name))
-}
-
-// fuzzyBranchParts builds the 5-item slice for a fuzzy AutocompleteBranchQ in verb order.
-func fuzzyBranchParts(st branchBuildState) []any {
-	return F.Pipe5(
-		// Start with an empty []any slice for the fmt.Sprintf arguments.
+// assembleAutocompleteQuery builds the complete 3-branch autocomplete statement.
+func assembleAutocompleteQuery() string {
+	fuzzyParts := F.Pipe6(
 		A.Empty[any](),
-		// 1st %s: append the AQL LET variable name (for example, "n_synonym").
-		A.Push[any](stateNameLens.Get(st)),
+		// 1st %s: append the AQL LET variable name ("n_value").
+		A.Push[any](autocompleteFuzzyBranchName),
 		// 2nd %s: append the AQL NGRAM_MATCH expression on the value attribute.
 		A.Push[any](autocompleteFuzzyExpr(docFieldValue)),
-		// 3rd %s: append the cvterm ID bind parameter name (for example, "synonym_term_id").
-		A.Push[any](stateTermBindLens.Get(st)),
-		// 4th %q: append the field label returned in each row (for example, "synonym").
-		A.Push[any](stateTagLens.Get(st)),
-		// 5th %s: append the AQL fuzzy score expression ("BM25(d)").
+		// 3rd %s: append the post-SEARCH value filter expression.
+		A.Push[any](annoFuzzyExcludedValueFilter),
+		// 4th %s: append the combined cvterm ID bind parameters.
+		A.Push[any](autocompleteFuzzyTargets),
+		// 5th %s: append the field label expression.
+		A.Push[any](autocompleteFuzzyFieldExpr),
+		// 6th %s: append the AQL fuzzy score expression ("BM25(d)").
 		A.Push[any](autocompleteFuzzyScore),
 	)
-}
-
-// setFuzzyBody builds the fuzzy AQL branch body from s and stores it in s.branch.body.
-func setFuzzyBody(s branchBuildState) branchBuildState {
-	return F.Pipe3(
-		s,
-		fuzzyBranchParts,
-		formatBranchBody,
-		setBranchBody(s),
+	fuzzyBody := F.Pipe1(fuzzyParts, formatBranchBody)
+	fuzzy := F.Pipe2(
+		queryBranch{},
+		nameLens.Set(autocompleteFuzzyBranchName),
+		bodyLens.Set(fuzzyBody),
 	)
-}
 
-// fuzzyBranch builds the n-gram branch of one field.
-func fuzzyBranch(spec autocompleteFieldSpec) queryBranch {
-	return F.Pipe4(
-		branchBuildState{},
-		specLens.Set(spec),
-		setFuzzyName,
-		setFuzzyBody,
-		branchLens.Get,
+	return F.Pipe6(
+		autocompleteFields,
+		A.Map(prefixBranch),
+		A.Push(fuzzy),
+		appendMergeBranch,
+		A.Map(bodyLens.Get),
+		A.Intersperse("\n"),
+		A.Fold(S.Monoid),
 	)
 }
 
@@ -268,17 +291,5 @@ func appendMergeBranch(branches []queryBranch) []queryBranch {
 		S.Format[string](AutocompleteMergeQ),
 		setBody,
 		F.Bind1st(A.Append, branches),
-	)
-}
-
-// assembleAutocompleteQuery builds the complete 4-branch autocomplete statement.
-func assembleAutocompleteQuery() string {
-	return F.Pipe5(
-		autocompleteBranchBuilders,
-		A.Ap[queryBranch](autocompleteFields),
-		appendMergeBranch,
-		A.Map(bodyLens.Get),
-		A.Intersperse("\n"),
-		A.Fold(S.Monoid),
 	)
 }

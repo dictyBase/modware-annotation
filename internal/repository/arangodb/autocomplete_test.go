@@ -336,7 +336,7 @@ func TestBuildAutocompleteQueryBranchCount(t *testing.T) {
 	statement := buildAutocompleteQuery()
 
 	for _, name := range []string{
-		"p_synonym", "p_genotype", "n_synonym", "n_genotype",
+		"p_synonym", "p_genotype", "n_value",
 	} {
 		require.Containsf(
 			t,
@@ -348,13 +348,13 @@ func TestBuildAutocompleteQueryBranchCount(t *testing.T) {
 	}
 	require.Equal(
 		t,
-		4,
+		3,
 		strings.Count(statement, "FOR d IN "+autocompleteViewName),
 		"expect one view scan per branch",
 	)
 	require.Equal(
 		t,
-		4,
+		3,
 		strings.Count(statement, "OUTBOUND d GRAPH @anno_cvterm_graph"),
 		"expect one tag traversal per branch",
 	)
@@ -366,9 +366,9 @@ func TestBuildAutocompleteQueryBranchCount(t *testing.T) {
 	)
 	require.Equal(
 		t,
-		2,
+		1,
 		strings.Count(statement, "NGRAM_MATCH(d.value"),
-		"expect two fuzzy branches",
+		"expect one combined fuzzy branch",
 	)
 	require.NotContains(
 		t,
@@ -382,18 +382,17 @@ func TestBuildAutocompleteQueryFilterOrder(t *testing.T) {
 	t.Parallel()
 	statement := buildAutocompleteQuery()
 
-	// Each branch ends where the next statement block begins, so the five
-	// block markers slice the statement into the four branch bodies.
+	// Each branch ends where the next statement block begins, so the four
+	// block markers slice the statement into the three branch bodies.
 	markers := []string{
 		"LET p_synonym = (",
 		"LET p_genotype = (",
-		"LET n_synonym = (",
-		"LET n_genotype = (",
+		"LET n_value = (",
 		"LET hits = FLATTEN(",
 	}
 
 	checked := 0
-	for i := range 4 {
+	for i := range 3 {
 		start := strings.Index(statement, markers[i])
 		end := strings.Index(statement, markers[i+1])
 		require.NotEqual(t, -1, start, "expect %s", markers[i])
@@ -401,12 +400,21 @@ func TestBuildAutocompleteQueryFilterOrder(t *testing.T) {
 		branch := statement[start:end]
 		checked++
 
-		tagFilter := strings.Index(branch, "FILTER has_tag == true")
+		valFilter := strings.Index(branch, "FILTER d.value NOT IN")
+		tagFilter := strings.Index(branch, "FILTER f != null")
 		sortNode := strings.Index(branch, "SORT BM25(d)")
 		limitNode := strings.Index(branch, "LIMIT @limit")
+		require.NotEqual(t, -1, valFilter, "expect the value filter in %s", markers[i])
 		require.NotEqual(t, -1, tagFilter, "expect the tag filter in %s", markers[i])
 		require.NotEqual(t, -1, sortNode, "expect the sort in %s", markers[i])
 		require.NotEqual(t, -1, limitNode, "expect the limit in %s", markers[i])
+		require.Less(
+			t,
+			valFilter,
+			tagFilter,
+			"expect the value filter before the tag traversal in %s",
+			markers[i],
+		)
 		require.Less(
 			t,
 			tagFilter,
@@ -422,7 +430,7 @@ func TestBuildAutocompleteQueryFilterOrder(t *testing.T) {
 			markers[i],
 		)
 	}
-	require.Equal(t, 4, checked, "expect four branches to be checked")
+	require.Equal(t, 3, checked, "expect three branches to be checked")
 }
 
 func TestBuildAutocompleteQueryIsValidAQL(t *testing.T) {
@@ -715,9 +723,9 @@ const (
 	// 3.12.12. It follows the host, so the gate logs it for trend and does not
 	// compare against it.
 	clientPathBaselineP95Ms = 8.0
-	// autocompleteBranchCount is the number of view scans in the statement. The
-	// explain plan asserts this count, so the control-derived ceiling stays in
-	// step with the statement.
+	// autocompleteBranchCount is the effective branch multiplier for the
+	// control-derived latency ceiling (p_synonym, p_genotype with a two-analyzer
+	// OR scan, and n_value with a two-target n-gram scan).
 	autocompleteBranchCount = 4.0
 	// autocompleteControlValue is the prefix term of the control scan. It is the
 	// lowercase form of the probe document value, so the control scan matches
@@ -870,7 +878,7 @@ func TestAutocompleteAnnotationExplainAndLatency(t *testing.T) {
 		counts[nodeType]++
 	}
 	assert.Equal(
-		4,
+		3,
 		counts["EnumerateViewNode"],
 		"expect one view scan per branch in the explain plan",
 	)
@@ -880,7 +888,7 @@ func TestAutocompleteAnnotationExplainAndLatency(t *testing.T) {
 		"expect no collection scan in the explain plan",
 	)
 	assert.Equal(
-		4,
+		3,
 		counts["TraversalNode"],
 		"expect one tag traversal per branch in the explain plan",
 	)
