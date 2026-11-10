@@ -31,42 +31,44 @@ RETURN {
 
 	// FullSearchAnnoBranchQ is one branch of the full search statement over
 	// the annotation collection. The builder fills it with fmt.Sprintf in
-	// this 5-verb order:
+	// this 6-verb order:
 	//
-	//  1. %s — branch variable (p0..p4, n0..n4, t0, h0)
+	//  1. %s — branch variable (p0, p1, n0, t0, h0)
 	//  2. %s — SEARCH value expression on d.value
-	//  3. %s — bind parameter name of the required cvterm _id
-	//  4. %q — canonical field label reported in each row
-	//  5. %s — score expression
+	//  3. %s — post-SEARCH value filter expression
+	//  4. %s — target cvterm _id list in e._to IN [...]
+	//  5. %s — canonical field label expression reported in each row
+	//  6. %s — score expression
 	FullSearchAnnoBranchQ = `LET %s = (
   FOR d IN annotation_full_search
     SEARCH d.is_obsolete == false
       AND ANALYZER(STARTS_WITH(d.entry_id, "dbs"), "annotation_search_norm")
       AND %s
-    LET has_tag = FIRST(
+    FILTER %s
+    LET f = FIRST(
       FOR cvt, e IN 1..1 OUTBOUND d GRAPH @anno_cvterm_graph
-        FILTER e._to == @%s AND cvt.deprecated == false
-        RETURN true
+        FILTER e._to IN [%s] AND cvt.deprecated == false
+        RETURN %s
     )
-    FILTER has_tag == true
+    FILTER f != null
     SORT BM25(d) DESC, d.entry_id ASC, d._key ASC
     LIMIT @limit
     RETURN {
       id: d.entry_id,
-      f: %q,
+      f: f,
       v: NOT_NULL(d.value, ""),
       s: %s
     }
 )`
 
 	// FullSearchTermBranchQ is one branch of the full search statement over
-	// the cvterm collection. The builder fills it with fmt.Sprintf in the
-	// exact same 5-verb order as FullSearchAnnoBranchQ:
+	// the cvterm collection. The builder fills it with fmt.Sprintf in this
+	// 5-verb order:
 	//
-	//  1. %s — branch variable (p5..p8, n5..n8, t1..t4, h1..h4)
+	//  1. %s — branch variable (p2..p5, n1..n4, t1..t4, h1..h4)
 	//  2. %s — SEARCH label expression on d.label
 	//  3. %s — bind parameter name of the required ontology graph_id (cv._id)
-	//  4. %q — canonical field label reported in each row
+	//  4. %s — quoted canonical field label reported in each row
 	//  5. %s — score expression
 	FullSearchTermBranchQ = `LET %s = (
   FOR d IN annotation_full_search
@@ -80,13 +82,13 @@ RETURN {
       LIMIT @limit
       RETURN {
         id: ann.entry_id,
-        f: %q,
+        f: %s,
         v: NOT_NULL(d.label, ""),
         s: %s
       }
 )`
 
-	// FullSearchMergeQ merges the 28 branches of the full search statement,
+	// FullSearchMergeQ merges the 21 branches of the full search statement,
 	// keeps one best row per entry_id, and returns at most @limit rows.
 	FullSearchMergeQ = `LET hits = FLATTEN([%s])
 LET best = (
