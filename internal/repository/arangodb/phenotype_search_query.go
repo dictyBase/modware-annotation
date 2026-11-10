@@ -48,22 +48,6 @@ const (
 )
 
 var (
-	// phenotypePrefixFuzzyFields are the 2 cvterm attributes that get prefix
-	// (p0..p1) and fuzzy (n0..n1) branches.
-	phenotypePrefixFuzzyFields = []phenotypeSearchField{
-		{index: 0, label: fieldPhenotypeLabel, attr: docFieldLabel},
-		{index: 1, label: fieldSynonym, attr: docAttrSynonyms},
-	}
-
-	// phenotypeTextFields are the 4 cvterm attributes that get token (t0..t3)
-	// and phrase (h0..h3) branches under text_en.
-	phenotypeTextFields = []phenotypeSearchField{
-		{index: 0, label: fieldPhenotypeLabel, attr: docFieldLabel},
-		{index: 1, label: fieldSynonym, attr: docAttrSynonyms},
-		{index: 2, label: fieldPhenotypeDefinition, attr: docAttrDefinition},
-		{index: 3, label: fieldPhenotypeComment, attr: docAttrComments},
-	}
-
 	// Lenses on phenotypeSearchField.
 	phenotypeFieldIndexLens = L.MakeLens(
 		func(f phenotypeSearchField) int { return f.index },
@@ -87,7 +71,76 @@ var (
 		},
 	)
 
-	// Lenses on phenotypeSearchBranchState and composed lenses into field and branch.
+	// Lenses on phenotypeSearchStage.
+	phenotypeStageNamePrefixLens = L.MakeLens(
+		func(s phenotypeSearchStage) string { return s.namePrefix },
+		func(s phenotypeSearchStage, v string) phenotypeSearchStage {
+			s.namePrefix = v
+			return s
+		},
+	)
+	phenotypeStageSearchExprLens = L.MakeLens(
+		func(s phenotypeSearchStage) func(string) string { return s.searchExpr },
+		func(s phenotypeSearchStage, v func(string) string) phenotypeSearchStage {
+			s.searchExpr = v
+			return s
+		},
+	)
+	phenotypeStageBandLens = L.MakeLens(
+		func(s phenotypeSearchStage) string { return s.band },
+		func(s phenotypeSearchStage, v string) phenotypeSearchStage {
+			s.band = v
+			return s
+		},
+	)
+
+	// phenotypePrefixFuzzyFields are the 2 cvterm attributes that get prefix
+	// (p0..p1) and fuzzy (n0..n1) branches.
+	phenotypePrefixFuzzyFields = []phenotypeSearchField{
+		F.Pipe3(
+			phenotypeSearchField{},
+			phenotypeFieldIndexLens.Set(0),
+			phenotypeFieldLabelLens.Set(fieldPhenotypeLabel),
+			phenotypeFieldAttrLens.Set(docFieldLabel),
+		),
+		F.Pipe3(
+			phenotypeSearchField{},
+			phenotypeFieldIndexLens.Set(1),
+			phenotypeFieldLabelLens.Set(fieldSynonym),
+			phenotypeFieldAttrLens.Set(docAttrSynonyms),
+		),
+	}
+
+	// phenotypeTextFields are the 4 cvterm attributes that get token (t0..t3)
+	// and phrase (h0..h3) branches under text_en.
+	phenotypeTextFields = []phenotypeSearchField{
+		F.Pipe3(
+			phenotypeSearchField{},
+			phenotypeFieldIndexLens.Set(0),
+			phenotypeFieldLabelLens.Set(fieldPhenotypeLabel),
+			phenotypeFieldAttrLens.Set(docFieldLabel),
+		),
+		F.Pipe3(
+			phenotypeSearchField{},
+			phenotypeFieldIndexLens.Set(1),
+			phenotypeFieldLabelLens.Set(fieldSynonym),
+			phenotypeFieldAttrLens.Set(docAttrSynonyms),
+		),
+		F.Pipe3(
+			phenotypeSearchField{},
+			phenotypeFieldIndexLens.Set(2),
+			phenotypeFieldLabelLens.Set(fieldPhenotypeDefinition),
+			phenotypeFieldAttrLens.Set(docAttrDefinition),
+		),
+		F.Pipe3(
+			phenotypeSearchField{},
+			phenotypeFieldIndexLens.Set(3),
+			phenotypeFieldLabelLens.Set(fieldPhenotypeComment),
+			phenotypeFieldAttrLens.Set(docAttrComments),
+		),
+	}
+
+	// Lenses on phenotypeSearchBranchState and composed lenses into stage, field, and branch.
 	phenotypeSearchStageLens = L.MakeLens(
 		func(s phenotypeSearchBranchState) phenotypeSearchStage { return s.stage },
 		func(s phenotypeSearchBranchState, v phenotypeSearchStage) phenotypeSearchBranchState {
@@ -108,6 +161,18 @@ var (
 			s.branch = v
 			return s
 		},
+	)
+	phenotypeStateNamePrefixLens = F.Pipe1(
+		phenotypeSearchStageLens,
+		L.Compose[phenotypeSearchBranchState](phenotypeStageNamePrefixLens),
+	)
+	phenotypeStateSearchExprLens = F.Pipe1(
+		phenotypeSearchStageLens,
+		L.Compose[phenotypeSearchBranchState](phenotypeStageSearchExprLens),
+	)
+	phenotypeStateBandLens = F.Pipe1(
+		phenotypeSearchStageLens,
+		L.Compose[phenotypeSearchBranchState](phenotypeStageBandLens),
 	)
 	phenotypeStateIndexLens = F.Pipe1(
 		phenotypeSearchFieldLens,
@@ -130,26 +195,30 @@ var (
 		L.Compose[phenotypeSearchBranchState](bodyLens),
 	)
 
-	phenotypePrefixStage = phenotypeSearchStage{
-		namePrefix: "p",
-		searchExpr: phenotypePrefixExpr,
-		band:       fullSearchPrefixBand,
-	}
-	phenotypeFuzzyStage = phenotypeSearchStage{
-		namePrefix: "n",
-		searchExpr: phenotypeFuzzyExpr,
-		band:       fullSearchFuzzyBand,
-	}
-	phenotypeTokenStage = phenotypeSearchStage{
-		namePrefix: "t",
-		searchExpr: phenotypeTokenExpr,
-		band:       fullSearchTokenBand,
-	}
-	phenotypePhraseStage = phenotypeSearchStage{
-		namePrefix: "h",
-		searchExpr: phenotypePhraseExpr,
-		band:       fullSearchPhraseBand,
-	}
+	phenotypePrefixStage = F.Pipe3(
+		phenotypeSearchStage{},
+		phenotypeStageNamePrefixLens.Set("p"),
+		phenotypeStageSearchExprLens.Set(phenotypePrefixExpr),
+		phenotypeStageBandLens.Set(fullSearchPrefixBand),
+	)
+	phenotypeFuzzyStage = F.Pipe3(
+		phenotypeSearchStage{},
+		phenotypeStageNamePrefixLens.Set("n"),
+		phenotypeStageSearchExprLens.Set(phenotypeFuzzyExpr),
+		phenotypeStageBandLens.Set(fullSearchFuzzyBand),
+	)
+	phenotypeTokenStage = F.Pipe3(
+		phenotypeSearchStage{},
+		phenotypeStageNamePrefixLens.Set("t"),
+		phenotypeStageSearchExprLens.Set(phenotypeTokenExpr),
+		phenotypeStageBandLens.Set(fullSearchTokenBand),
+	)
+	phenotypePhraseStage = F.Pipe3(
+		phenotypeSearchStage{},
+		phenotypeStageNamePrefixLens.Set("h"),
+		phenotypeStageSearchExprLens.Set(phenotypePhraseExpr),
+		phenotypeStageBandLens.Set(fullSearchPhraseBand),
+	)
 
 	// phenotypePrefixFuzzyBuilders are the prefix and fuzzy builders applied
 	// across phenotypePrefixFuzzyFields via A.Ap.
@@ -212,24 +281,32 @@ func phenotypePhraseExpr(attr string) string {
 func setPhenotypeSearchName(
 	s phenotypeSearchBranchState,
 ) phenotypeSearchBranchState {
-	stage := phenotypeSearchStageLens.Get(s)
-	name := fmt.Sprintf("%s%d", stage.namePrefix, phenotypeStateIndexLens.Get(s))
+	name := fmt.Sprintf(
+		"%s%d",
+		phenotypeStateNamePrefixLens.Get(s),
+		phenotypeStateIndexLens.Get(s),
+	)
 
 	return F.Pipe1(s, phenotypeStateNameLens.Set(name))
+}
+
+// phenotypeSearchExpr evaluates the stage SEARCH expression for st.field.attr.
+func phenotypeSearchExpr(st phenotypeSearchBranchState) string {
+	exprFn := phenotypeStateSearchExprLens.Get(st)
+	attr := phenotypeStateAttrLens.Get(st)
+
+	return exprFn(attr)
 }
 
 // phenotypeSearchBranchParts builds the 4-item slice for PhenotypeSearchBranchQ
 // in verb order.
 func phenotypeSearchBranchParts(st phenotypeSearchBranchState) []any {
-	stage := phenotypeSearchStageLens.Get(st)
-	attr := phenotypeStateAttrLens.Get(st)
-
 	return F.Pipe4(
 		A.Empty[any](),
 		A.Push[any](phenotypeStateNameLens.Get(st)),
-		A.Push[any](stage.searchExpr(attr)),
+		A.Push[any](phenotypeSearchExpr(st)),
 		A.Push[any](phenotypeStateLabelLens.Get(st)),
-		A.Push[any](stage.band),
+		A.Push[any](phenotypeStateBandLens.Get(st)),
 	)
 }
 

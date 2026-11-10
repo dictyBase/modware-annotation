@@ -77,10 +77,105 @@ var (
 			return r
 		},
 	)
+	phenotypeTargetsGraphsLens = L.MakeLens(
+		func(t phenotypeSearchTargets) map[string]string { return t.Graphs },
+		func(t phenotypeSearchTargets, g map[string]string) phenotypeSearchTargets {
+			t.Graphs = g
+			return t
+		},
+	)
 	phenotypeSearchTargetsLens = L.MakeLens(
 		func(r phenotypeSearchRequest) phenotypeSearchTargets { return r.targets },
 		func(r phenotypeSearchRequest, t phenotypeSearchTargets) phenotypeSearchRequest {
 			r.targets = t
+			return r
+		},
+	)
+	phenotypeRequestGraphsLens = F.Pipe1(
+		phenotypeSearchTargetsLens,
+		L.Compose[phenotypeSearchRequest](phenotypeTargetsGraphsLens),
+	)
+	phenotypeQueryInputTextLens = L.MakeLens(
+		func(q *repo.PhenotypeSearchQuery) string { return q.Query },
+		func(q *repo.PhenotypeSearchQuery, v string) *repo.PhenotypeSearchQuery {
+			q.Query = v
+			return q
+		},
+	)
+	phenotypeQueryInputLimitLens = L.MakeLens(
+		func(q *repo.PhenotypeSearchQuery) int { return q.Limit },
+		func(q *repo.PhenotypeSearchQuery, v int) *repo.PhenotypeSearchQuery {
+			q.Limit = v
+			return q
+		},
+	)
+	phenotypeRowIDLens = L.MakeLens(
+		func(r phenotypeSearchRow) string { return r.ID },
+		func(r phenotypeSearchRow, v string) phenotypeSearchRow {
+			r.ID = v
+			return r
+		},
+	)
+	phenotypeRowFieldLens = L.MakeLens(
+		func(r phenotypeSearchRow) string { return r.Field },
+		func(r phenotypeSearchRow, v string) phenotypeSearchRow {
+			r.Field = v
+			return r
+		},
+	)
+	phenotypeRowNameLens = L.MakeLens(
+		func(r phenotypeSearchRow) string { return r.Name },
+		func(r phenotypeSearchRow, v string) phenotypeSearchRow {
+			r.Name = v
+			return r
+		},
+	)
+	phenotypeRowDefLens = L.MakeLens(
+		func(r phenotypeSearchRow) string { return r.Definition },
+		func(r phenotypeSearchRow, v string) phenotypeSearchRow {
+			r.Definition = v
+			return r
+		},
+	)
+	phenotypeRowScoreLens = L.MakeLens(
+		func(r phenotypeSearchRow) float64 { return r.Score },
+		func(r phenotypeSearchRow, v float64) phenotypeSearchRow {
+			r.Score = v
+			return r
+		},
+	)
+	phenotypeResultEntryIDLens = L.MakeLens(
+		func(r *repo.PhenotypeSearchResult) string { return r.EntryID },
+		func(r *repo.PhenotypeSearchResult, v string) *repo.PhenotypeSearchResult {
+			r.EntryID = v
+			return r
+		},
+	)
+	phenotypeResultFieldLens = L.MakeLens(
+		func(r *repo.PhenotypeSearchResult) string { return r.Field },
+		func(r *repo.PhenotypeSearchResult, v string) *repo.PhenotypeSearchResult {
+			r.Field = v
+			return r
+		},
+	)
+	phenotypeResultNameLens = L.MakeLens(
+		func(r *repo.PhenotypeSearchResult) string { return r.Name },
+		func(r *repo.PhenotypeSearchResult, v string) *repo.PhenotypeSearchResult {
+			r.Name = v
+			return r
+		},
+	)
+	phenotypeResultDefLens = L.MakeLens(
+		func(r *repo.PhenotypeSearchResult) string { return r.Definition },
+		func(r *repo.PhenotypeSearchResult, v string) *repo.PhenotypeSearchResult {
+			r.Definition = v
+			return r
+		},
+	)
+	phenotypeResultScoreLens = L.MakeLens(
+		func(r *repo.PhenotypeSearchResult) float64 { return r.Score },
+		func(r *repo.PhenotypeSearchResult, v float64) *repo.PhenotypeSearchResult {
+			r.Score = v
 			return r
 		},
 	)
@@ -151,7 +246,7 @@ var (
 func stopwordPhenotypeSearchError(req phenotypeSearchRequest) error {
 	return fmt.Errorf(
 		"expect a query with at least one non-stopword, received %q",
-		req.query,
+		phenotypeSearchQueryLens.Get(req),
 	)
 }
 
@@ -159,8 +254,16 @@ func stopwordPhenotypeSearchError(req phenotypeSearchRequest) error {
 func newPhenotypeSearchRequest(
 	params *repo.PhenotypeSearchQuery,
 ) phenotypeSearchRequest {
-	normalized := F.Pipe1(params.Query, repo.NormalizeAutocompleteQuery)
-	limit := F.Pipe1(params.Limit, clampFullSearchLimit)
+	normalized := F.Pipe2(
+		params,
+		phenotypeQueryInputTextLens.Get,
+		repo.NormalizeAutocompleteQuery,
+	)
+	limit := F.Pipe2(
+		params,
+		phenotypeQueryInputLimitLens.Get,
+		clampFullSearchLimit,
+	)
 
 	return F.Pipe2(
 		phenotypeSearchRequest{},
@@ -235,8 +338,7 @@ func (ar *arangorepository) resolvePhenotypeSearchTargets(
 func (ar *arangorepository) phenotypeSearchBindParams(
 	req phenotypeSearchRequest,
 ) map[string]any {
-	targets := phenotypeSearchTargetsLens.Get(req)
-	graphs := targets.Graphs
+	graphs := phenotypeRequestGraphsLens.Get(req)
 
 	return map[string]any{
 		"q":                  phenotypeSearchQueryLens.Get(req),
@@ -289,13 +391,20 @@ func emptyPhenotypeSearchResults() []*repo.PhenotypeSearchResult {
 
 // toPhenotypeSearchResult maps one projection row to a repository PhenotypeSearchResult.
 func toPhenotypeSearchResult(row phenotypeSearchRow) *repo.PhenotypeSearchResult {
-	return &repo.PhenotypeSearchResult{
-		EntryID:    row.ID,
-		Field:      row.Field,
-		Name:       row.Name,
-		Definition: row.Definition,
-		Score:      row.Score,
-	}
+	id := phenotypeRowIDLens.Get(row)
+	field := phenotypeRowFieldLens.Get(row)
+	name := phenotypeRowNameLens.Get(row)
+	def := phenotypeRowDefLens.Get(row)
+	score := phenotypeRowScoreLens.Get(row)
+
+	return F.Pipe5(
+		&repo.PhenotypeSearchResult{},
+		phenotypeResultEntryIDLens.Set(id),
+		phenotypeResultFieldLens.Set(field),
+		phenotypeResultNameLens.Set(name),
+		phenotypeResultDefLens.Set(def),
+		phenotypeResultScoreLens.Set(score),
+	)
 }
 
 // SearchPhenotypes returns at most Limit ranked strain phenotype matches for the
