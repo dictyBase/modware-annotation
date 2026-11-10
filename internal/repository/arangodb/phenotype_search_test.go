@@ -2,6 +2,7 @@ package arangodb
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	E "github.com/IBM/fp-go/v2/either"
@@ -170,7 +171,22 @@ func TestBuildPhenotypeSearchQueryBranchCount(t *testing.T) {
 	}
 	assert.Contains(
 		stmt,
-		"LET hits = FLATTEN([p0, p1, n0, n1, t0, t1, t2, t3, h0, h1, h2, h3])",
+		"LET term_hits = FLATTEN([p0, p1, n0, n1, t0, t1, t2, t3, h0, h1, h2, h3])",
+	)
+	assert.Equal(
+		12,
+		strings.Count(stmt, "FOR d IN "+fullSearchViewName),
+		"expect 12 view scans",
+	)
+	assert.Equal(
+		1,
+		strings.Count(stmt, "INBOUND t.id GRAPH @anno_cvterm_graph"),
+		"expect 1 inbound traversal in the merge block",
+	)
+	assert.Equal(
+		0,
+		strings.Count(stmt, "INBOUND d GRAPH @anno_cvterm_graph"),
+		"expect 0 per-branch inbound traversals",
 	)
 }
 
@@ -427,5 +443,24 @@ func TestSearchPhenotypesAcrossThreeOntologiesAndFourFields(t *testing.T) {
 			seen[row.EntryID]++
 		}
 		assert.Equal(1, seen["DBS0236201"], "expect one deduplicated row per strain")
+
+		// Add multiple annotations on DBS0236202 for "in suspension" so raw
+		// edges exceed limit=2 while unique strains (DBS0236202, DBS0236205)
+		// equal 2. Verify deduplication runs before @limit cuts off DBS0236205.
+		addFullSearchAnnotation(
+			t, repo, "DBS0236202", environmentOntology, "in suspension", "novalue", 1,
+		)
+		addFullSearchAnnotation(
+			t, repo, "DBS0236202", environmentOntology, "in suspension", "novalue", 2,
+		)
+		limitRows := waitForPhenotypeSearchResults(
+			t, repo, "in suspension", 2,
+			func(rows []*repository.PhenotypeSearchResult) bool {
+				return len(rows) == 2
+			},
+		)
+		assert.Len(limitRows, 2)
+		assert.NotNil(findPhenotypeRow(limitRows, "DBS0236202"))
+		assert.NotNil(findPhenotypeRow(limitRows, "DBS0236205"))
 	})
 }
