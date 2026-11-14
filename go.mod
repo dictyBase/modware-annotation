@@ -7,7 +7,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.9.0
 	github.com/dictyBase/aphgrpc v1.4.2
 	github.com/dictyBase/arangomanager v0.8.0
-	github.com/dictyBase/fp-go-loom v0.3.0
+	github.com/dictyBase/fp-go-loom v0.5.0
 	github.com/dictyBase/go-genproto v0.0.0-20261029035135-a46038587034
 	github.com/dictyBase/go-obograph v1.6.1
 	github.com/go-playground/validator/v10 v10.30.6

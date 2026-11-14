@@ -34,8 +34,8 @@ github.com/dictyBase/aphgrpc v1.4.2 h1:jkNyIpUBATNVNTM99TfAHln8UEpzyvNNNuM2+UY6t
 github.com/dictyBase/aphgrpc v1.4.2/go.mod h1:rzi2U95QntAuS6XpqespgZmQ8Ujo2Sq2R5FyhW5adA8=
 github.com/dictyBase/arangomanager v0.8.0 h1:wXWmq7QYBn37eGs0nELPxqccMbTvx9G99k/crHwfDAw=
 github.com/dictyBase/arangomanager v0.8.0/go.mod h1:Fm3AuYBeMccsYcu8M6iq2a96XlPIe4Y55x95TAWmGs4=
-github.com/dictyBase/fp-go-loom v0.3.0 h1:9zeDui8f7wby1/OJ0+Cw2VcQH27eqFP3Cz+FNFND0Ro=
-github.com/dictyBase/fp-go-loom v0.3.0/go.mod h1:OJAl1gwqY0wJPp68ED2DeMQ8GLCeI34BM9FcQdxL5V0=
+github.com/dictyBase/fp-go-loom v0.5.0 h1:uGa9V13Fx7jixcdzsYstnOUg1+Gba+XY1xJ7ar5qa9Y=
+github.com/dictyBase/fp-go-loom v0.5.0/go.mod h1:OJAl1gwqY0wJPp68ED2DeMQ8GLCeI34BM9FcQdxL5V0=
 github.com/dictyBase/go-genproto v0.0.0-20261029035135-a46038587034 h1:a3z7bUH34pv6H5yrN6TJszMmdpdUeiDrji40UhRRo/k=
 github.com/dictyBase/go-genproto v0.0.0-20261029035135-a46038587034/go.mod h1:rlUPhBs4duDUE73MswuLGW9UzbkcTWqQsbpsp/pGqTg=
 github.com/dictyBase/go-obograph v1.6.1 h1:2qWF1OPVUAV20OeCZxi6bEQyMFzKdV7DNzmG7qT9otE=
