@@ -1,0 +1,72 @@
+{
+  "graphs": [
+    {
+      "id": "http://purl.obolibrary.org/obo/tglk.owl",
+      "meta": {
+        "basicPropertyValues": [
+          {
+            "pred": "http://www.geneontology.org/formats/oboInOwl#default-namespace",
+            "val": "tag_lookup"
+          }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "http://purl.obolibrary.org/obo/TGLK_0000001",
+          "type": "CLASS",
+          "lbl": "alpha",
+          "meta": {
+            "synonyms": [
+              {"pred": "hasExactSynonym", "val": "alpha alias"},
+              {"pred": "hasRelatedSynonym", "val": "shared synonym"}
+            ]
+          }
+        },
+        {
+          "id": "http://purl.obolibrary.org/obo/TGLK_0000002",
+          "type": "CLASS",
+          "lbl": "beta",
+          "meta": {
+            "synonyms": [
+              {"pred": "hasRelatedSynonym", "val": "shared synonym"},
+              {"pred": "hasRelatedSynonym", "val": "alpha"}
+            ]
+          }
+        },
+        {
+          "id": "http://purl.obolibrary.org/obo/TGLK_0000003",
+          "type": "CLASS",
+          "lbl": "obsolete gamma",
+          "meta": {
+            "deprecated": true,
+            "synonyms": [
+              {"pred": "hasExactSynonym", "val": "gamma alias"}
+            ]
+          }
+        },
+        {
+          "id": "http://purl.obolibrary.org/obo/TGLK_0000004",
+          "type": "CLASS",
+          "lbl": "XYZ_0000001"
+        },
+        {
+          "id": "http://purl.obolibrary.org/obo/TGLK_0000005",
+          "type": "CLASS",
+          "lbl": "delta"
+        },
+        {
+          "id": "http://purl.obolibrary.org/obo/TGLK_0000006",
+          "type": "CLASS",
+          "lbl": "delta"
+        }
+      ],
+      "edges": [
+        {
+          "sub": "http://purl.obolibrary.org/obo/TGLK_0000002",
+          "pred": "is_a",
+          "obj": "http://purl.obolibrary.org/obo/TGLK_0000001"
+        }
+      ]
+    }
+  ]
+}

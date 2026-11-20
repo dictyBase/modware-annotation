@@ -181,7 +181,8 @@ func (srv *AnnotationService) ListAnnotations(
 	return tac, nil
 }
 
-// GetAnnotationTag retrieves an annotation tag by name and ontology.
+// GetAnnotationTag retrieves an annotation tag by term id, label or unique
+// synonym in an ontology.
 func (srv *AnnotationService) GetAnnotationTag(
 	ctx context.Context, rta *annotation.TagRequest,
 ) (*annotation.AnnotationTag, error) {
@@ -193,6 +194,9 @@ func (srv *AnnotationService) GetAnnotationTag(
 	if err != nil {
 		if repository.IsAnnoTagNotFound(err) {
 			return nil, aphgrpc.HandleNotFoundError(ctx, err)
+		}
+		if repository.IsAnnoTagAmbiguous(err) {
+			return nil, aphgrpc.HandleInvalidParamError(ctx, err)
 		}
 
 		return nil, aphgrpc.HandleGetError(ctx, err)

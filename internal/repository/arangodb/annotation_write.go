@@ -30,7 +30,7 @@ func (ar *arangorepository) AddAnnotation(na *annotation.NewTaggedAnnotation) (*
 		return mann, err
 	}
 	// check if the annotation exist
-	if err := ar.existAnno(attr, tag); err != nil {
+	if err := ar.existAnno(attr, cvtid); err != nil {
 		return mann, err
 	}
 
