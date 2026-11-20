@@ -235,48 +235,18 @@ func (ar *arangorepository) ListAnnotationGroup(
 	return agrp, nil
 }
 
-// GetAnnotationTag retrieves tag information.
-func (ar *arangorepository) GetAnnotationTag(
-	tag, ontology string,
-) (*model.AnnoTag, error) {
-	annoModel := new(model.AnnoTag)
-	res, err := ar.database.GetRow(
-		tagGetQ,
-		map[string]any{
-			cvtermCollectionBind: ar.onto.Term.Name(),
-			cvCollectionBind:     ar.onto.Cv.Name(),
-			"ontology":           ontology,
-			"tag":                tag,
-		})
-	if err != nil {
-		return annoModel, fmt.Errorf("error in running tag query %s", err)
-	}
-	if res.IsEmpty() {
-		return annoModel, &repository.AnnoTagNotFoundError{Tag: tag}
-	}
-	if err := res.Read(annoModel); err != nil {
-		return annoModel,
-			fmt.Errorf(
-				"error in retrieving tag %s in ontology %s %s",
-				tag, ontology, err,
-			)
-	}
-
-	return annoModel, nil
-}
-
+// existAnno reports an error when an active annotation of entry and rank
+// already points to the cvterm cvtID.
 func (ar *arangorepository) existAnno(
 	attr *annotation.NewTaggedAnnotationAttributes,
-	tag string,
+	cvtID string,
 ) error {
 	count, err := ar.database.CountWithParams(annExistQ, map[string]any{
 		"@anno_collection":  ar.anno.annot.Name(),
-		cvCollectionBind:    ar.onto.Cv.Name(),
 		"anno_cvterm_graph": ar.anno.annotg.Name(),
 		"entry_id":          attr.EntryId,
 		"rank":              attr.Rank,
-		"ontology":          attr.Ontology,
-		"tag":               tag,
+		"cvterm_id":         cvtID,
 	})
 	if err != nil {
 		return fmt.Errorf("error in count query %s", err)

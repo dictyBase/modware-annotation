@@ -45,6 +45,10 @@ func (srv *AnnotationService) CreateAnnotation(
 	tga := &annotation.TaggedAnnotation{}
 	m, err := srv.repo.AddAnnotation(rta)
 	if err != nil {
+		if repository.IsAnnoTagAmbiguous(err) {
+			return nil, aphgrpc.HandleInvalidParamError(ctx, err)
+		}
+
 		return nil, aphgrpc.HandleInsertError(ctx, err)
 	}
 	tga.Data = srv.getAnnoData(m)

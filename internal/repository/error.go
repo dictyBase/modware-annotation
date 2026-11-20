@@ -2,6 +2,7 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -112,20 +113,55 @@ func IsAnnotationGroupListNotFound(err error) bool {
 
 // AnnoTagNotFoundError is returned when an annotation tag is not found.
 type AnnoTagNotFoundError struct {
-	Tag string
+	Tag      string
+	Ontology string
+}
+
+// NewAnnoTagNotFoundError returns an AnnoTagNotFoundError for tag in ontology.
+func NewAnnoTagNotFoundError(tag, ontology string) error {
+	return &AnnoTagNotFoundError{Tag: tag, Ontology: ontology}
 }
 
 func (at *AnnoTagNotFoundError) Error() string {
-	return fmt.Sprintf("annotation tag %s not found", at.Tag)
+	return fmt.Sprintf(
+		"annotation tag %s not found in ontology %s",
+		at.Tag,
+		at.Ontology,
+	)
+}
+
+// AnnoTagAmbiguousError is returned when a tag matches more than one
+// ontology term, for example a synonym that two terms share.
+type AnnoTagAmbiguousError struct {
+	Tag      string
+	Ontology string
+}
+
+// NewAnnoTagAmbiguousError returns an AnnoTagAmbiguousError for tag in ontology.
+func NewAnnoTagAmbiguousError(tag, ontology string) error {
+	return &AnnoTagAmbiguousError{Tag: tag, Ontology: ontology}
+}
+
+func (at *AnnoTagAmbiguousError) Error() string {
+	return fmt.Sprintf(
+		"annotation tag %s matches more than one term in ontology %s",
+		at.Tag,
+		at.Ontology,
+	)
+}
+
+// IsAnnoTagAmbiguous reports whether err is an AnnoTagAmbiguousError.
+func IsAnnoTagAmbiguous(err error) bool {
+	var target *AnnoTagAmbiguousError
+
+	return errors.As(err, &target)
 }
 
 // IsAnnoTagNotFound reports whether err is an AnnoTagNotFoundError.
 func IsAnnoTagNotFound(err error) bool {
-	if _, ok := err.(*AnnoTagNotFoundError); ok {
-		return true
-	}
+	var target *AnnoTagNotFoundError
 
-	return false
+	return errors.As(err, &target)
 }
 
 // OrganismNotFoundError is returned when an organism with the given ID does not exist.

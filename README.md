@@ -170,7 +170,7 @@ Full protobuf definitions: [dictybaseapis/annotation.proto](https://github.com/d
 | `AddToAnnotationGroup` | `AnnotationGroupId` | `TaggedAnnotationGroup` | Add annotations to an existing group |
 | `DeleteAnnotationGroup` | `GroupEntryId` | `Empty` | Delete an annotation group |
 | `ListAnnotationGroups` | `ListGroupParameters` | `TaggedAnnotationGroupCollection` | Paginated group listing with filters |
-| `GetAnnotationTag` | `TagRequest` | `AnnotationTag` | Retrieve an ontology tag by ID |
+| `GetAnnotationTag` | `TagRequest` | `AnnotationTag` | Retrieve an ontology tag by term ID, label, or unique synonym (see [Tag Lookup](#tag-lookup)) |
 | `AutocompleteAnnotation` | `AnnotationAutocompleteParameters` | `AnnotationSuggestionCollection` | Suggest strain synonyms and genotypes for partial text |
 | `SearchAnnotation` | `AnnotationSearchParameters` | `AnnotationSearchResultCollection` | Search strain annotations across 10 fields and 4 score bands |
 | `OboJSONFileUpload` | `stream FileUploadRequest` | `FileUploadResponse` | Stream-upload an OBO JSON ontology file |
@@ -344,13 +344,40 @@ resp, err := annoClient.CreateAnnotation(ctx, &annotation.NewTaggedAnnotation{
             CreatedBy: "user@dictybase.org",
             Tag:       "GO:0005634",
             Ontology:  "cellular_component",
-            Version:   1,
             Rank:      0,
         },
     },
 })
 // resp.Data.Id — auto-generated annotation ID
 ```
+
+### Tag Lookup
+
+`CreateAnnotation` and `GetAnnotationTag` find the ontology term of a tag.
+The service applies these rules in this order:
+
+1. A tag in term ID form, such as `DDPHENO:0001008` or `DDPHENO_0001008`,
+   matches only the term ID. The service does not compare it with labels.
+2. Other tags match the exact label of the term.
+3. If no label matches, the tag matches a synonym.
+
+The service returns an error when no term matches. It also returns an error
+when more than one term matches. For example, two terms can have the same
+synonym. The service does not select one of these terms.
+
+| Result | `GetAnnotationTag` code | `CreateAnnotation` code |
+|--------|-------------------------|-------------------------|
+| No term matches | `NOT_FOUND` | `INTERNAL` |
+| More than one term matches | `INVALID_ARGUMENT` | `INVALID_ARGUMENT` |
+
+`CreateAnnotation` accepts only active terms. `GetAnnotationTag` also returns
+obsolete terms and sets `is_obsolete` to true.
+
+The service stores the term label as the tag of the annotation. An annotation
+that you create with a term ID has the same tag as an annotation that you
+create with the label. The service rejects a second annotation with the same
+term, entry, and rank, for each form of the tag. Two different terms with the
+same label are not duplicates.
 
 ### Get an Annotation
 

@@ -2,46 +2,84 @@ package arangodb
 
 const (
 	orgListQ = `FOR org IN @@collection RETURN org`
-	tagGetQ  = `
-		FOR cv IN @@cv_collection
-			FOR cvt IN @@cvterm_collection
+	// tagResolveQ resolves @tag to the matching terms of @ontology. It
+	// returns an array with at most 2 terms, so the caller can tell a
+	// unique match from an ambiguous one. The match rules are:
+	//
+	//  1. A tag in term id form (PREFIX:digits or PREFIX_digits) matches
+	//     only cvt.id, in either separator form. It never matches a label.
+	//  2. Any other tag matches the exact label.
+	//  3. Only when no label matches, it matches a synonym.
+	//
+	// @include_obsolete false keeps only active terms.
+	tagResolveQ = `
+		LET is_term_id = REGEX_TEST(@tag, "^[A-Za-z][A-Za-z0-9]*[:_][0-9]+$")
+		LET id_forms = [
+			SUBSTITUTE(@tag, ":", "_", 1),
+			SUBSTITUTE(@tag, "_", ":", 1)
+		]
+		LET graphs = (
+			FOR cv IN @@cv_collection
 				FILTER cv.metadata.namespace == @ontology
+				RETURN cv._id
+		)
+		LET by_id = (
+			FOR cvt IN @@cvterm_collection
+				FILTER is_term_id
+				FILTER cvt.graph_id IN graphs
+				FILTER cvt.id IN id_forms
+				FILTER @include_obsolete || cvt.deprecated == false
+				LIMIT 2
+				RETURN cvt
+		)
+		LET by_label = (
+			FOR cvt IN @@cvterm_collection
+				FILTER NOT is_term_id
+				FILTER cvt.graph_id IN graphs
 				FILTER cvt.label == @tag
-				FILTER cvt.graph_id == cv._id
-				LIMIT 1
+				FILTER @include_obsolete || cvt.deprecated == false
+				LIMIT 2
+				RETURN cvt
+		)
+		LET by_synonym = (
+			FOR cvt IN @@cvterm_collection
+				FILTER NOT is_term_id
+				FILTER LENGTH(by_label) == 0
+				FILTER cvt.graph_id IN graphs
+				FILTER @tag IN cvt.metadata.synonyms[*].value
+				FILTER @include_obsolete || cvt.deprecated == false
+				LIMIT 2
+				RETURN cvt
+		)
+		LET hits = is_term_id ? by_id : (
+			LENGTH(by_label) > 0 ? by_label : by_synonym
+		)
+		RETURN (
+			FOR cvt IN hits
 				RETURN {
+					key: cvt._id,
 					id: cvt.id,
 					name: cvt.label,
 					is_obsolete: cvt.deprecated,
-					ontology: cv.metadata.namespace
+					ontology: @ontology
 				}
+		)
 	`
 	cvtID2LblQ = `
 		FOR cvt IN @@cvterm_collection
 			FILTER cvt._id == @id
 			RETURN cvt.label
 	`
-	annExistTagQ = `
-		FOR cv IN @@cv_collection
-			FOR cvt IN @@cvterm_collection
-				FILTER cv.metadata.namespace == @ontology
-				FILTER cvt.label == @tag || @tag IN cvt.metadata.synonyms[*].value
-				FILTER cvt.graph_id == cv._id
-				FILTER cvt.deprecated == false
-				RETURN cvt._id
-	`
+	// annExistQ matches the tag term by its cvterm _id, so two terms with the
+	// same label never count as a duplicate of each other.
 	annExistQ = `
 		FOR ann IN @@anno_collection
+			FILTER ann.entry_id == @entry_id
+			FILTER ann.rank == @rank
+			FILTER ann.is_obsolete == false
 			FOR v IN 1..1 OUTBOUND ann GRAPH @anno_cvterm_graph
-				FOR cv IN @@cv_collection
-					FILTER ann.entry_id == @entry_id
-					FILTER ann.rank == @rank
-					FILTER ann.is_obsolete == false
-					FILTER v.label == @tag
-					FILTER v.deprecated == false
-					FILTER v.graph_id == cv._id
-					FILTER cv.metadata.namespace == @ontology
-					RETURN ann
+				FILTER v._id == @cvterm_id
+				RETURN ann
 	`
 	annInst = `
 		LET n = (
